@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/to-no-host",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "http://1.2.3.999/"
+    },
+    "bodyBase64": ""
+  }
+}

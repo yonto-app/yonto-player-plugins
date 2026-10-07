@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://conformance.test/kept",
+    "body": "q=1"
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "cG9zdGVk"
+  }
+}

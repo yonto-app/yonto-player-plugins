@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Items/Filters?UserId=fixture-user-id&ParentId=lib-movies&IncludeItemTypes=Movie%2CSeries",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJHZW5yZXMiOlsiRHJhbWEiLCJBY3Rpb24iXSwiVGFncyI6W10sIk9mZmljaWFsUmF0aW5ncyI6WyJQRy0xMyJdLCJZZWFycyI6WzIwMDgsMjAxNCwyMDEwXX0="
+  }
+}

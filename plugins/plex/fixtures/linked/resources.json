@@ -1,0 +1,50 @@
+{
+  "about": "NOT A RECORDING: the answer of https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1, written from Plex's documentation and the shape tools/plugin-cli/conformance/link-login/discovery.json uses, since no Plex account exists to record one. Two servers shared with the account, one it owns and a player; addresses are from the documentation ranges, tokens are made up. The friend's connections are listed relay, remote, http, local on purpose, so the order the plugin tries them in is its own.",
+  "body": [
+    {
+      "name": "Friend's server",
+      "product": "Plex Media Server",
+      "clientIdentifier": "server-friend",
+      "provides": "server",
+      "owned": false,
+      "accessToken": "friend-token-aaaaaaaa",
+      "connections": [
+        { "protocol": "https", "address": "198.51.100.2", "port": 8443, "uri": "https://198-51-100-2.aaaa.plex.direct:8443", "local": false, "relay": true },
+        { "protocol": "https", "address": "203.0.113.7", "port": 32400, "uri": "https://203-0-113-7.aaaa.plex.direct:32400", "local": false, "relay": false },
+        { "protocol": "http", "address": "192.168.1.5", "port": 32400, "uri": "http://192.168.1.5:32400", "local": true, "relay": false },
+        { "protocol": "https", "address": "192.168.1.5", "port": 32400, "uri": "https://192-168-1-5.aaaa.plex.direct:32400", "local": true, "relay": false }
+      ]
+    },
+    {
+      "name": "Neighbour's server",
+      "product": "Plex Media Server",
+      "clientIdentifier": "server-neighbour",
+      "provides": "server",
+      "owned": false,
+      "accessToken": "neighbour-token-bbbbbbbb",
+      "connections": [
+        { "protocol": "https", "address": "203.0.113.9", "port": 32400, "uri": "https://203-0-113-9.bbbb.plex.direct:32400", "local": false, "relay": false }
+      ]
+    },
+    {
+      "name": "My server",
+      "product": "Plex Media Server",
+      "clientIdentifier": "server-mine",
+      "provides": "server",
+      "owned": true,
+      "accessToken": "mine-token-cccccccc",
+      "connections": [
+        { "protocol": "https", "address": "192.168.1.9", "port": 32400, "uri": "https://192-168-1-9.cccc.plex.direct:32400", "local": true, "relay": false }
+      ]
+    },
+    {
+      "name": "Phone",
+      "product": "Plex for Android",
+      "clientIdentifier": "player-phone",
+      "provides": "player,controller",
+      "owned": true,
+      "accessToken": "player-token-dddddddd",
+      "connections": []
+    }
+  ]
+}

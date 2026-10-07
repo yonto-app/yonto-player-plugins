@@ -1,0 +1,5 @@
+{
+  "unnamedHost": "pong",
+  "unnamedRedirect": "landed|https://elsewhere.test/landed",
+  "errorDuckTyped": "NOT_FOUND: hand-built, not yonto.error.notFound()"
+}

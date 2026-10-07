@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://conformance.test/echo",
+    "body": "a�b"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "bodyBase64": "ZWNob2Vk"
+  }
+}

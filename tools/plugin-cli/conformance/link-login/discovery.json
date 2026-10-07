@@ -1,0 +1,1716 @@
+{
+  "$comment": "What a discovery answer becomes, on both hosts: the servers the plugin is handed, with no credential field, and the hosts each server's credential is bound to. `typed` is what the viewer typed into the plugin's url fields; only an IP literal a connection's address and port match binds, over the scheme typed, and confirmed by the server's identity before first use. A case names a service in contracts/link-logins.json, or one of declarations.json's. test/link-login.test.js walks it through src/host/link-sign-in.js and LinkBindingRecordTest through LinkSignIn.kt.",
+  "cases": [
+    {
+      "why": "a shared server is handed over without its token and bound on each https connection the reach admits and on the address the viewer typed; an owned server, a player, a server whose token is the account's, one that cannot be read, one over http and one with no token are not bound, and the unreadable one is left out",
+      "about": "NOT A RECORDING: the shape of https://clients.plex.tv/api/v2/resources written from Plex's documentation, since no account exists to record one; addresses are from the documentation ranges",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "shared-token-aaaaaaaa",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        },
+        {
+          "name": "My server",
+          "clientIdentifier": "server-mine",
+          "provides": "server",
+          "owned": true,
+          "accessToken": "owned-token-bbbbbbbb",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.9",
+              "port": 32400,
+              "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            }
+          ]
+        },
+        {
+          "name": "Living room TV",
+          "clientIdentifier": "player-1",
+          "provides": "player,pubsub-player",
+          "owned": true,
+          "accessToken": "player-token-dddddddd",
+          "connections": []
+        },
+        {
+          "name": "Account's own",
+          "clientIdentifier": "server-same",
+          "provides": "client,server",
+          "owned": false,
+          "accessToken": "account-token-cccccccc",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.10",
+              "port": 32400,
+              "uri": "https://203-0-113-10.cccc.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            }
+          ]
+        },
+        {
+          "name": "Broken",
+          "clientIdentifier": "server-broken",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "broken-token-eeeeeeee",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.11",
+              "port": "32400",
+              "uri": "https://203-0-113-11.eeee.plex.direct:32400",
+              "local": false,
+              "relay": false
+            }
+          ]
+        },
+        {
+          "name": "Plain",
+          "clientIdentifier": "server-plain",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "plain-token-ffffffff",
+          "connections": [
+            {
+              "protocol": "http",
+              "address": "203.0.113.12",
+              "port": 32400,
+              "uri": "http://203-0-113-12.ffff.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            }
+          ]
+        },
+        {
+          "name": "No token",
+          "clientIdentifier": "server-tokenless",
+          "provides": "server",
+          "owned": false,
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.13",
+              "port": 32400,
+              "uri": "https://203-0-113-13.gggg.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [
+        "http://192.168.1.5:32400",
+        "http://nas.example:32400",
+        "http://192.168.1.6:32400"
+      ],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Friend's server",
+            "id": "server-friend",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                "address": "192.168.1.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": true,
+                "relay": false
+              },
+              {
+                "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+                "address": "198.51.100.2",
+                "port": 8443,
+                "protocol": "https",
+                "local": false,
+                "relay": true
+              }
+            ]
+          },
+          {
+            "name": "My server",
+            "id": "server-mine",
+            "owned": true,
+            "connections": [
+              {
+                "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                "address": "203.0.113.9",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          },
+          {
+            "name": "Account's own",
+            "id": "server-same",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-10.cccc.plex.direct:32400",
+                "address": "203.0.113.10",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          },
+          {
+            "name": "Plain",
+            "id": "server-plain",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "http://203-0-113-12.ffff.plex.direct:32400",
+                "address": "203.0.113.12",
+                "port": 32400,
+                "protocol": "http",
+                "local": false,
+                "relay": false
+              }
+            ]
+          },
+          {
+            "name": "No token",
+            "id": "server-tokenless",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-13.gggg.plex.direct:32400",
+                "address": "203.0.113.13",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          }
+        ],
+        "bindings": [
+          {
+            "scheme": "https",
+            "host": "203-0-113-7.aaaa.plex.direct",
+            "port": 32400,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "192-168-1-5.aaaa.plex.direct",
+            "port": 32400,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": false
+          },
+          {
+            "scheme": "http",
+            "host": "192.168.1.5",
+            "port": 32400,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": true
+          },
+          {
+            "scheme": "https",
+            "host": "198-51-100-2.aaaa.plex.direct",
+            "port": 8443,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": false
+          }
+        ]
+      }
+    },
+    {
+      "why": "a reach that does not admit the connections binds only the typed address",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "shared-token-aaaaaaaa",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [],
+      "typed": [
+        "http://192.168.1.5:32400"
+      ],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Friend's server",
+            "id": "server-friend",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                "address": "192.168.1.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": true,
+                "relay": false
+              },
+              {
+                "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+                "address": "198.51.100.2",
+                "port": 8443,
+                "protocol": "https",
+                "local": false,
+                "relay": true
+              }
+            ]
+          }
+        ],
+        "bindings": [
+          {
+            "scheme": "http",
+            "host": "192.168.1.5",
+            "port": 32400,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": true
+          }
+        ]
+      }
+    },
+    {
+      "why": "a typed address on another port matches no connection",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "shared-token-aaaaaaaa",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [],
+      "typed": [
+        "http://192.168.1.5:8080"
+      ],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Friend's server",
+            "id": "server-friend",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                "address": "192.168.1.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": true,
+                "relay": false
+              },
+              {
+                "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+                "address": "198.51.100.2",
+                "port": 8443,
+                "protocol": "https",
+                "local": false,
+                "relay": true
+              }
+            ]
+          }
+        ],
+        "bindings": []
+      }
+    },
+    {
+      "why": "a typed name is never matched by what it resolves to",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "shared-token-aaaaaaaa",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [],
+      "typed": [
+        "https://203-0-113-7.aaaa.plex.direct:32400"
+      ],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Friend's server",
+            "id": "server-friend",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                "address": "192.168.1.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": true,
+                "relay": false
+              },
+              {
+                "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+                "address": "198.51.100.2",
+                "port": 8443,
+                "protocol": "https",
+                "local": false,
+                "relay": true
+              }
+            ]
+          }
+        ],
+        "bindings": []
+      }
+    },
+    {
+      "why": "a typed https address is bound over https",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "shared-token-aaaaaaaa",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [],
+      "typed": [
+        "https://203.0.113.7:32400"
+      ],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Friend's server",
+            "id": "server-friend",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                "address": "192.168.1.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": true,
+                "relay": false
+              },
+              {
+                "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+                "address": "198.51.100.2",
+                "port": 8443,
+                "protocol": "https",
+                "local": false,
+                "relay": true
+              }
+            ]
+          }
+        ],
+        "bindings": [
+          {
+            "scheme": "https",
+            "host": "203.0.113.7",
+            "port": 32400,
+            "server": "server-friend",
+            "credential": "shared-token-aaaaaaaa",
+            "typed": true
+          }
+        ]
+      }
+    },
+    {
+      "why": "at most 32 hosts are bound",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Many",
+          "clientIdentifier": "server-many",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "many-token-hhhhhhhh",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.1",
+              "port": 32400,
+              "uri": "https://203-0-113-1.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.2",
+              "port": 32400,
+              "uri": "https://203-0-113-2.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.3",
+              "port": 32400,
+              "uri": "https://203-0-113-3.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.4",
+              "port": 32400,
+              "uri": "https://203-0-113-4.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.5",
+              "port": 32400,
+              "uri": "https://203-0-113-5.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.6",
+              "port": 32400,
+              "uri": "https://203-0-113-6.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.8",
+              "port": 32400,
+              "uri": "https://203-0-113-8.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.9",
+              "port": 32400,
+              "uri": "https://203-0-113-9.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.10",
+              "port": 32400,
+              "uri": "https://203-0-113-10.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.11",
+              "port": 32400,
+              "uri": "https://203-0-113-11.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.12",
+              "port": 32400,
+              "uri": "https://203-0-113-12.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.13",
+              "port": 32400,
+              "uri": "https://203-0-113-13.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.14",
+              "port": 32400,
+              "uri": "https://203-0-113-14.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.15",
+              "port": 32400,
+              "uri": "https://203-0-113-15.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.16",
+              "port": 32400,
+              "uri": "https://203-0-113-16.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.17",
+              "port": 32400,
+              "uri": "https://203-0-113-17.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.18",
+              "port": 32400,
+              "uri": "https://203-0-113-18.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.19",
+              "port": 32400,
+              "uri": "https://203-0-113-19.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.20",
+              "port": 32400,
+              "uri": "https://203-0-113-20.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.21",
+              "port": 32400,
+              "uri": "https://203-0-113-21.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.22",
+              "port": 32400,
+              "uri": "https://203-0-113-22.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.23",
+              "port": 32400,
+              "uri": "https://203-0-113-23.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.24",
+              "port": 32400,
+              "uri": "https://203-0-113-24.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.25",
+              "port": 32400,
+              "uri": "https://203-0-113-25.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.26",
+              "port": 32400,
+              "uri": "https://203-0-113-26.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.27",
+              "port": 32400,
+              "uri": "https://203-0-113-27.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.28",
+              "port": 32400,
+              "uri": "https://203-0-113-28.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.29",
+              "port": 32400,
+              "uri": "https://203-0-113-29.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.30",
+              "port": 32400,
+              "uri": "https://203-0-113-30.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.31",
+              "port": 32400,
+              "uri": "https://203-0-113-31.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.32",
+              "port": 32400,
+              "uri": "https://203-0-113-32.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "203.0.113.33",
+              "port": 32400,
+              "uri": "https://203-0-113-33.hhhh.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Many",
+            "id": "server-many",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://203-0-113-1.hhhh.plex.direct:32400",
+                "address": "203.0.113.1",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-2.hhhh.plex.direct:32400",
+                "address": "203.0.113.2",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-3.hhhh.plex.direct:32400",
+                "address": "203.0.113.3",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-4.hhhh.plex.direct:32400",
+                "address": "203.0.113.4",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-5.hhhh.plex.direct:32400",
+                "address": "203.0.113.5",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-6.hhhh.plex.direct:32400",
+                "address": "203.0.113.6",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-7.hhhh.plex.direct:32400",
+                "address": "203.0.113.7",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-8.hhhh.plex.direct:32400",
+                "address": "203.0.113.8",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-9.hhhh.plex.direct:32400",
+                "address": "203.0.113.9",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-10.hhhh.plex.direct:32400",
+                "address": "203.0.113.10",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-11.hhhh.plex.direct:32400",
+                "address": "203.0.113.11",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-12.hhhh.plex.direct:32400",
+                "address": "203.0.113.12",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-13.hhhh.plex.direct:32400",
+                "address": "203.0.113.13",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-14.hhhh.plex.direct:32400",
+                "address": "203.0.113.14",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-15.hhhh.plex.direct:32400",
+                "address": "203.0.113.15",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-16.hhhh.plex.direct:32400",
+                "address": "203.0.113.16",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-17.hhhh.plex.direct:32400",
+                "address": "203.0.113.17",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-18.hhhh.plex.direct:32400",
+                "address": "203.0.113.18",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-19.hhhh.plex.direct:32400",
+                "address": "203.0.113.19",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-20.hhhh.plex.direct:32400",
+                "address": "203.0.113.20",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-21.hhhh.plex.direct:32400",
+                "address": "203.0.113.21",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-22.hhhh.plex.direct:32400",
+                "address": "203.0.113.22",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-23.hhhh.plex.direct:32400",
+                "address": "203.0.113.23",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-24.hhhh.plex.direct:32400",
+                "address": "203.0.113.24",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-25.hhhh.plex.direct:32400",
+                "address": "203.0.113.25",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-26.hhhh.plex.direct:32400",
+                "address": "203.0.113.26",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-27.hhhh.plex.direct:32400",
+                "address": "203.0.113.27",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-28.hhhh.plex.direct:32400",
+                "address": "203.0.113.28",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-29.hhhh.plex.direct:32400",
+                "address": "203.0.113.29",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-30.hhhh.plex.direct:32400",
+                "address": "203.0.113.30",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-31.hhhh.plex.direct:32400",
+                "address": "203.0.113.31",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-32.hhhh.plex.direct:32400",
+                "address": "203.0.113.32",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              },
+              {
+                "uri": "https://203-0-113-33.hhhh.plex.direct:32400",
+                "address": "203.0.113.33",
+                "port": 32400,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          }
+        ],
+        "bindings": [
+          {
+            "scheme": "https",
+            "host": "203-0-113-1.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-2.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-3.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-4.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-5.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-6.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-7.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-8.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-9.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-10.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-11.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-12.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-13.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-14.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-15.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-16.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-17.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-18.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-19.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-20.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-21.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-22.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-23.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-24.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-25.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-26.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-27.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-28.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-29.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-30.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-31.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "203-0-113-32.hhhh.plex.direct",
+            "port": 32400,
+            "server": "server-many",
+            "credential": "many-token-hhhhhhhh",
+            "typed": false
+          }
+        ]
+      }
+    },
+    {
+      "why": "an answer that is not a list is no answer",
+      "service": "plex.tv",
+      "bodyText": "{\"error\":\"nope\"}",
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "refused": "the account answered no list of servers"
+      }
+    },
+    {
+      "why": "nor is one that is not JSON",
+      "service": "plex.tv",
+      "bodyText": "<html>",
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "refused": "the account answered no list of servers"
+      }
+    },
+    {
+      "why": "an empty list is an account with no servers",
+      "service": "plex.tv",
+      "body": [],
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [],
+        "bindings": []
+      }
+    },
+    {
+      "why": "a server whose token is not one a host keeps is left out",
+      "service": "plex.tv",
+      "body": [
+        {
+          "name": "Friend's server",
+          "product": "Plex Media Server",
+          "productVersion": "1.40.0",
+          "clientIdentifier": "server-friend",
+          "provides": "server",
+          "owned": false,
+          "accessToken": "short",
+          "connections": [
+            {
+              "protocol": "https",
+              "address": "203.0.113.7",
+              "port": 32400,
+              "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+              "local": false,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "192.168.1.5",
+              "port": 32400,
+              "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+              "local": true,
+              "relay": false,
+              "IPv6": false
+            },
+            {
+              "protocol": "https",
+              "address": "198.51.100.2",
+              "port": 8443,
+              "uri": "https://198-51-100-2.aaaa.plex.direct:8443",
+              "local": false,
+              "relay": true,
+              "IPv6": false
+            }
+          ]
+        }
+      ],
+      "allowedHosts": [
+        "*.plex.direct"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [],
+        "bindings": []
+      }
+    },
+    {
+      "why": "a service that declares no owner owns nothing, whatever an entry's fields say, so every server is bound but one whose token is the account's",
+      "service": "device.test",
+      "body": {
+        "data": {
+          "servers": [
+            {
+              "title": "Shared",
+              "uuid": "server-shared",
+              "key": "shared-token-aaaaaaaa",
+              "urls": [
+                {
+                  "href": "https://media.example.test",
+                  "ip": "203.0.113.7",
+                  "port": 443,
+                  "scheme": "https",
+                  "lan": false,
+                  "proxied": false
+                }
+              ]
+            },
+            {
+              "title": "Says it is mine",
+              "uuid": "server-mine",
+              "mine": true,
+              "owned": true,
+              "key": "mine-token-bbbbbbbb",
+              "urls": [
+                {
+                  "href": "https://other.example.test",
+                  "ip": "203.0.113.8",
+                  "port": 443,
+                  "scheme": "https",
+                  "lan": false,
+                  "proxied": false
+                }
+              ]
+            },
+            {
+              "title": "The account",
+              "uuid": "server-account",
+              "key": "account-token-cccccccc",
+              "urls": [
+                {
+                  "href": "https://third.example.test",
+                  "ip": "203.0.113.9",
+                  "port": 443,
+                  "scheme": "https",
+                  "lan": false,
+                  "proxied": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "allowedHosts": [
+        "media.example.test",
+        "other.example.test",
+        "third.example.test"
+      ],
+      "typed": [],
+      "account": "account-token-cccccccc",
+      "expect": {
+        "servers": [
+          {
+            "name": "Shared",
+            "id": "server-shared",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://media.example.test",
+                "address": "203.0.113.7",
+                "port": 443,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          },
+          {
+            "name": "Says it is mine",
+            "id": "server-mine",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://other.example.test",
+                "address": "203.0.113.8",
+                "port": 443,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          },
+          {
+            "name": "The account",
+            "id": "server-account",
+            "owned": false,
+            "connections": [
+              {
+                "uri": "https://third.example.test",
+                "address": "203.0.113.9",
+                "port": 443,
+                "protocol": "https",
+                "local": false,
+                "relay": false
+              }
+            ]
+          }
+        ],
+        "bindings": [
+          {
+            "scheme": "https",
+            "host": "media.example.test",
+            "port": 443,
+            "credential": "shared-token-aaaaaaaa",
+            "server": "server-shared",
+            "typed": false
+          },
+          {
+            "scheme": "https",
+            "host": "other.example.test",
+            "port": 443,
+            "credential": "mine-token-bbbbbbbb",
+            "server": "server-mine",
+            "typed": false
+          }
+        ]
+      }
+    }
+  ]
+}

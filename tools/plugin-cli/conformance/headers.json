@@ -1,0 +1,80 @@
+{
+  "$comment": "What a plugin file's own yonto-plugin header means, for both hosts. The value is the manifest JSON text the header yields — the slice exactly, whitespace and all, because the two hosts have to agree on the bytes and each one's JSON parser ignores the rest — or null when the file carries no header a host will read. See contracts/content-source-http.md's \"What a plugin is\".",
+  "cases": [
+    {
+      "why": "a plain header",
+      "source": "/* yonto-plugin\n{\"id\":\"a\"}\n*/\nexport default {};",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "a BOM before it, which an editor adds unasked",
+      "source": "﻿/* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "whitespace and newlines before it",
+      "source": "\n\n   /* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "the manifest on one line",
+      "source": "/* yonto-plugin {\"id\":\"a\"} */",
+      "manifestJson": " {\"id\":\"a\"} "
+    },
+    {
+      "why": "it stops at the first terminator, so nothing after it is manifest",
+      "source": "/* yonto-plugin\n{\"id\":\"a\"}\n*/\nconst x = 1;\n*/",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "no header at all",
+      "source": "export default {};",
+      "manifestJson": null
+    },
+    {
+      "why": "a comment that is not this one",
+      "source": "/* something else\n{\"id\":\"a\"}\n*/",
+      "manifestJson": null
+    },
+    {
+      "why": "code before the header",
+      "source": "const x = 1;\n/* yonto-plugin\n{}\n*/",
+      "manifestJson": null
+    },
+    {
+      "why": "a line comment, which does not open one",
+      "source": "// yonto-plugin\n{\"id\":\"a\"}",
+      "manifestJson": null
+    },
+    {
+      "why": "a header nothing closes",
+      "source": "/* yonto-plugin\n{\"id\":\"a\"}",
+      "manifestJson": null
+    },
+    {
+      "why": "an empty file",
+      "source": "",
+      "manifestJson": null
+    },
+    {
+      "why": "a BOM after a newline, which the two languages disagree about if left to their own idea of blank",
+      "source": "\n﻿/* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "more than one BOM, which an editor and a pipeline can each add",
+      "source": "﻿﻿/* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": "\n{\"id\":\"a\"}\n"
+    },
+    {
+      "why": "a C0 separator, blank to Kotlin and not to JS, so neither host may take it",
+      "source": "\u001c/* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": null
+    },
+    {
+      "why": "a non-breaking space, blank to both languages and to neither host",
+      "source": " /* yonto-plugin\n{\"id\":\"a\"}\n*/",
+      "manifestJson": null
+    }
+  ]
+}

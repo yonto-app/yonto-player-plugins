@@ -1,0 +1,33 @@
+{
+  "$comment": "Which strings are a Yonto type name, by contracts/yonto-type-name.schema.json: the grammar a manifest's `handles` and an index's `ext.yontoType` both $ref. A short id, or reverse-DNS in two or more lowercase RFC 1123 labels. test/yonto-types.test.js walks it against the schema and against a manifest's `handles`; anything else that reads a type name is held to it too.",
+  "cases": [
+    { "name": "maccms-json", "accepted": true, "why": "a short id, Yonto's own" },
+    { "name": "maccms-json-2", "accepted": true, "why": "a breaking change is a new short id" },
+    { "name": "plugin", "accepted": true, "why": "a short id; lint refuses it in handles for another reason" },
+    { "name": "com.example", "accepted": true, "why": "two labels is enough for reverse-DNS" },
+    { "name": "io.alist", "accepted": true, "why": "two labels, as above" },
+    { "name": "io.github.someone.alist", "accepted": true, "why": "the design's own example" },
+    { "name": "io.github.9gag", "accepted": true, "why": "an RFC 1123 label may start with a digit" },
+    { "name": "9.github.alist", "accepted": true, "why": "and may be a single digit" },
+    { "name": "io.github.my-reader", "accepted": true, "why": "a hyphen inside a label" },
+    { "name": "io.github.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "accepted": true, "why": "a label of 63 characters, the most RFC 1123 allows" },
+    { "name": "io.github.a-", "accepted": false, "why": "a label may not end in a hyphen" },
+    { "name": "maccms-", "accepted": false, "why": "a short id may not end in a hyphen either" },
+    { "name": "io-.github.alist", "accepted": false, "why": "nor may a label before the last" },
+    { "name": "-maccms", "accepted": false, "why": "or start with one" },
+    { "name": "Maccms-JSON", "accepted": false, "why": "lowercase only, so one type has one spelling" },
+    { "name": "Io.github.alist", "accepted": false, "why": "an uppercase first letter too" },
+    { "name": "io.GitHub.alist", "accepted": false, "why": "and uppercase in a later label" },
+    { "name": "maccms_json", "accepted": false, "why": "no underscores" },
+    { "name": "io..alist", "accepted": false, "why": "no empty label" },
+    { "name": ".alist", "accepted": false, "why": "no empty first label" },
+    { "name": "io.github.", "accepted": false, "why": "no empty last label" },
+    { "name": "", "accepted": false, "why": "an empty name is no name" },
+    { "name": "io.github.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "accepted": false, "why": "a label is at most 63 characters" },
+    { "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "accepted": false, "why": "a short id is one label, so 63 characters at most" },
+    { "name": "io.a_b", "accepted": false, "why": "no underscore in a later label either" },
+    { "name": "io.github.-a", "accepted": false, "why": "a later label may not start with a hyphen" },
+    { "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "accepted": true, "why": "253 characters, the most a name may have in all" },
+    { "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "accepted": false, "why": "254 is one too many, though every label is legal" }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "$comment": "Whether a plugin's CHALLENGED at `url` is offered to the viewer as a browser check, on both hosts: `refusal` is null where it is, and otherwise the rule it failed, worded identically because a television logs it and `run` and `doctor` print it. `reached` is the sites the call's yonto.fetch reached, on any hop. test/browser-check.test.js walks it through src/browser-check.js and BrowserChecksRecordTest through BrowserChecks.kt. See docs/design/2026-09-23-a-challenge-the-viewer-clears.md, *How a plugin asks*.",
+  "cases": [
+    {
+      "why": "a url-form check at the site the call reached is offered",
+      "manifest": {
+        "allowedHosts": [
+          "site.test"
+        ],
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "url": "https://site.test/"
+          }
+        ]
+      },
+      "url": "https://site.test/list?page=3",
+      "reached": [
+        "https://site.test"
+      ],
+      "refusal": null
+    },
+    {
+      "why": "a fromConfig check covers any public https site a hostsFromConfig plugin reached",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://catalog.test/vod",
+      "reached": [
+        "https://catalog.test"
+      ],
+      "refusal": null
+    },
+    {
+      "why": "a site the call did not reach is an accident, not a check",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://moved-off.test/",
+      "reached": [
+        "https://catalog.test"
+      ],
+      "refusal": "yonto.fetch did not reach it in this call"
+    },
+    {
+      "why": "a plugin that declares no check gets none",
+      "manifest": {
+        "allowedHosts": [
+          "site.test"
+        ],
+        "capabilities": []
+      },
+      "url": "https://site.test/",
+      "reached": [
+        "https://site.test"
+      ],
+      "refusal": "no browserCheck in the manifest covers it"
+    },
+    {
+      "why": "a url-form check covers its own site and no other",
+      "manifest": {
+        "allowedHosts": [
+          "site.test",
+          "other.test"
+        ],
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "url": "https://site.test/"
+          }
+        ]
+      },
+      "url": "https://other.test/",
+      "reached": [
+        "https://other.test"
+      ],
+      "refusal": "no browserCheck in the manifest covers it"
+    },
+    {
+      "why": "a fromConfig check on a plugin without hostsFromConfig is no check at all",
+      "manifest": {
+        "allowedHosts": [
+          "site.test"
+        ],
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://site.test/",
+      "reached": [
+        "https://site.test"
+      ],
+      "refusal": "no browserCheck in the manifest covers it"
+    },
+    {
+      "why": "a clearance on the wire is a clearance given away, whatever the manifest covers",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "http://catalog.test/",
+      "reached": [
+        "http://catalog.test"
+      ],
+      "refusal": "it is not https"
+    },
+    {
+      "why": "a check on the viewer's own network is not a thing a site asks for",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://192.168.1.1/",
+      "reached": [
+        "https://192.168.1.1"
+      ],
+      "refusal": "it is a private address"
+    },
+    {
+      "why": "the site of the plugin's cookieLogin already has a host-held credential",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "cookieLogin",
+            "url": "https://login.test/"
+          },
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://login.test/",
+      "reached": [
+        "https://login.test"
+      ],
+      "refusal": "it is the site of the plugin's cookieLogin"
+    },
+    {
+      "why": "what the plugin raised is not a URL",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "Just a moment...",
+      "reached": [
+        "https://catalog.test"
+      ],
+      "refusal": "it is not a URL"
+    },
+    {
+      "why": "a URL carrying a user name and password is not opened, as yonto.fetch will not send one",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://user:pw@catalog.test/",
+      "reached": [
+        "https://catalog.test"
+      ],
+      "refusal": "it carries a user name or password"
+    },
+    {
+      "why": "a user name alone is refused the same way",
+      "manifest": {
+        "allowedHosts": [],
+        "hostsFromConfig": true,
+        "capabilities": [
+          {
+            "type": "browserCheck",
+            "fromConfig": true
+          }
+        ]
+      },
+      "url": "https://user@catalog.test/",
+      "reached": [
+        "https://catalog.test"
+      ],
+      "refusal": "it carries a user name or password"
+    }
+  ]
+}

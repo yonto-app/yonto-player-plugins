@@ -1,0 +1,85 @@
+{
+  "$comment": "What a plugin reads of a response's body, on both hosts: bodyBase64 is asked for when first read and only during the call that fetched it, and a body over limits.json's responseBodyBytes is RESPONSE_TOO_LARGE, and a call keeps at most unreadBodyBytesPerCall of its unread bodies (kangzj/lantern-tv#333). The calls run in order on one runtime. Both hosts answer `bodies` as recorded, and each of `sized` with that many bytes of `fill`, where `limit` is limits.json's responseBodyBytes. test/fetch-body.test.js walks it through the CLI's engine and PluginFetchBodyRecordTest through the device's runtime.",
+  "bodies": {
+    "https://body.test/gbk": { "contentType": "text/html; charset=gbk", "bodyBase64": "tc2199OwytM=" },
+    "https://body.test/other": { "contentType": "text/plain", "bodyBase64": "b3RoZXI=" },
+    "https://body.test/nul": { "contentType": "application/octet-stream", "bodyBase64": "YQBi" }
+  },
+  "sized": {
+    "https://body.test/at-the-limit": { "bytes": "limit", "fill": 120 },
+    "https://body.test/over-the-limit": { "bytes": "limit+1", "fill": 120 },
+    "https://body.test/undecodable": { "bytes": 10485760, "fill": 228 }
+  },
+  "calls": [
+    {
+      "why": "bodyBase64 is the bytes undecoded, the same string however often it is read, whichever response it is on",
+      "method": "readTwice",
+      "answer": ["低调影视", true, "other"]
+    },
+    {
+      "why": "a NUL byte is a character of body like any other, not where it ends",
+      "method": "codes",
+      "args": ["https://body.test/nul"],
+      "answer": [[97, 0, 98], "YQBi"]
+    },
+    {
+      "why": "bodyBase64 is listed where it always was",
+      "method": "keys",
+      "answer": ["status", "url", "location", "headers", "setCookie", "body", "bodyBase64"]
+    },
+    {
+      "why": "a copy of the response carries bodyBase64 as a value",
+      "method": "copied",
+      "answer": ["b3RoZXI=", "b3RoZXI="]
+    },
+    {
+      "why": "bodyBase64 can be replaced and deleted, as any other field can",
+      "method": "replaced",
+      "answer": ["replaced", true, false]
+    },
+    {
+      "why": "a response kept past its call",
+      "method": "keep",
+      "answer": null
+    },
+    {
+      "why": "read in a later call, bodyBase64 says it can only be read during the call that fetched it",
+      "method": "readKept",
+      "answer": [null, "bodyBase64 can only be read during the call that fetched it"]
+    },
+    {
+      "why": "a body of exactly the limit is handed over whole, as text and as bytes",
+      "method": "bothLengths",
+      "args": ["https://body.test/at-the-limit"],
+      "answer": [16777216, 22369624]
+    },
+    {
+      "why": "a body that does not decode is one U+FFFD a byte, twice the memory, and 10 MB of it, the most a television holds, still reads both ways",
+      "method": "bothLengths",
+      "args": ["https://body.test/undecodable"],
+      "answer": [10485760, 13981016]
+    },
+    {
+      "why": "a call keeps limits.json's unreadBodyBytesPerCall of its unread bodies, four at the limit, and the oldest it dropped reads as late",
+      "method": "manyUnread",
+      "args": ["https://body.test/at-the-limit", 6],
+      "answer": [
+        [null, "bodyBase64 can only be read during the call that fetched it"],
+        [null, "bodyBase64 can only be read during the call that fetched it"],
+        22369624, 22369624, 22369624, 22369624
+      ]
+    },
+    {
+      "why": "a body read as bytes no longer counts against what the call keeps, so four read and two more fetched all read",
+      "method": "readThenMore",
+      "args": ["https://body.test/at-the-limit"],
+      "answer": [22369624, 22369624, 22369624, 22369624, 22369624, 22369624]
+    },
+    {
+      "why": "one byte over the limit is RESPONSE_TOO_LARGE, naming it",
+      "method": "bodyLength",
+      "args": ["https://body.test/over-the-limit"],
+      "answer": ["RESPONSE_TOO_LARGE", "the response from https://body.test/over-the-limit was larger than the 16 MB a plugin may read"]
+    }
+  ]
+}

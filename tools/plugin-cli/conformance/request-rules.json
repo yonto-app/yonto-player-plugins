@@ -1,0 +1,130 @@
+{
+  "$comment": "What yonto.fetch refuses to send, and what it changes before sending, on both hosts. The rules are the WHATWG Fetch standard's (https://fetch.spec.whatwg.org/): its forbidden methods, its method normalisation, its forbidden request-headers, its refusal of a URL carrying credentials and of a GET or HEAD with a body, and the Content-Type it gives a string body. Three forbidden request-headers are let through, each for the reason in `allowedDespiteFetch`, and a header value must be printable ASCII or a tab, which is stricter than Fetch because OkHttp cannot send anything else. A refusal is REQUEST_INVALID, and nothing is sent. The CLI reads this file (src/host/request-shape.js); the device keeps the same lists in PluginRequestShape, held to this file by PluginRequestRulesRecordTest. Both walk every entry of every list, and every case below, through their own yonto.fetch (test/request-rules.test.js on the CLI). A case either names the refusal or what was sent: the method, and the Content-Type header when the case says one. `redirectsTo` makes the first answer a 302 there.",
+  "forbiddenMethods": ["CONNECT", "TRACE", "TRACK"],
+  "normalisedMethods": ["DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT"],
+  "forbiddenHeaders": [
+    "accept-charset",
+    "accept-encoding",
+    "access-control-request-headers",
+    "access-control-request-method",
+    "access-control-request-private-network",
+    "connection",
+    "content-length",
+    "cookie2",
+    "date",
+    "dnt",
+    "expect",
+    "host",
+    "keep-alive",
+    "set-cookie",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    "via"
+  ],
+  "forbiddenHeaderPrefixes": ["proxy-", "sec-"],
+  "methodOverrideHeaders": ["x-http-method", "x-http-method-override", "x-method-override"],
+  "allowedDespiteFetch": {
+    "cookie": "Fetch forbids it so a page cannot forge the browser's cookie jar. A plugin has no jar to forge: the host attaches a cookieLogin session over whatever Cookie the plugin set (see the contract), and XPTV catalogs send back a cookie a site handed them (plugins/xptv-js, bdys.js).",
+    "origin": "Fetch forbids it because the browser, not the page, knows which page a request came from. A plugin is no page, and sites check it as they check Referer: two of the three recorded XPTV catalogs send it (plugins/xptv-js/fixtures/catalogs, ddys.js and tianyiso.js).",
+    "referer": "The same reason as Origin, and shipped plugins send it: plugins/ddys, and every recorded XPTV catalog through plugins/xptv-js."
+  },
+  "stringBodyContentType": "text/plain;charset=UTF-8",
+  "cases": [
+    {
+      "why": "a method that is not an HTTP token is refused",
+      "url": "https://conformance.test/a",
+      "init": { "method": "GE T" },
+      "refused": "GE T is not an HTTP method"
+    },
+    {
+      "why": "a GET carries no body",
+      "url": "https://conformance.test/a",
+      "init": { "body": "q=1" },
+      "refused": "a GET request cannot carry a body"
+    },
+    {
+      "why": "a HEAD carries no body, however its method was spelled",
+      "url": "https://conformance.test/a",
+      "init": { "method": "head", "body": "q=1" },
+      "refused": "a HEAD request cannot carry a body"
+    },
+    {
+      "why": "a header name that is not an HTTP token is refused",
+      "url": "https://conformance.test/a",
+      "init": { "headers": { "bad name": "x" } },
+      "refused": "bad name is not a header name"
+    },
+    {
+      "why": "a header value outside printable ASCII is refused: OkHttp cannot send it, so a Referer carrying 搜索 is percent-encoded by the plugin",
+      "url": "https://conformance.test/a",
+      "init": { "headers": { "Referer": "https://conformance.test/搜索" } },
+      "refused": "the Referer header has a character a header cannot carry"
+    },
+    {
+      "why": "a Latin-1 header value is refused too: Node's fetch would send one, since a header is a ByteString there, and OkHttp cannot (kangzj/lantern-tv#605)",
+      "url": "https://conformance.test/a",
+      "init": { "headers": { "X-Name": "café" } },
+      "refused": "the X-Name header has a character a header cannot carry"
+    },
+    {
+      "why": "a URL carrying a user name and password is refused",
+      "url": "https://user:secret@conformance.test/a",
+      "refused": "a URL cannot carry a user name or password"
+    },
+    {
+      "why": "a URL carrying a user name alone is refused",
+      "url": "https://user@conformance.test/a",
+      "refused": "a URL cannot carry a user name or password"
+    },
+    {
+      "why": "a redirect to a URL carrying credentials is refused as a redirect",
+      "url": "https://conformance.test/a",
+      "redirectsTo": "https://user:secret@conformance.test/b",
+      "refusedRedirect": "https://conformance.test/a redirected to a URL carrying a user name or password"
+    },
+    {
+      "why": "a method override naming a forbidden method is refused",
+      "url": "https://conformance.test/a",
+      "init": { "headers": { "X-HTTP-Method-Override": "TRACE" } },
+      "refused": "X-HTTP-Method-Override is a header the host does not let a plugin set"
+    },
+    {
+      "why": "a method override naming an ordinary method is sent",
+      "url": "https://conformance.test/a",
+      "init": { "method": "POST", "body": "q=1", "headers": { "X-HTTP-Method-Override": "PUT" } },
+      "sent": { "method": "POST" }
+    },
+    {
+      "why": "a standard method is sent upper case, however it was spelled",
+      "url": "https://conformance.test/a",
+      "init": { "method": "delete" },
+      "sent": { "method": "DELETE" }
+    },
+    {
+      "why": "a method Fetch does not normalise is sent as the plugin spelled it",
+      "url": "https://conformance.test/a",
+      "init": { "method": "patch", "body": "q=1" },
+      "sent": { "method": "patch" }
+    },
+    {
+      "why": "a string body with no Content-Type is sent as text",
+      "url": "https://conformance.test/a",
+      "init": { "method": "post", "body": "q=1" },
+      "sent": { "method": "POST", "contentType": "text/plain;charset=UTF-8" }
+    },
+    {
+      "why": "a Content-Type the plugin set is kept, whatever case its name is in",
+      "url": "https://conformance.test/a",
+      "init": { "method": "POST", "body": "q=1", "headers": { "content-type": "application/x-www-form-urlencoded" } },
+      "sent": { "method": "POST", "contentType": "application/x-www-form-urlencoded" }
+    },
+    {
+      "why": "a POST with no body is sent, with no Content-Type of its own",
+      "url": "https://conformance.test/a",
+      "init": { "method": "POST" },
+      "sent": { "method": "POST", "contentType": null }
+    }
+  ]
+}

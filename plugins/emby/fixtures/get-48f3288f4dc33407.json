@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Views",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-allow-private-network": "true",
+      "content-encoding": "deflate",
+      "content-length": "532",
+      "content-type": "application/json; charset=utf-8",
+      "cross-origin-resource-policy": "cross-origin",
+      "date": "Wed, 23 Sep 2026 19:37:08 GMT",
+      "expires": "-1",
+      "private-network-access-id": "8d581b68dbcb42eaaffbca6937440bac",
+      "private-network-access-name": "170e069d5d91",
+      "server": "UPnP/1.0 DLNADOC/1.50",
+      "vary": "Accept-Encoding"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siTmFtZSI6Ik1vdmllcyIsIlNlcnZlcklkIjoiOGQ1ODFiNjhkYmNiNDJlYWFmZmJjYTY5Mzc0NDBiYWMiLCJJZCI6IjMiLCJHdWlkIjoiMzJhNDgxNjc4NTczNGMzZGFhZGQ2Y2VjOTJlMDhlNzMiLCJFdGFnIjoiN2MxNjZiOTUwZjI1MDIzYWQyMTRiNWY0MDBlNTk4ODYiLCJEYXRlQ3JlYXRlZCI6IjIwMjYtMDktMjNUMTk6MzI6MDguMTc1NjIzNFoiLCJEYXRlTW9kaWZpZWQiOiIwMDAxLTAxLTAxVDAwOjAwOjAwLjAwMDAwMDBaIiwiQ2FuRGVsZXRlIjpmYWxzZSwiQ2FuRG93bmxvYWQiOmZhbHNlLCJQcmVzZW50YXRpb25VbmlxdWVLZXkiOiIzMmE0ODE2Nzg1NzM0YzNkYWFkZDZjZWM5MmUwOGU3MyIsIlNvcnROYW1lIjoiTW92aWVzIiwiRm9yY2VkU29ydE5hbWUiOiJNb3ZpZXMiLCJFeHRlcm5hbFVybHMiOltdLCJUYWdsaW5lcyI6W10sIlJlbW90ZVRyYWlsZXJzIjpbXSwiUHJvdmlkZXJJZHMiOnt9LCJJc0ZvbGRlciI6dHJ1ZSwiUGFyZW50SWQiOiIyIiwiVHlwZSI6IkNvbGxlY3Rpb25Gb2xkZXIiLCJVc2VyRGF0YSI6eyJQbGF5YmFja1Bvc2l0aW9uVGlja3MiOjAsIklzRmF2b3JpdGUiOmZhbHNlLCJQbGF5ZWQiOmZhbHNlfSwiRGlzcGxheVByZWZlcmVuY2VzSWQiOiIzMmE0ODE2Nzg1NzM0YzNkYWFkZDZjZWM5MmUwOGU3MyIsIkNvbGxlY3Rpb25UeXBlIjoibW92aWVzIiwiSW1hZ2VUYWdzIjp7fSwiQmFja2Ryb3BJbWFnZVRhZ3MiOltdLCJMb2NrZWRGaWVsZHMiOltdLCJMb2NrRGF0YSI6ZmFsc2V9LHsiTmFtZSI6IlNob3dzIiwiU2VydmVySWQiOiI4ZDU4MWI2OGRiY2I0MmVhYWZmYmNhNjkzNzQ0MGJhYyIsIklkIjoiNSIsIkd1aWQiOiJjNjNiYjZkZjViODY0YmRjOWMwMjQ5YWVhMzE1MDdmYyIsIkV0YWciOiIxMjQyMGY5NDYyMDEwNjU5MTY2YzQwNzhiNTdhZDIwOSIsIkRhdGVDcmVhdGVkIjoiMjAyNi0wOS0yM1QxOTozMjowOC4yNDA3MjQ3WiIsIkRhdGVNb2RpZmllZCI6IjAwMDEtMDEtMDFUMDA6MDA6MDAuMDAwMDAwMFoiLCJDYW5EZWxldGUiOmZhbHNlLCJDYW5Eb3dubG9hZCI6ZmFsc2UsIlByZXNlbnRhdGlvblVuaXF1ZUtleSI6ImM2M2JiNmRmNWI4NjRiZGM5YzAyNDlhZWEzMTUwN2ZjIiwiU29ydE5hbWUiOiJTaG93cyIsIkZvcmNlZFNvcnROYW1lIjoiU2hvd3MiLCJFeHRlcm5hbFVybHMiOltdLCJUYWdsaW5lcyI6W10sIlJlbW90ZVRyYWlsZXJzIjpbXSwiUHJvdmlkZXJJZHMiOnt9LCJJc0ZvbGRlciI6dHJ1ZSwiUGFyZW50SWQiOiIyIiwiVHlwZSI6IkNvbGxlY3Rpb25Gb2xkZXIiLCJVc2VyRGF0YSI6eyJQbGF5YmFja1Bvc2l0aW9uVGlja3MiOjAsIklzRmF2b3JpdGUiOmZhbHNlLCJQbGF5ZWQiOmZhbHNlfSwiRGlzcGxheVByZWZlcmVuY2VzSWQiOiJjNjNiYjZkZjViODY0YmRjOWMwMjQ5YWVhMzE1MDdmYyIsIkNvbGxlY3Rpb25UeXBlIjoidHZzaG93cyIsIkltYWdlVGFncyI6e30sIkJhY2tkcm9wSW1hZ2VUYWdzIjpbXSwiTG9ja2VkRmllbGRzIjpbXSwiTG9ja0RhdGEiOmZhbHNlfV0sIlRvdGFsUmVjb3JkQ291bnQiOjJ9",
+    "setCookie": []
+  }
+}

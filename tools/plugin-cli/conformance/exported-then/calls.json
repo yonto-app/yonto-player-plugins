@@ -1,0 +1,9 @@
+{
+  "$comment": "A plugin that exports `then`, which makes its module namespace a thenable. Both hosts import the namespace statically and never settle a promise with it, so the `then` is never run and the plugin loads and answers. Each case is its own plugin, `<case>/<case>-plugin.js`, called once for `fine` with `budgetMs` as its call budget. test/exported-then.test.js walks it through the CLI's engine and ExportedThenRecordTest through the device's runtime. The CLI used to settle the namespace, so these ran its `then`, and the last two hung it for good (found in review of kangzj/yonto#630).",
+  "budgetMs": 300,
+  "cases": [
+    { "plugin": "then-loops", "method": "fine", "answers": "fine" },
+    { "plugin": "then-resolves-getter", "method": "fine", "answers": "fine" },
+    { "plugin": "then-resolves-proxy", "method": "fine", "answers": "fine" }
+  ]
+}

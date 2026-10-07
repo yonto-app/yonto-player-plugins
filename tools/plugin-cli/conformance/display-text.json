@@ -1,0 +1,28 @@
+{
+  "$comment": "What the app does to a source's display text before showing it — SourceText.kt, applied field by field in ContractDtos.toDomain(). `removed` code points go from every field below; `spaced` ones become one space in a `line` field (a CR LF pair becoming one) and stay in a `prose` one. Code points as inclusive ranges rather than a regex, so the two hosts' regex dialects cannot read them differently, and in decimal because JSON has no hex: 8234-8238 is U+202A-U+202E and 8294-8297 is U+2066-U+2069. Fields are named by the shape of the answer they are in, whichever method returned it. doctor reads this to tell an author what a television will change (kangzj/lantern-tv#487), and DisplayTextRecordTest holds the app to it in both directions: every field listed is cleaned, and no field left out is. Change the app and this together.",
+  "removed": [
+    [0, 8],
+    [11, 12],
+    [14, 31],
+    [127, 127],
+    [8234, 8238],
+    [8294, 8297]
+  ],
+  "spaced": [
+    [9, 10],
+    [13, 13]
+  ],
+  "line": {
+    "category": ["name"],
+    "filter": ["name"],
+    "filterOption": ["name"],
+    "summary": ["title", "year", "rating"],
+    "detail": ["title", "year", "rating", "genres"],
+    "playbackOption": ["label", "line"],
+    "subSource": ["name"],
+    "health": ["summary"]
+  },
+  "prose": {
+    "detail": ["synopsis"]
+  }
+}

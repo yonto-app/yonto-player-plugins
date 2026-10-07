@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/yonto-types/plugin.schema.json",
+  "title": "plugin",
+  "description": "A Yonto plugin to install, as a type-50 entry carries it in `ext.config`: enough to list it and compare versions without downloading anything, and checked against the downloaded manifest before anything installs (kangzj/lantern-tv#606). Not a catalog type, so no handler receives it.",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,31}$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "contractVersion": { "type": "integer", "minimum": 1 },
+    "provides": { "enum": ["source", "source-type"] },
+    "description": { "type": "string" },
+    "handles": {
+      "$comment": "Copied from the manifest, so a repo can offer the handler of a type without downloading every zip it lists (docs/design/2026-09-23-the-app-reads-every-index.md, *Types*).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "../yonto-type-name.schema.json" }
+    }
+  },
+  "required": ["id", "version", "contractVersion", "provides"],
+  "additionalProperties": true
+}

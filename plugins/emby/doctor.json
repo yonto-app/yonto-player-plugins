@@ -1,0 +1,5 @@
+{
+  "serverUrl": "https://emby.example.com",
+  "apiKey": "fixture-api-key",
+  "userId": "fixture-user-id"
+}

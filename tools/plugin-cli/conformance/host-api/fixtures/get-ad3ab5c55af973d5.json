@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/loop",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "/loop"
+    },
+    "bodyBase64": ""
+  }
+}

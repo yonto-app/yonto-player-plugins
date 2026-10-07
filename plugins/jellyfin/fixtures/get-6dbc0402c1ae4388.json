@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/s1?Fields=Genres%2COverview%2CProductionYear",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJJZCI6InMxIiwiTmFtZSI6IlBpb25lZXIgT25lIiwiVHlwZSI6IlNlcmllcyIsIk92ZXJ2aWV3IjoiQSBTb3ZpZXQtZXJhIGNhcHN1bGUgZmFsbHMgb3ZlciBNb250YW5hLiIsIkdlbnJlcyI6WyJEcmFtYSIsIlNjaWVuY2UgRmljdGlvbiJdLCJQcm9kdWN0aW9uWWVhciI6MjAxMCwiSW1hZ2VUYWdzIjp7IlByaW1hcnkiOiJwaW9uZWVyUHJpbWFyeVRhZyJ9LCJCYWNrZHJvcEltYWdlVGFncyI6WyJwaW9uZWVyQmFja2Ryb3BUYWciXX0="
+  }
+}

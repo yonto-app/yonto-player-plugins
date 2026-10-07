@@ -1,0 +1,13 @@
+{
+  "linked": "true",
+  "servers": "[{\"name\":\"Friend's server\",\"id\":\"server-friend\",\"owned\":false,\"connections\":[{\"uri\":\"https://203-0-113-7.aaaa.plex.direct:32400\",\"address\":\"203.0.113.7\",\"port\":32400,\"protocol\":\"https\",\"local\":false,\"relay\":false}]},{\"name\":\"Mine, token yonto-held-credential\",\"id\":\"server-mine\",\"owned\":true,\"connections\":[{\"uri\":\"https://203-0-113-9.bbbb.plex.direct:32400\",\"address\":\"203.0.113.9\",\"port\":32400,\"protocol\":\"https\",\"local\":false,\"relay\":false}]}]",
+  "echoedBody": "{\"token\":\"yonto-held-credential\",\"account\":\"yonto-held-credential\",\"path\":\"/a/yonto-held-credential/b\"}",
+  "echoedHeaders": "{\"content-type\":\"application/json\",\"x-echo\":\"yonto-held-credential\"}",
+  "echoedBytes": "{\"token\":\"yonto-held-credential\",\"account\":\"yonto-held-credential\",\"path\":\"/a/yonto-held-credential/b\"}",
+  "redirectedLocation": "https://203-0-113-7.aaaa.plex.direct:32400/next?X-Plex-Token=yonto-held-credential",
+  "credentialInUrl": "REQUEST_INVALID: the URL carries a credential the host holds, and one never goes in a URL",
+  "accountInUrl": "REQUEST_INVALID: the URL carries a credential the host holds, and one never goes in a URL",
+  "bytesReadLater": "{\"token\":\"yonto-held-credential\",\"account\":\"yonto-held-credential\",\"path\":\"/a/yonto-held-credential/b\"}",
+  "linkedAfterRefused": "true",
+  "errorDuckTyped": "NOT_FOUND: not found: ‹credential› or ‹credential›"
+}

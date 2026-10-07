@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://v6-link.test/ping",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "cG9uZw=="
+  }
+}

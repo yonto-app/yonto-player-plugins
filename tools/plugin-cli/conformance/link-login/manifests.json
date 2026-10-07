@@ -1,0 +1,288 @@
+{
+  "$comment": "Whether a host runs a manifest's linkLogin, and every rule it breaks, worded the same on both hosts: `lint` refuses the manifest with these, and a television, which runs no lint, reads the capability as absent and so runs the plugin signed out with no yonto.session. test/link-login.test.js walks it through src/link-login.js and LinkLoginsRecordTest through LinkLogins.kt.",
+  "cases": [
+    {
+      "why": "a service a host signs in to, on a plugin that cannot reach its account",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": []
+    },
+    {
+      "why": "a service no host knows",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "example.test"
+          }
+        ]
+      },
+      "refusals": [
+        "linkLogin names example.test, which is not a service a host signs in to: plex.tv (contracts/link-logins.json)"
+      ]
+    },
+    {
+      "why": "the account's host admitted exactly",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "plex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "allowedHosts entry plex.tv reaches plex.tv, where plex.tv's account is: only Yonto talks to it"
+      ]
+    },
+    {
+      "why": "and through a wildcard, the discovery's host included",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "allowedHosts entry *.plex.tv reaches plex.tv, where plex.tv's account is: only Yonto talks to it"
+      ]
+    },
+    {
+      "why": "a wildcard over the whole suffix admits it",
+      "manifest": {
+        "allowedHosts": [
+          "*.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "allowedHosts entry *.tv reaches plex.tv, where plex.tv's account is: only Yonto talks to it"
+      ]
+    },
+    {
+      "why": "a host below the account's domain it never asks is the account's too",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "www.plex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "allowedHosts entry www.plex.tv reaches plex.tv, where plex.tv's account is: only Yonto talks to it"
+      ]
+    },
+    {
+      "why": "and one written in another case, or with a port",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "Clients.Plex.TV:443"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "allowedHosts entry Clients.Plex.TV:443 reaches plex.tv, where plex.tv's account is: only Yonto talks to it"
+      ]
+    },
+    {
+      "why": "a name that only ends like the domain is not below it",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "myplex.tv",
+          "*.notplex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": []
+    },
+    {
+      "why": "beside hostsFromConfig",
+      "manifest": {
+        "allowedHosts": [],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "hostsFromConfig": true
+      },
+      "refusals": [
+        "a linkLogin cannot stand beside hostsFromConfig, since nothing bounds where its requests go"
+      ]
+    },
+    {
+      "why": "beside runsFetchedCode",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "runsFetchedCode": true
+      },
+      "refusals": [
+        "a linkLogin cannot stand beside runsFetchedCode, since nothing bounds what code runs beside the session"
+      ]
+    },
+    {
+      "why": "on a handler",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "handles": [
+          "maccms-json"
+        ]
+      },
+      "refusals": [
+        "a linkLogin cannot stand beside handles: a catalog is never offered a sign-in"
+      ]
+    },
+    {
+      "why": "beside a cookieLogin",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          },
+          {
+            "type": "cookieLogin",
+            "url": "https://ddys.app"
+          }
+        ]
+      },
+      "refusals": [
+        "a linkLogin cannot stand beside a cookieLogin: two host-held credentials on one source need a merge rule"
+      ]
+    },
+    {
+      "why": "beside a browserCheck",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          },
+          {
+            "type": "browserCheck",
+            "url": "https://site.test"
+          }
+        ]
+      },
+      "refusals": [
+        "a linkLogin cannot stand beside a browserCheck: two host-held credentials on one source need a merge rule"
+      ]
+    },
+    {
+      "why": "twice",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          },
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "refusals": [
+        "linkLogin is declared more than once"
+      ]
+    },
+    {
+      "why": "every rule it breaks, together",
+      "manifest": {
+        "allowedHosts": [
+          "plex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "runsFetchedCode": true
+      },
+      "refusals": [
+        "allowedHosts entry plex.tv reaches plex.tv, where plex.tv's account is: only Yonto talks to it",
+        "a linkLogin cannot stand beside runsFetchedCode, since nothing bounds what code runs beside the session"
+      ]
+    },
+    {
+      "why": "no linkLogin, nothing to refuse",
+      "manifest": {
+        "allowedHosts": [
+          "plex.tv"
+        ],
+        "capabilities": []
+      },
+      "refusals": []
+    }
+  ]
+}

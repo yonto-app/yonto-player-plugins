@@ -1,0 +1,22 @@
+{
+  "$comment": "What a plugin reads as yonto.config: the saved values its configSchema declares, and nothing else. `values` is what the profile saved, `received` what the plugin reads. The device builds it in PluginManifest.configFor, the CLI in src/config.js's configOf. PluginHostConfigRecordTest and test/config.test.js hold each host to it. A text field, so neither host's form reading (a url's normalizing) is what is compared.",
+  "configSchema": [
+    {
+      "id": "note",
+      "type": "text",
+      "label": "Note"
+    }
+  ],
+  "cases": [
+    {
+      "why": "a declared value is kept and an undeclared one dropped",
+      "values": {
+        "note": "kept",
+        "stray": "x"
+      },
+      "received": {
+        "note": "kept"
+      }
+    }
+  ]
+}

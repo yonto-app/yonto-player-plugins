@@ -1,0 +1,1201 @@
+[
+  {
+    "name": "an XPTV index",
+    "about": "plugins/xptv/fixtures/get-0c3b38f35d7c4422.json, copied: fangkuia/XPTV allinone.json as recorded on 2026-09-22, uncut.",
+    "url": "https://raw.githubusercontent.com/fangkuia/XPTV/main/allinone.json",
+    "bodyBase64": "ewogICJzaXRlcyI6IFsKICAgIHsKICAgICAgIm5hbWUiOiAiMzYwfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovLzM2MHp5LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuixhueTo3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jYWlqaS5kYnp5LnR2L2FwaS5waHAvcHJvdmlkZS92b2QvYXQvam9zbiIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaXuuaXunzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkud3d6eS50di9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWiqOaWl3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cubWR6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpu5HmnKjogLN854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vanNvbjAyLmhlaW11ZXIueHl6L2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2O5Li65ZCnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2h3OC5saXZlL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6IWQ5YmnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8vd3d3LmZ1anUyMDI0LmNjOjgwMTMvcnVpZmVuZ2xiX2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6YeR6bmwfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2ppbnlpbmd6eS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJPS3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9va3p5dzkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5a6d54mHfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL3pwc3BzLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWwj+m7hOS6unzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9pcXlpLnhpYW9odWFuZ3JlbnR2LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueJm+eJm3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkubml1bml1enkubWUvYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkuKvkuKt854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2oueWF5YXp5Lm5ldC9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuW9seWbvnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jai52b2RpbWcudG9wL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiVemFt3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkudWt1YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuixquWNjnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9oaHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5p6B6YCffOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2pzenlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLntKLlsLx854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vc3VvbmlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiaWt1bnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9pa3VuenlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6Z2e5YehfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8vY2ouZmZ6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLph4/lrZB854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2oubHppYXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaatOmjjnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9iZnp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIue6oueJm3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cuaG9uZ25pdXp5Mi5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlv6vovaZ854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2Fpamkua2N6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC9mcm9tL2tjbTN1OC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpl6rnlLV854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHA6Ly9zZHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaoseiKsXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9tM3U4LmFwaXloenkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2n6b6ZfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2NvbGxlY3Qud29sb25nenl3LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiZjueJmXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cuaHV5YWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpo5jpm7Z854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vcDIxMDAubmV0L2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5peg5bC9fOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2FwaS53dWppbmFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpgJ/ljZp854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vc3Vib2NhaWppLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIumtlOmDvXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jYWlqaS5tb2R1YXBpLmNjL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5pyA5aSnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8venVpZGF6eS5tZS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueBq+eLkHzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9oaHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaWsOa1qnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkueGlubGFuZ2FwaS5jb20veGlubGFuZ2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5ZOU5ru05b2x6KeGIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9iZGU0IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL2JkeXMuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmrKfkuZDwn6qcIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9PbGV2b2QiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvb2xlLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Zyo57q/5LmL5a62IiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9aeHpqIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL3p4emouanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLni6zmkq3lupMiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2R1Ym9rdSIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy9kdWJva3UuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJBR0XliqjmvKsiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2FnZSIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9vY2N1cHktcGx1dG8vZTNhN2JiOThkNTAyN2QwZjZkZmE4NWZjMmFjMTFhNzgvcmF3LzZkZWIwNDc1ZDI5NWFjODY3Y2NiOWM3Y2YzYjFmYjIxMmE3N2FiZDcvYWdlZG0uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICI0ay1hdiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfNGthdiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy80a2F2LmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6YeR54mM5b2x6ZmiIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9qcHl5IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL2pweXkuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLnh5Lngavpm7vlvbEiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3Nhb2h1byIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy9zYW9odW8uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJOT+imlumguyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfbm92aXBub2FkIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL25vdmlwbm9hZC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaYn+iKveefreWKhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfeGluZ3lhIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL3hpbmd5YS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueTnOWtkCIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfZ3VhemkiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvZ3p5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaEm+WjueW4hiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfaXlmdHYiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvaXlmdHYuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlvbHop4blpKnloIIiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3lzdHQiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveXN0dC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiNkOeJhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfamlhbnBpYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy9qaWFucGlhbi5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImFuaW1lMSIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfYW5pbWUxIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMvYW5pbWUxLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5LiD6Imy55Wq5YuV5ryrIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF83c2VmdW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy83c2VmdW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLot6/mvKvmvKsiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2xtbTg1IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMvbG1tODUuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJwcG5peCIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfcHBuaXgiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy9wcG5peC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuays+mmrOefreWKhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfa3VhaWthdyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvcmVmcy9oZWFkcy9tYWluL2pzL2t1YWlrYXcuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlo7nlvbHoppYiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3lpeXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy95aXlzLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5rC45qiC6KaW6aC7IiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF95bHlzIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMveWx5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueOqeWBtuWTpeWTpSB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfd29nZyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy93b2dnLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2X6aKo55+t5YqHIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9uYW5mZGoiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvbmFuZmRqLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5aSa5aSa5b2x6Z+zIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF95eWRzeXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMveXlkc3lzLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6Jyh56yU55uYIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9sYWJpIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL2xhYmlwYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmnKjlgbYgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX211b3UiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvbXVvdS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiHs+iHuyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbWloZHIiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvbWloZHIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkupHnm5jotYTmupDnvZEgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3l1bnBhbnJlcyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy95dW5wYW5yZXMuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmoKHplb/lvbHop4YgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3h6eXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveHp5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIumbt+myuCB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbGVpamluZyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy9sZWlqaW5nLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5qyn5ZOlIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9vdWdlIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL291Z2UuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkupHnm5jlkKcgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3l1bnBhbjgiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveXVucGFuOC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWwj+exs1VDIHwgUEFOKOaYiikiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2pzL211Y3BhbiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9raW5ncmVldmljZS9teV94cHR2L3JlZnMvaGVhZHMvbWFpbi9qcy9tdWNwYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpl6rnlLVVQyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfc2hhbmRpYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvc2hhbmRpYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlpaXnp5ggfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2FvbWkiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvYW9taS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWFrei2oyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbHVpcXUiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvbGl1cXUuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLnmb3lq5YgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2JhaXBpYW8iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvYmFpcGlhby5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiZjuaWkSB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfaHViYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvaHViYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkuIvppa0gfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3hpYWZhbiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy94aWFmYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJTZWVkSHViIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9zZWVkaHViIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL3NlZWRodWIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJTdGFyMiB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfc3RhcjIiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvc3RhcjIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLop4LlvbEgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2d1YW55aW5nIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2tpbmdyZWV2aWNlL215X3hwdHYvcmVmcy9oZWFkcy9tYWluL2pzL0dZSU5HXzIwMjVfMi5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIlRH5pCcIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF90Z3N4cCIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy90Z3NfeHAuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlpKnpgLjmkJwgfCBQQU7mkJzntKIiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3RpYW55aXNvIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9vY2N1cHktcGx1dG8vODc0ZDliMTgwYmNhZmY5MWUyZGFjMDZkMzhlZDg0NzQvcmF3L3RpYW55aXNvLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5LqR5beiIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9qcy95dW5jaGFvIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2tpbmdyZWV2aWNlL215X3hwdHYvcmVmcy9oZWFkcy9tYWluL2pzL3l1bmNoYW8uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlsI/nm5jnm5ggfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3hwYW5wYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveHBhbnBhbi5qcyIKICAgIH0KICBdCn0K",
+    "expected": {
+      "dialect": "xptv",
+      "named": 81,
+      "entries": [
+        {
+          "key": "https://360zy.com/api.php/provide/vod/",
+          "name": "360|点播",
+          "yontoType": "maccms-json",
+          "address": "https://360zy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://360zy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+          "name": "豆瓣|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+          "config": {
+            "api": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.wwzy.tv/api.php/provide/vod/",
+          "name": "旺旺|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.wwzy.tv/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.wwzy.tv/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.mdzyapi.com/api.php/provide/vod/",
+          "name": "墨斗|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.mdzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.mdzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://json02.heimuer.xyz/api.php/provide/vod/",
+          "name": "黑木耳|点播",
+          "yontoType": "maccms-json",
+          "address": "https://json02.heimuer.xyz/api.php/provide/vod/",
+          "config": {
+            "api": "https://json02.heimuer.xyz/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hw8.live/api.php/provide/vod/",
+          "name": "华为吧|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hw8.live/api.php/provide/vod/",
+          "config": {
+            "api": "https://hw8.live/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+          "name": "腐剧|点播",
+          "yontoType": "maccms-json",
+          "address": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+          "config": {
+            "api": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://jinyingzy.com/api.php/provide/vod/",
+          "name": "金鹰|点播",
+          "yontoType": "maccms-json",
+          "address": "https://jinyingzy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://jinyingzy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://okzyw9.com/api.php/provide/vod/",
+          "name": "OK|点播",
+          "yontoType": "maccms-json",
+          "address": "https://okzyw9.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://okzyw9.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://zpsps.com/api.php/provide/vod/",
+          "name": "宝片|点播",
+          "yontoType": "maccms-json",
+          "address": "https://zpsps.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://zpsps.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+          "name": "小黄人|点播",
+          "yontoType": "maccms-json",
+          "address": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.niuniuzy.me/api.php/provide/vod/",
+          "name": "牛牛|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.niuniuzy.me/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.niuniuzy.me/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.yayazy.net/api.php/provide/vod/",
+          "name": "丫丫|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.yayazy.net/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.yayazy.net/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.vodimg.top/api.php/provide/vod/",
+          "name": "影图|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.vodimg.top/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.vodimg.top/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.ukuapi.com/api.php/provide/vod/",
+          "name": "U酷|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.ukuapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.ukuapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hhzyapi.com/api.php/provide/vod",
+          "name": "豪华|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hhzyapi.com/api.php/provide/vod",
+          "config": {
+            "api": "https://hhzyapi.com/api.php/provide/vod",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://jszyapi.com/api.php/provide/vod",
+          "name": "极速|点播",
+          "yontoType": "maccms-json",
+          "address": "https://jszyapi.com/api.php/provide/vod",
+          "config": {
+            "api": "https://jszyapi.com/api.php/provide/vod",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://suoniapi.com/api.php/provide/vod/",
+          "name": "索尼|点播",
+          "yontoType": "maccms-json",
+          "address": "https://suoniapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://suoniapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://ikunzyapi.com/api.php/provide/vod/",
+          "name": "ikun|点播",
+          "yontoType": "maccms-json",
+          "address": "https://ikunzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://ikunzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://cj.ffzyapi.com/api.php/provide/vod/",
+          "name": "非凡|点播",
+          "yontoType": "maccms-json",
+          "address": "http://cj.ffzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "http://cj.ffzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.lziapi.com/api.php/provide/vod/",
+          "name": "量子|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.lziapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.lziapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://bfzyapi.com/api.php/provide/vod/",
+          "name": "暴风|点播",
+          "yontoType": "maccms-json",
+          "address": "https://bfzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://bfzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.hongniuzy2.com/api.php/provide/vod/",
+          "name": "红牛|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.hongniuzy2.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.hongniuzy2.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+          "name": "快车|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+          "config": {
+            "api": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://sdzyapi.com/api.php/provide/vod/",
+          "name": "闪电|点播",
+          "yontoType": "maccms-json",
+          "address": "http://sdzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "http://sdzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+          "name": "樱花|点播",
+          "yontoType": "maccms-json",
+          "address": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://collect.wolongzyw.com/api.php/provide/vod/",
+          "name": "卧龙|点播",
+          "yontoType": "maccms-json",
+          "address": "https://collect.wolongzyw.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://collect.wolongzyw.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.huyaapi.com/api.php/provide/vod/",
+          "name": "虎牙|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.huyaapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.huyaapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://p2100.net/api.php/provide/vod/",
+          "name": "飘零|点播",
+          "yontoType": "maccms-json",
+          "address": "https://p2100.net/api.php/provide/vod/",
+          "config": {
+            "api": "https://p2100.net/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.wujinapi.com/api.php/provide/vod/",
+          "name": "无尽|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.wujinapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.wujinapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://subocaiji.com/api.php/provide/vod/",
+          "name": "速博|点播",
+          "yontoType": "maccms-json",
+          "address": "https://subocaiji.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://subocaiji.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.moduapi.cc/api.php/provide/vod/",
+          "name": "魔都|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.moduapi.cc/api.php/provide/vod/",
+          "config": {
+            "api": "https://caiji.moduapi.cc/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://zuidazy.me/api.php/provide/vod/",
+          "name": "最大|点播",
+          "yontoType": "maccms-json",
+          "address": "http://zuidazy.me/api.php/provide/vod/",
+          "config": {
+            "api": "http://zuidazy.me/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hhzyapi.com/api.php/provide/vod/",
+          "name": "火狐|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hhzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://hhzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+          "name": "新浪|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+          "config": {
+            "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/bdys.js",
+          "name": "哔滴影视",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/bdys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/bdys.js",
+            "className": "csp_bde4"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ole.js",
+          "name": "欧乐🪜",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ole.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ole.js",
+            "className": "csp_Olevod"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/zxzj.js",
+          "name": "在线之家",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/zxzj.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/zxzj.js",
+            "className": "csp_Zxzj"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/duboku.js",
+          "name": "独播库",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/duboku.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/duboku.js",
+            "className": "csp_duboku"
+          }
+        },
+        {
+          "key": "https://gist.githubusercontent.com/occupy-pluto/e3a7bb98d5027d0f6dfa85fc2ac11a78/raw/6deb0475d295ac867ccb9c7cf3b1fb212a77abd7/agedm.js",
+          "name": "AGE动漫",
+          "yontoType": "xptv-js",
+          "address": "https://gist.githubusercontent.com/occupy-pluto/e3a7bb98d5027d0f6dfa85fc2ac11a78/raw/6deb0475d295ac867ccb9c7cf3b1fb212a77abd7/agedm.js",
+          "config": {
+            "ext": "https://gist.githubusercontent.com/occupy-pluto/e3a7bb98d5027d0f6dfa85fc2ac11a78/raw/6deb0475d295ac867ccb9c7cf3b1fb212a77abd7/agedm.js",
+            "className": "csp_age"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/4kav.js",
+          "name": "4k-av",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/4kav.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/4kav.js",
+            "className": "csp_4kav"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/jpyy.js",
+          "name": "金牌影院",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/jpyy.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/jpyy.js",
+            "className": "csp_jpyy"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/saohuo.js",
+          "name": "燒火電影",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/saohuo.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/saohuo.js",
+            "className": "csp_saohuo"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/novipnoad.js",
+          "name": "NO視頻",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/novipnoad.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/novipnoad.js",
+            "className": "csp_novipnoad"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/xingya.js",
+          "name": "星芽短劇",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/xingya.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/xingya.js",
+            "className": "csp_xingya"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/gzys.js",
+          "name": "瓜子",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/gzys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/gzys.js",
+            "className": "csp_guazi"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/iyftv.js",
+          "name": "愛壹帆",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/iyftv.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/iyftv.js",
+            "className": "csp_iyftv"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ystt.js",
+          "name": "影视天堂",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ystt.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ystt.js",
+            "className": "csp_ystt"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/jianpian.js",
+          "name": "荐片",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/jianpian.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/jianpian.js",
+            "className": "csp_jianpian"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/anime1.js",
+          "name": "anime1",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/anime1.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/anime1.js",
+            "className": "csp_anime1"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/7sefun.js",
+          "name": "七色番動漫",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/7sefun.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/7sefun.js",
+            "className": "csp_7sefun"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/lmm85.js",
+          "name": "路漫漫",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/lmm85.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/lmm85.js",
+            "className": "csp_lmm85"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ppnix.js",
+          "name": "ppnix",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ppnix.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ppnix.js",
+            "className": "csp_ppnix"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/kuaikaw.js",
+          "name": "河馬短劇",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/kuaikaw.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/kuaikaw.js",
+            "className": "csp_kuaikaw"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/yiys.js",
+          "name": "壹影視",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/yiys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/yiys.js",
+            "className": "csp_yiys"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ylys.js",
+          "name": "永樂視頻",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ylys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/refs/heads/main/js/ylys.js",
+            "className": "csp_ylys"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/wogg.js",
+          "name": "玩偶哥哥 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/wogg.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/wogg.js",
+            "className": "csp_wogg"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/nanfdj.js",
+          "name": "南風短劇 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/nanfdj.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/nanfdj.js",
+            "className": "csp_nanfdj"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yydsys.js",
+          "name": "多多影音 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yydsys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yydsys.js",
+            "className": "csp_yydsys"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/labipan.js",
+          "name": "蜡笔盘 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/labipan.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/labipan.js",
+            "className": "csp_labi"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/muou.js",
+          "name": "木偶 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/muou.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/muou.js",
+            "className": "csp_muou"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/mihdr.js",
+          "name": "至臻 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/mihdr.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/mihdr.js",
+            "className": "csp_mihdr"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yunpanres.js",
+          "name": "云盘资源网 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yunpanres.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/yunpanres.js",
+            "className": "csp_yunpanres"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xzys.js",
+          "name": "校长影视 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xzys.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xzys.js",
+            "className": "csp_xzys"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/leijing.js",
+          "name": "雷鲸 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/leijing.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/leijing.js",
+            "className": "csp_leijing"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ouge.js",
+          "name": "欧哥 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ouge.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/ouge.js",
+            "className": "csp_ouge"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/yunpan8.js",
+          "name": "云盘吧 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/yunpan8.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/yunpan8.js",
+            "className": "csp_yunpan8"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/mucpan.js",
+          "name": "小米UC | PAN(昊)",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/mucpan.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/mucpan.js",
+            "className": "csp_js/mucpan"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/shandian.js",
+          "name": "闪电UC | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/shandian.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/shandian.js",
+            "className": "csp_shandian"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/aomi.js",
+          "name": "奥秘 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/aomi.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/aomi.js",
+            "className": "csp_aomi"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/liuqu.js",
+          "name": "六趣 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/liuqu.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/liuqu.js",
+            "className": "csp_luiqu"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/baipiao.js",
+          "name": "白嫖 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/baipiao.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/baipiao.js",
+            "className": "csp_baipiao"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/huban.js",
+          "name": "虎斑 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/huban.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/huban.js",
+            "className": "csp_huban"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xiafan.js",
+          "name": "下饭 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xiafan.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xiafan.js",
+            "className": "csp_xiafan"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/seedhub.js",
+          "name": "SeedHub | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/seedhub.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/seedhub.js",
+            "className": "csp_seedhub"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/star2.js",
+          "name": "Star2 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/star2.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/star2.js",
+            "className": "csp_star2"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/GYING_2025_2.js",
+          "name": "观影 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/GYING_2025_2.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/GYING_2025_2.js",
+            "className": "csp_guanying"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/tgs_xp.js",
+          "name": "TG搜 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/tgs_xp.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/tgs_xp.js",
+            "className": "csp_tgsxp"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://gist.githubusercontent.com/occupy-pluto/874d9b180bcaff91e2dac06d38ed8474/raw/tianyiso.js",
+          "name": "天逸搜 | PAN搜索",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://gist.githubusercontent.com/occupy-pluto/874d9b180bcaff91e2dac06d38ed8474/raw/tianyiso.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://gist.githubusercontent.com/occupy-pluto/874d9b180bcaff91e2dac06d38ed8474/raw/tianyiso.js",
+            "className": "csp_tianyiso"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/yunchao.js",
+          "name": "云巢 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/yunchao.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/kingreevice/my_xptv/refs/heads/main/js/yunchao.js",
+            "className": "csp_js/yunchao"
+          }
+        },
+        {
+          "key": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xpanpan.js",
+          "name": "小盘盘 | PAN",
+          "yontoType": "xptv-js",
+          "address": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xpanpan.js",
+          "config": {
+            "ext": "https://ghp.xptvhelper.link/https://raw.githubusercontent.com/fangkuia/XPTV/refs/heads/main/js/xpanpan.js",
+            "className": "csp_xpanpan"
+          }
+        }
+      ],
+      "skipped": {
+        "spider": 0,
+        "type": 0,
+        "address": 0,
+        "duplicate": 0,
+        "unknownType": 0
+      }
+    }
+  },
+  {
+    "name": "the same XPTV index read as a 仓",
+    "about": "The recording above, pinned to the other dialect: a repo is its address and its dialect, and one document is two sets of catalogs, since type 3 is a script to XPTV and a spider to a 仓.",
+    "url": "https://raw.githubusercontent.com/fangkuia/XPTV/main/allinone.json",
+    "dialect": "cang",
+    "bodyBase64": "ewogICJzaXRlcyI6IFsKICAgIHsKICAgICAgIm5hbWUiOiAiMzYwfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovLzM2MHp5LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuixhueTo3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jYWlqaS5kYnp5LnR2L2FwaS5waHAvcHJvdmlkZS92b2QvYXQvam9zbiIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaXuuaXunzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkud3d6eS50di9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWiqOaWl3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cubWR6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpu5HmnKjogLN854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vanNvbjAyLmhlaW11ZXIueHl6L2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2O5Li65ZCnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2h3OC5saXZlL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6IWQ5YmnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8vd3d3LmZ1anUyMDI0LmNjOjgwMTMvcnVpZmVuZ2xiX2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6YeR6bmwfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2ppbnlpbmd6eS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJPS3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9va3p5dzkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5a6d54mHfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL3pwc3BzLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWwj+m7hOS6unzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9pcXlpLnhpYW9odWFuZ3JlbnR2LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueJm+eJm3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkubml1bml1enkubWUvYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkuKvkuKt854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2oueWF5YXp5Lm5ldC9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuW9seWbvnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jai52b2RpbWcudG9wL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiVemFt3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkudWt1YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuixquWNjnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9oaHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5p6B6YCffOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2pzenlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLntKLlsLx854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vc3VvbmlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiaWt1bnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9pa3VuenlhcGkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6Z2e5YehfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8vY2ouZmZ6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLph4/lrZB854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2oubHppYXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaatOmjjnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9iZnp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIue6oueJm3zngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cuaG9uZ25pdXp5Mi5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlv6vovaZ854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vY2Fpamkua2N6eWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC9mcm9tL2tjbTN1OC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpl6rnlLV854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHA6Ly9zZHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaoseiKsXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9tM3U4LmFwaXloenkuY29tL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2n6b6ZfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2NvbGxlY3Qud29sb25nenl3LmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiZjueJmXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly93d3cuaHV5YWFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpo5jpm7Z854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vcDIxMDAubmV0L2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5peg5bC9fOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwczovL2FwaS53dWppbmFwaS5jb20vYXBpLnBocC9wcm92aWRlL3ZvZC8iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpgJ/ljZp854K55pKtIiwKICAgICAgInR5cGUiOiAxLAogICAgICAiYXBpIjogImh0dHBzOi8vc3Vib2NhaWppLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIumtlOmDvXzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9jYWlqaS5tb2R1YXBpLmNjL2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5pyA5aSnfOeCueaSrSIsCiAgICAgICJ0eXBlIjogMSwKICAgICAgImFwaSI6ICJodHRwOi8venVpZGF6eS5tZS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueBq+eLkHzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9oaHp5YXBpLmNvbS9hcGkucGhwL3Byb3ZpZGUvdm9kLyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaWsOa1qnzngrnmkq0iLAogICAgICAidHlwZSI6IDEsCiAgICAgICJhcGkiOiAiaHR0cHM6Ly9hcGkueGlubGFuZ2FwaS5jb20veGlubGFuZ2FwaS5waHAvcHJvdmlkZS92b2QvIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5ZOU5ru05b2x6KeGIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9iZGU0IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL2JkeXMuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmrKfkuZDwn6qcIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9PbGV2b2QiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvb2xlLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Zyo57q/5LmL5a62IiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9aeHpqIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL3p4emouanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLni6zmkq3lupMiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2R1Ym9rdSIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy9kdWJva3UuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJBR0XliqjmvKsiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2FnZSIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9vY2N1cHktcGx1dG8vZTNhN2JiOThkNTAyN2QwZjZkZmE4NWZjMmFjMTFhNzgvcmF3LzZkZWIwNDc1ZDI5NWFjODY3Y2NiOWM3Y2YzYjFmYjIxMmE3N2FiZDcvYWdlZG0uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICI0ay1hdiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfNGthdiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy80a2F2LmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6YeR54mM5b2x6ZmiIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9qcHl5IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL2pweXkuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLnh5Lngavpm7vlvbEiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3Nhb2h1byIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy9zYW9odW8uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJOT+imlumguyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfbm92aXBub2FkIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL25vdmlwbm9hZC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaYn+iKveefreWKhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfeGluZ3lhIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9tYWluL2pzL3hpbmd5YS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueTnOWtkCIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfZ3VhemkiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvZ3p5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuaEm+WjueW4hiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfaXlmdHYiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvaXlmdHYuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlvbHop4blpKnloIIiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3lzdHQiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveXN0dC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiNkOeJhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfamlhbnBpYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy9qaWFucGlhbi5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImFuaW1lMSIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfYW5pbWUxIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMvYW5pbWUxLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5LiD6Imy55Wq5YuV5ryrIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF83c2VmdW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy83c2VmdW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLot6/mvKvmvKsiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2xtbTg1IiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMvbG1tODUuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJwcG5peCIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfcHBuaXgiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy9wcG5peC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuays+mmrOefreWKhyIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfa3VhaWthdyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvcmVmcy9oZWFkcy9tYWluL2pzL2t1YWlrYXcuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlo7nlvbHoppYiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3lpeXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL3JlZnMvaGVhZHMvbWFpbi9qcy95aXlzLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5rC45qiC6KaW6aC7IiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF95bHlzIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL1lzd2FnL3hwdHYtZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vanMveWx5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIueOqeWBtuWTpeWTpSB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfd29nZyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy93b2dnLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5Y2X6aKo55+t5YqHIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9uYW5mZGoiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvbmFuZmRqLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5aSa5aSa5b2x6Z+zIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF95eWRzeXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMveXlkc3lzLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi6Jyh56yU55uYIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9sYWJpIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL2xhYmlwYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmnKjlgbYgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX211b3UiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvbXVvdS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiHs+iHuyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbWloZHIiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vWXN3YWcveHB0di1leHRlbnNpb25zL21haW4vanMvbWloZHIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkupHnm5jotYTmupDnvZEgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3l1bnBhbnJlcyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9Zc3dhZy94cHR2LWV4dGVuc2lvbnMvbWFpbi9qcy95dW5wYW5yZXMuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLmoKHplb/lvbHop4YgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3h6eXMiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveHp5cy5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIumbt+myuCB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbGVpamluZyIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy9sZWlqaW5nLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5qyn5ZOlIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9vdWdlIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL291Z2UuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkupHnm5jlkKcgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3l1bnBhbjgiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveXVucGFuOC5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWwj+exs1VDIHwgUEFOKOaYiikiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2pzL211Y3BhbiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9raW5ncmVldmljZS9teV94cHR2L3JlZnMvaGVhZHMvbWFpbi9qcy9tdWNwYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLpl6rnlLVVQyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfc2hhbmRpYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvc2hhbmRpYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlpaXnp5ggfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2FvbWkiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvYW9taS5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuWFrei2oyB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfbHVpcXUiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvbGl1cXUuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLnmb3lq5YgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2JhaXBpYW8iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvYmFpcGlhby5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIuiZjuaWkSB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3BfaHViYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvaHViYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLkuIvppa0gfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3hpYWZhbiIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy94aWFmYW4uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJTZWVkSHViIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9zZWVkaHViIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2ZhbmdrdWlhL1hQVFYvcmVmcy9oZWFkcy9tYWluL2pzL3NlZWRodWIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJTdGFyMiB8IFBBTiIsCiAgICAgICJ0eXBlIjogMywKICAgICAgImFwaSI6ICJjc3Bfc3RhcjIiLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMvc3RhcjIuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLop4LlvbEgfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX2d1YW55aW5nIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2tpbmdyZWV2aWNlL215X3hwdHYvcmVmcy9oZWFkcy9tYWluL2pzL0dZSU5HXzIwMjVfMi5qcyIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogIlRH5pCcIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF90Z3N4cCIsCiAgICAgICJleHQiOiAiaHR0cHM6Ly9naHAueHB0dmhlbHBlci5saW5rL2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9mYW5na3VpYS9YUFRWL3JlZnMvaGVhZHMvbWFpbi9qcy90Z3NfeHAuanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlpKnpgLjmkJwgfCBQQU7mkJzntKIiLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3RpYW55aXNvIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9vY2N1cHktcGx1dG8vODc0ZDliMTgwYmNhZmY5MWUyZGFjMDZkMzhlZDg0NzQvcmF3L3RpYW55aXNvLmpzIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAi5LqR5beiIHwgUEFOIiwKICAgICAgInR5cGUiOiAzLAogICAgICAiYXBpIjogImNzcF9qcy95dW5jaGFvIiwKICAgICAgImV4dCI6ICJodHRwczovL2docC54cHR2aGVscGVyLmxpbmsvaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2tpbmdyZWV2aWNlL215X3hwdHYvcmVmcy9oZWFkcy9tYWluL2pzL3l1bmNoYW8uanMiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICLlsI/nm5jnm5ggfCBQQU4iLAogICAgICAidHlwZSI6IDMsCiAgICAgICJhcGkiOiAiY3NwX3hwYW5wYW4iLAogICAgICAiZXh0IjogImh0dHBzOi8vZ2hwLnhwdHZoZWxwZXIubGluay9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vZmFuZ2t1aWEvWFBUVi9yZWZzL2hlYWRzL21haW4vanMveHBhbnBhbi5qcyIKICAgIH0KICBdCn0K",
+    "expected": {
+      "dialect": "cang",
+      "named": 81,
+      "entries": [
+        {
+          "key": "https://360zy.com/api.php/provide/vod/",
+          "name": "360|点播",
+          "yontoType": "maccms-json",
+          "address": "https://360zy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://360zy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+          "name": "豆瓣|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+          "config": {
+            "api": "https://caiji.dbzy.tv/api.php/provide/vod/at/josn",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.wwzy.tv/api.php/provide/vod/",
+          "name": "旺旺|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.wwzy.tv/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.wwzy.tv/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.mdzyapi.com/api.php/provide/vod/",
+          "name": "墨斗|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.mdzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.mdzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://json02.heimuer.xyz/api.php/provide/vod/",
+          "name": "黑木耳|点播",
+          "yontoType": "maccms-json",
+          "address": "https://json02.heimuer.xyz/api.php/provide/vod/",
+          "config": {
+            "api": "https://json02.heimuer.xyz/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hw8.live/api.php/provide/vod/",
+          "name": "华为吧|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hw8.live/api.php/provide/vod/",
+          "config": {
+            "api": "https://hw8.live/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+          "name": "腐剧|点播",
+          "yontoType": "maccms-json",
+          "address": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+          "config": {
+            "api": "http://www.fuju2024.cc:8013/ruifenglb_api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://jinyingzy.com/api.php/provide/vod/",
+          "name": "金鹰|点播",
+          "yontoType": "maccms-json",
+          "address": "https://jinyingzy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://jinyingzy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://okzyw9.com/api.php/provide/vod/",
+          "name": "OK|点播",
+          "yontoType": "maccms-json",
+          "address": "https://okzyw9.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://okzyw9.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://zpsps.com/api.php/provide/vod/",
+          "name": "宝片|点播",
+          "yontoType": "maccms-json",
+          "address": "https://zpsps.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://zpsps.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+          "name": "小黄人|点播",
+          "yontoType": "maccms-json",
+          "address": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://iqyi.xiaohuangrentv.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.niuniuzy.me/api.php/provide/vod/",
+          "name": "牛牛|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.niuniuzy.me/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.niuniuzy.me/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.yayazy.net/api.php/provide/vod/",
+          "name": "丫丫|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.yayazy.net/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.yayazy.net/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.vodimg.top/api.php/provide/vod/",
+          "name": "影图|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.vodimg.top/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.vodimg.top/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.ukuapi.com/api.php/provide/vod/",
+          "name": "U酷|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.ukuapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.ukuapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hhzyapi.com/api.php/provide/vod",
+          "name": "豪华|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hhzyapi.com/api.php/provide/vod",
+          "config": {
+            "api": "https://hhzyapi.com/api.php/provide/vod",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://jszyapi.com/api.php/provide/vod",
+          "name": "极速|点播",
+          "yontoType": "maccms-json",
+          "address": "https://jszyapi.com/api.php/provide/vod",
+          "config": {
+            "api": "https://jszyapi.com/api.php/provide/vod",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://suoniapi.com/api.php/provide/vod/",
+          "name": "索尼|点播",
+          "yontoType": "maccms-json",
+          "address": "https://suoniapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://suoniapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://ikunzyapi.com/api.php/provide/vod/",
+          "name": "ikun|点播",
+          "yontoType": "maccms-json",
+          "address": "https://ikunzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://ikunzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://cj.ffzyapi.com/api.php/provide/vod/",
+          "name": "非凡|点播",
+          "yontoType": "maccms-json",
+          "address": "http://cj.ffzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "http://cj.ffzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://cj.lziapi.com/api.php/provide/vod/",
+          "name": "量子|点播",
+          "yontoType": "maccms-json",
+          "address": "https://cj.lziapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://cj.lziapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://bfzyapi.com/api.php/provide/vod/",
+          "name": "暴风|点播",
+          "yontoType": "maccms-json",
+          "address": "https://bfzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://bfzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.hongniuzy2.com/api.php/provide/vod/",
+          "name": "红牛|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.hongniuzy2.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.hongniuzy2.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+          "name": "快车|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+          "config": {
+            "api": "https://caiji.kczyapi.com/api.php/provide/vod/from/kcm3u8/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://sdzyapi.com/api.php/provide/vod/",
+          "name": "闪电|点播",
+          "yontoType": "maccms-json",
+          "address": "http://sdzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "http://sdzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+          "name": "樱花|点播",
+          "yontoType": "maccms-json",
+          "address": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://m3u8.apiyhzy.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://collect.wolongzyw.com/api.php/provide/vod/",
+          "name": "卧龙|点播",
+          "yontoType": "maccms-json",
+          "address": "https://collect.wolongzyw.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://collect.wolongzyw.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://www.huyaapi.com/api.php/provide/vod/",
+          "name": "虎牙|点播",
+          "yontoType": "maccms-json",
+          "address": "https://www.huyaapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://www.huyaapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://p2100.net/api.php/provide/vod/",
+          "name": "飘零|点播",
+          "yontoType": "maccms-json",
+          "address": "https://p2100.net/api.php/provide/vod/",
+          "config": {
+            "api": "https://p2100.net/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.wujinapi.com/api.php/provide/vod/",
+          "name": "无尽|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.wujinapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://api.wujinapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://subocaiji.com/api.php/provide/vod/",
+          "name": "速博|点播",
+          "yontoType": "maccms-json",
+          "address": "https://subocaiji.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://subocaiji.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://caiji.moduapi.cc/api.php/provide/vod/",
+          "name": "魔都|点播",
+          "yontoType": "maccms-json",
+          "address": "https://caiji.moduapi.cc/api.php/provide/vod/",
+          "config": {
+            "api": "https://caiji.moduapi.cc/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "http://zuidazy.me/api.php/provide/vod/",
+          "name": "最大|点播",
+          "yontoType": "maccms-json",
+          "address": "http://zuidazy.me/api.php/provide/vod/",
+          "config": {
+            "api": "http://zuidazy.me/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://hhzyapi.com/api.php/provide/vod/",
+          "name": "火狐|点播",
+          "yontoType": "maccms-json",
+          "address": "https://hhzyapi.com/api.php/provide/vod/",
+          "config": {
+            "api": "https://hhzyapi.com/api.php/provide/vod/",
+            "dialect": "json"
+          }
+        },
+        {
+          "key": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+          "name": "新浪|点播",
+          "yontoType": "maccms-json",
+          "address": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+          "config": {
+            "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/",
+            "dialect": "json"
+          }
+        }
+      ],
+      "skipped": {
+        "spider": 46,
+        "type": 0,
+        "address": 0,
+        "duplicate": 0,
+        "unknownType": 0
+      }
+    }
+  }
+]

@@ -1,0 +1,18 @@
+[
+  "ownThrow",
+  "ownThrowMarked",
+  "ownHonoured",
+  "ownInterrupt",
+  "hostVerdict",
+  "hostVerdictRethrown",
+  "sleepPastBudget",
+  "recoded",
+  "keep",
+  "earlierVerdict",
+  "tamperWeakSet",
+  "tamperIndexOf",
+  "tamperIncludes",
+  "tamperStringify",
+  "replaceWrapper",
+  "afterReplacedWrapper"
+]

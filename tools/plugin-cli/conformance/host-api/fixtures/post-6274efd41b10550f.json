@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://conformance.test/submit",
+    "body": "q=1"
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "/submitted"
+    },
+    "bodyBase64": ""
+  }
+}

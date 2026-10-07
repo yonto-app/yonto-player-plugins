@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?ParentId=lib-shows&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear&SortBy=SortName&SortOrder=Ascending&StartIndex=0&Limit=500",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJzMSIsIk5hbWUiOiJQaW9uZWVyIE9uZSIsIlR5cGUiOiJTZXJpZXMiLCJPdmVydmlldyI6IkEgU292aWV0LWVyYSBjYXBzdWxlIGZhbGxzIG92ZXIgTW9udGFuYS4iLCJHZW5yZXMiOlsiRHJhbWEiLCJTY2llbmNlIEZpY3Rpb24iXSwiUHJvZHVjdGlvblllYXIiOjIwMTAsIkltYWdlVGFncyI6eyJQcmltYXJ5IjoicGlvbmVlclByaW1hcnlUYWcifSwiQmFja2Ryb3BJbWFnZVRhZ3MiOlsicGlvbmVlckJhY2tkcm9wVGFnIl19LHsiSWQiOiJlcDEiLCJOYW1lIjoiRWFydGhmYWxsIiwiVHlwZSI6IkVwaXNvZGUiLCJJbmRleE51bWJlciI6MSwiUGFyZW50SW5kZXhOdW1iZXIiOjEsIlNlcmllc0lkIjoiczEiLCJTZXJpZXNOYW1lIjoiUGlvbmVlciBPbmUiLCJQYXJlbnRCYWNrZHJvcEl0ZW1JZCI6InMxIiwiUGFyZW50QmFja2Ryb3BJbWFnZVRhZ3MiOlsicGlvbmVlckJhY2tkcm9wVGFnIl19XSwiVG90YWxSZWNvcmRDb3VudCI6MiwiU3RhcnRJbmRleCI6MH0="
+  }
+}

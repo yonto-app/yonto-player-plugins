@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://[2002:c0a8:146::]/ping",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "cG9uZw=="
+  }
+}

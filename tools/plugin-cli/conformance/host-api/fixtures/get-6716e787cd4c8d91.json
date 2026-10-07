@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/hello",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "aGVsbG8="
+  }
+}

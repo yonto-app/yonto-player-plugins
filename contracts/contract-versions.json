@@ -1,0 +1,31 @@
+{
+  "$comment": "When each part of the content-source contract's surface arrived, and the oldest version a host still runs. Only what changed: anything absent has been there since version 1. See contracts/README.md for what reads it and why it carries no names of its own. Version 10's `multi` configSchema field type was withdrawn (kangzj/lantern-tv#440) and is no longer listed; the version number itself stands. Version 21 removed `lantern`, the host global's old name, so only `yonto` is left, and no host runs a plugin declaring anything older: that is `oldest`. Version 19's entry for naming `yonto` went with it, since every plugin now does.",
+  "oldest": 21,
+  "since": {
+    "yonto.now": 2,
+    "getImageHeaders": 2,
+    "yonto.installId": 3,
+    "onImageHeadersRefused": 3,
+    "getSubSources": 4,
+    "yonto.subSource": 4,
+    "cookieLogin.hostHeld": 5,
+    "yonto.error.misconfigured": 6,
+    "yonto.html.load": 7,
+    "catalogsAreRemote": 8,
+    "yonto.cryptoJs": 9,
+    "runsFetchedCode": 11,
+    "playbackTokens": 12,
+    "getStream": 12,
+    "getFilters.init": 13,
+    "yonto.partial": 14,
+    "yonto.xml.load": 15,
+    "yonto.error.unreachable": 16,
+    "browserCheck": 17,
+    "yonto.error.challenged": 17,
+    "linkLogin": 18,
+    "yonto.session.linked": 18,
+    "yonto.session.servers": 18,
+    "yonto.session.refused": 18,
+    "yonto.jsEncrypt": 20
+  }
+}

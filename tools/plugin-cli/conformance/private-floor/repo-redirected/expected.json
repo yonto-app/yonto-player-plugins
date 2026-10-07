@@ -1,0 +1,5 @@
+{
+  "entryWhereTheFetchLanded": "HOST_NOT_ALLOWED: 192.168.1.62 is a private address, and nothing the viewer typed names it",
+  "publicEntry": "pong",
+  "errorDuckTyped": "NOT_FOUND: hand-built, not yonto.error.notFound()"
+}

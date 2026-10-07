@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://conformance.test/keep",
+    "body": "q=1"
+  },
+  "response": {
+    "status": 307,
+    "headers": {
+      "location": "/kept"
+    },
+    "bodyBase64": ""
+  }
+}

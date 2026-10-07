@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://192.168.1.50:8096/moved",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": { "location": "http://192.168.1.1/b" },
+    "bodyBase64": ""
+  }
+}

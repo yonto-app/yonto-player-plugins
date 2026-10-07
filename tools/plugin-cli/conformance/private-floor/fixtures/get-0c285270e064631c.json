@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://192.168.1.50:8096/ping",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "cG9uZw=="
+  }
+}

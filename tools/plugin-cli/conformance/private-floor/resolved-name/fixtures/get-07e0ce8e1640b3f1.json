@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://[64:ff9b::7f00:1]/ping",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "bodyBase64": "cG9uZw=="
+  }
+}

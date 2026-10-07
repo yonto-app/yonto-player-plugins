@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/yonto-types/jellyfin-server.schema.json",
+  "title": "jellyfin-server",
+  "description": "One Jellyfin server. The key and the user are the viewer's, and are never in an index.",
+  "type": "object",
+  "properties": {
+    "serverUrl": { "type": "string", "format": "uri", "x-yonto-field": "url" }
+  },
+  "required": ["serverUrl"],
+  "additionalProperties": true
+}

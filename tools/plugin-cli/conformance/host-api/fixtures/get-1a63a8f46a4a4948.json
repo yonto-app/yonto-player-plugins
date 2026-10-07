@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/moved",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "/landed"
+    },
+    "bodyBase64": ""
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/lone%EF%BF%BD/landed",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "bodyBase64": "bGFuZGVkIGJlc2lkZSBpdA=="
+  }
+}

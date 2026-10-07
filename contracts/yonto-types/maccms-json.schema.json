@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/yonto-types/maccms-json.schema.json",
+  "title": "maccms-json",
+  "description": "One MacCMS server, read over the JSON dialect of its api.php/provide/vod API.",
+  "type": "object",
+  "properties": {
+    "api": { "type": "string", "format": "uri", "x-yonto-field": "url" },
+    "dialect": { "const": "json", "x-yonto-field": "choice" },
+    "searchable": {
+      "description": "Whether the server searches; absent means it does. A type-50 entry says it here, in `ext.config.searchable`. For a numbered entry the reader fills it in, false only when the entry says `searchable: 0`; a type-50 entry's own `searchable: 0` is what keeps it out of FongMi's search and says nothing about this.",
+      "type": "boolean",
+      "x-yonto-field": "bool"
+    }
+  },
+  "required": ["api", "dialect"],
+  "additionalProperties": true
+}

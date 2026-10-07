@@ -1,0 +1,225 @@
+{
+  "$comment": "Whether a session linked under a record may still be used by the plugin as it is now, on both hosts: the same service, its account on the same hosts, and a reach no wider than when it was linked. On reach, not on origin (docs/design/2026-09-24-a-code-the-viewer-links.md, *What happens to it*). test/link-login.test.js walks it through src/link-login.js and LinkRecordRecordTest through LinkLogins.kt.",
+  "cases": [
+    {
+      "why": "the plugin as it was linked keeps it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": true
+    },
+    {
+      "why": "a narrower reach keeps it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct",
+          "images.example"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": true
+    },
+    {
+      "why": "the same reach written in another case keeps it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.PLEX.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": true
+    },
+    {
+      "why": "a wider reach drops it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "collector.example"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": false
+    },
+    {
+      "why": "another service drops it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "other.example",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": false
+    },
+    {
+      "why": "the service's account on other hosts drops it, so an app that moved the service's endpoints does not follow them",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": false
+    },
+    {
+      "why": "a plugin that no longer declares a linkLogin drops it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": []
+      },
+      "kept": false
+    },
+    {
+      "why": "a plugin whose linkLogin a host would refuse drops it",
+      "record": {
+        "linkedAt": 1700000000000,
+        "service": "plex.tv",
+        "accountHosts": [
+          "clients.plex.tv",
+          "plex.tv"
+        ],
+        "allowedHosts": [
+          "*.plex.direct"
+        ]
+      },
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.tv"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": false
+    },
+    {
+      "why": "no record keeps nothing",
+      "record": null,
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ]
+      },
+      "kept": false
+    }
+  ]
+}

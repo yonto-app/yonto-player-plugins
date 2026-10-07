@@ -1,0 +1,52 @@
+{
+  "$comment": "What bounds a call, scaled down to a one-second budget, with room enough either side of it that a process descheduled for a few hundred milliseconds under load changes no outcome: the budget is the JS a call runs, summed over its runs, and time parked on a host function is not counted. Each case runs call-budget-plugin.js on a fresh host with `budgetMs` as its call budget and every request answering after `siteAnswersAfterMs`, after one call to `ready`, which pays for the module body, unless the case says `warmsUp: false`. `answers` is the method's answer, or `fails` its error code, and `endsWithinMs` is when the call ends, measured from its start. test/call-budget.test.js walks it through the CLI's engine and CallBudgetRecordTest through the device's runtime (kangzj/yonto#513).",
+  "budgetMs": 1000,
+  "siteAnswersAfterMs": 3000,
+  "cases": [
+    {
+      "why": "a loop that yields to the host between short bursts is cut once its bursts add up to the budget",
+      "method": "yieldThenSpin",
+      "args": [80],
+      "fails": "TIMEOUT",
+      "endsWithinMs": [1000, 2500]
+    },
+    {
+      "why": "a call that waits three budgets on the host and then works a quarter of a budget finishes",
+      "method": "waitThenWork",
+      "args": [250],
+      "answers": "200,200:worked",
+      "endsWithinMs": [3250, 4500]
+    },
+    {
+      "why": "a loop after a wait longer than the budget is cut one budget into itself",
+      "method": "waitThenSpin",
+      "args": [],
+      "fails": "TIMEOUT",
+      "endsWithinMs": [4000, 5500]
+    },
+    {
+      "why": "a call that answers with a request still out ends once the request is answered and the work on it has run",
+      "method": "leaves",
+      "args": [250],
+      "answers": "left",
+      "endsWithinMs": [3250, 4500]
+    },
+    {
+      "why": "work a call left running is spent from that call's budget",
+      "method": "leaves",
+      "args": [1500],
+      "fails": "TIMEOUT",
+      "endsWithinMs": [4000, 5500]
+    },
+    {
+      "why": "the module body's JS is spent from the first call's budget, so 500 ms of it and 700 ms of the call's own is too much",
+      "$why": "Each alone is well under the budget and the two together well over it, so neither a slow machine nor a thread descheduled across the deadline changes the outcome (found in review of kangzj/yonto#630).",
+      "warmsUp": false,
+      "method": "spins",
+      "args": [700],
+      "fails": "TIMEOUT",
+      "$endsWithinMs": "Wide, because on the CLI the first call also bundles the plugin and starts QuickJS, which a loaded machine can take seconds over.",
+      "endsWithinMs": [1000, 20000]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  "getFilters",
+  "getRecommendations",
+  "checkHealth",
+  "getImageHeaders",
+  "onImageHeadersRefused",
+  "getSubSources",
+  "getStream"
+]

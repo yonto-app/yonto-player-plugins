@@ -1,0 +1,25 @@
+{
+  "$comment": "What a plugin reads as yonto.config for what a viewer's form answered, on both hosts. The device builds it in PluginConfigForm.validate; the CLI in src/config.js. `given` is the form's answers, and either `received`, what the plugin is handed, or `refused`, the field the form will not save. Every value is trimmed, an answer that is empty after that is no key at all, a bool is 'true' or 'false' and always present, a choice is an option the field still offers, a url is saved the way SourceUrl.normalize reads it, and a key no field declares is dropped (kangzj/lantern-tv#414). PluginConfigRecordTest and test/config.test.js hold each host to it.",
+  "configSchema": [
+    { "id": "text", "type": "text", "label": "Text" },
+    { "id": "secret", "type": "secret", "label": "Secret" },
+    { "id": "server", "type": "url", "label": "Address" },
+    { "id": "choice", "type": "choice", "label": "Quality", "options": [{ "id": "hd", "label": "HD" }, { "id": "sd", "label": "SD" }] },
+    { "id": "bool", "type": "bool", "label": "Subtitles" }
+  ],
+  "cases": [
+    { "why": "nothing answered: only the bool, which is never unanswered", "given": {}, "received": { "bool": "false" } },
+    { "why": "an empty answer is no answer, not a key holding nothing", "given": { "text": "" }, "received": { "bool": "false" } },
+    { "why": "whitespace alone is no answer either", "given": { "text": "   " }, "received": { "bool": "false" } },
+    { "why": "every answer is trimmed, a secret's too", "given": { "text": "  hello  ", "secret": "  s3cret " }, "received": { "text": "hello", "secret": "s3cret", "bool": "false" } },
+    { "why": "a bool is true or false and nothing else", "given": { "bool": "yes" }, "received": { "bool": "false" } },
+    { "why": "a bool's true survives whitespace", "given": { "bool": " true " }, "received": { "bool": "true" } },
+    { "why": "a choice naming no option this field offers is no answer", "given": { "choice": "4k" }, "received": { "bool": "false" } },
+    { "why": "a choice is trimmed", "given": { "choice": " hd " }, "received": { "choice": "hd", "bool": "false" } },
+    { "why": "a url gains a scheme and loses its path's trailing slashes", "given": { "server": " example.com/api/ " }, "received": { "server": "http://example.com/api", "bool": "false" } },
+    { "why": "a url keeps its query", "given": { "server": "https://example.com/list/?page=1" }, "received": { "server": "https://example.com/list?page=1", "bool": "false" } },
+    { "why": "a key no field declares is dropped", "given": { "stray": "x" }, "received": { "bool": "false" } },
+    { "why": "a url that is not an address is refused, naming the field", "given": { "server": "a b" }, "refused": "server" },
+    { "why": "a url whose host is not a host is refused too", "given": { "server": "999.999.999.999" }, "refused": "server" }
+  ]
+}

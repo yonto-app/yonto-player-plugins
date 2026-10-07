@@ -1,0 +1,1550 @@
+{
+  "$comment": "How the one link sign-in engine reads a service's start and poll, on both hosts, and the requests it makes: test/link-login.test.js walks it through src/host/link-sign-in.js and LinkSignInRecordTest through LinkSignIn.kt. A case names a service in contracts/link-logins.json, or one of declarations.json's. Every rule of the design's *The dialects* holds for every service: a code of 1 to 16 letters, digits, `-` and single spaces; an expiry of 10 seconds to an hour; a credential of 8 to 4,096 printable ASCII characters; an interval clamped to 2 to 60 seconds, and widened by a `slower` answer (`widen`) within the same clamp; a QR off the visit site replaced by the visit address. `about` says where a body came from.",
+  "requests": [
+    {
+      "why": "plex.tv's start carries the host's own identifier and product, never a plugin's",
+      "service": "plex.tv",
+      "clientId": "host-client-id",
+      "request": "begin",
+      "expect": {
+        "method": "POST",
+        "url": "https://plex.tv/api/v2/pins",
+        "headers": {
+          "Accept": "application/json",
+          "X-Plex-Product": "Yonto",
+          "X-Plex-Client-Identifier": "host-client-id"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "the poll names the pin the start answered",
+      "service": "plex.tv",
+      "clientId": "host-client-id",
+      "code": {
+        "id": 1000000001,
+        "userCode": "WXYZ"
+      },
+      "request": "poll",
+      "expect": {
+        "method": "GET",
+        "url": "https://plex.tv/api/v2/pins/1000000001",
+        "headers": {
+          "Accept": "application/json",
+          "X-Plex-Product": "Yonto",
+          "X-Plex-Client-Identifier": "host-client-id"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "the discovery alone carries the account credential, in the service's account header",
+      "service": "plex.tv",
+      "clientId": "host-client-id",
+      "account": "account-token-cccccccc",
+      "request": "discover",
+      "expect": {
+        "method": "GET",
+        "url": "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1",
+        "headers": {
+          "Accept": "application/json",
+          "X-Plex-Product": "Yonto",
+          "X-Plex-Client-Identifier": "host-client-id",
+          "X-Plex-Token": "account-token-cccccccc"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "what the start answered is percent-encoded into the poll's URL",
+      "service": "plex.tv",
+      "clientId": "c",
+      "code": {
+        "id": "a b/c",
+        "userCode": "ABCD"
+      },
+      "request": "poll",
+      "expect": {
+        "method": "GET",
+        "url": "https://plex.tv/api/v2/pins/a%20b%2Fc",
+        "headers": {
+          "Accept": "application/json",
+          "X-Plex-Product": "Yonto",
+          "X-Plex-Client-Identifier": "c"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "a form body is written as declared, a registered client id as the literal it is, and the engine sets its Content-Type",
+      "service": "device.test",
+      "clientId": "host client id",
+      "request": "begin",
+      "expect": {
+        "method": "POST",
+        "url": "https://device.test/device/code",
+        "headers": {
+          "Accept": "application/json",
+          "User-Agent": "Yonto",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "body": "client_id=yonto-device-test"
+      }
+    },
+    {
+      "why": "RFC 8628's poll is a form body naming the device code, every character but letters, digits and *-._ escaped, and nothing in its URL",
+      "service": "device.test",
+      "clientId": "c",
+      "code": {
+        "id": "a b/c~*!'é",
+        "userCode": "ABCD"
+      },
+      "request": "poll",
+      "expect": {
+        "method": "POST",
+        "url": "https://device.test/token",
+        "headers": {
+          "Accept": "application/json",
+          "User-Agent": "Yonto",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code=a+b%2Fc%7E*%21%27%C3%A9&client_id=yonto-device-test"
+      }
+    },
+    {
+      "why": "a credential header's value is its template with the credential in it, whatever characters the credential carries",
+      "service": "device.test",
+      "clientId": "c",
+      "account": "tok$&en-$1-cccc",
+      "request": "discover",
+      "expect": {
+        "method": "GET",
+        "url": "https://api.device.test/servers",
+        "headers": {
+          "Accept": "application/json",
+          "User-Agent": "Yonto",
+          "Authorization": "Bearer tok$&en-$1-cccc"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "a JSON body is an object of the filled-in strings, and the engine sets its Content-Type over any spelling of one the service names",
+      "service": "quick.test",
+      "clientId": "c",
+      "request": "begin",
+      "expect": {
+        "method": "POST",
+        "url": "https://quick.test/connect/initiate",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "body": "{\"client\":\"c\",\"app\":\"Yonto\"}"
+      }
+    },
+    {
+      "why": "what the start answered is escaped as JSON in a JSON body, and nothing else is",
+      "service": "quick.test",
+      "clientId": "c",
+      "code": {
+        "id": "a\"b\\c\né\u0001/",
+        "userCode": "ABCD"
+      },
+      "request": "poll",
+      "expect": {
+        "method": "POST",
+        "url": "https://quick.test/connect/state",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "body": "{\"secret\":\"a\\\"b\\\\c\\né\\u0001/\"}"
+      }
+    },
+    {
+      "why": "plex.tv asks a typed address who it is with a GET that says it reads JSON, and nothing of the service's own headers",
+      "service": "plex.tv",
+      "place": {
+        "scheme": "https",
+        "host": "192.168.1.5",
+        "port": 32400
+      },
+      "request": "identity",
+      "expect": {
+        "method": "GET",
+        "url": "https://192.168.1.5:32400/identity",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "an address written with colons is bracketed",
+      "service": "plex.tv",
+      "place": {
+        "scheme": "http",
+        "host": "fd00::5",
+        "port": 32400
+      },
+      "request": "identity",
+      "expect": {
+        "method": "GET",
+        "url": "http://[fd00::5]:32400/identity",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "another service asks with the method and headers it declares",
+      "service": "device.test",
+      "place": {
+        "scheme": "https",
+        "host": "203.0.113.7",
+        "port": 8920
+      },
+      "request": "identity",
+      "expect": {
+        "method": "GET",
+        "url": "https://203.0.113.7:8920/whoami",
+        "headers": {
+          "Accept": "application/json",
+          "X-Asked-By": "Yonto"
+        },
+        "body": null
+      }
+    },
+    {
+      "why": "and with the method it declares, no headers at all included",
+      "service": "quick.test",
+      "place": {
+        "scheme": "http",
+        "host": "192.168.1.9",
+        "port": 8096
+      },
+      "request": "identity",
+      "expect": {
+        "method": "POST",
+        "url": "http://192.168.1.9:8096/system/info",
+        "headers": {},
+        "body": null
+      }
+    }
+  ],
+  "begin": [
+    {
+      "why": "the start plex.tv answers is a code to show, a QR of the link carrying it, and a poll every three seconds",
+      "about": "recorded from plex.tv on 2026-09-25 with no account; the pin's id, its code and our client identifier replaced, the location blanked",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": 1000000001,
+          "userCode": "WXYZ",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=WXYZ",
+          "expiresInMs": 900000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "a start that is not a success is a failed start",
+      "service": "plex.tv",
+      "status": 500,
+      "bodyText": "oops",
+      "expect": {
+        "refused": "the start answered 500"
+      }
+    },
+    {
+      "why": "an answer that is not JSON names no id",
+      "service": "plex.tv",
+      "status": 201,
+      "bodyText": "<html>",
+      "expect": {
+        "refused": "the start answered no id"
+      }
+    },
+    {
+      "why": "an id of zero is no id",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 0,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered no id"
+      }
+    },
+    {
+      "why": "a string id is an id",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": "p-1",
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": "p-1",
+          "userCode": "WXYZ",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=WXYZ",
+          "expiresInMs": 900000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "a code of sixteen characters is one a viewer can type",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "ABCDEFGHIJKLMNOP",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": 1000000001,
+          "userCode": "ABCDEFGHIJKLMNOP",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=ABCDEFGHIJKLMNOP",
+          "expiresInMs": 900000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "a code of seventeen is not",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "ABCDEFGHIJKLMNOPQ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered no code a viewer can type"
+      }
+    },
+    {
+      "why": "single spaces and dashes are part of a code",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "AB-1 CD",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": 1000000001,
+          "userCode": "AB-1 CD",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=AB-1%20CD",
+          "expiresInMs": 900000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "two spaces together are not",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "AB  CD",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered no code a viewer can type"
+      }
+    },
+    {
+      "why": "a code outside ASCII is not",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "ÄBCD",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered no code a viewer can type"
+      }
+    },
+    {
+      "why": "an empty code is not",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 900,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered no code a viewer can type"
+      }
+    },
+    {
+      "why": "ten seconds is the shortest expiry",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 10,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": 1000000001,
+          "userCode": "WXYZ",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=WXYZ",
+          "expiresInMs": 10000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "nine is too short to type a code in",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 9,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered an expiry outside 10 seconds to an hour"
+      }
+    },
+    {
+      "why": "an hour is the longest",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 3600,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "code": {
+          "id": 1000000001,
+          "userCode": "WXYZ",
+          "visit": "https://plex.tv/link",
+          "qr": "https://www.plex.tv/link/?pin=WXYZ",
+          "expiresInMs": 3600000,
+          "intervalMs": 3000
+        }
+      }
+    },
+    {
+      "why": "past an hour is refused",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 3601,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered an expiry outside 10 seconds to an hour"
+      }
+    },
+    {
+      "why": "an expiry written as text is none",
+      "service": "plex.tv",
+      "status": 201,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": "900",
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "refused": "the start answered an expiry outside 10 seconds to an hour"
+      }
+    },
+    {
+      "why": "an interval the answer carries is used, clamped up to two seconds, and a QR it carries on the visit site is kept",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 1,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 600000,
+          "intervalMs": 2000
+        }
+      }
+    },
+    {
+      "why": "an interval past a minute is clamped to one",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 120,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 600000,
+          "intervalMs": 60000
+        }
+      }
+    },
+    {
+      "why": "an answer with no interval takes the service's own",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 600000,
+          "intervalMs": 5000
+        }
+      }
+    },
+    {
+      "why": "a QR off the visit site is replaced by the visit address",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 1,
+        "verification_uri_complete": "https://elsewhere.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate",
+          "expiresInMs": 600000,
+          "intervalMs": 2000
+        }
+      }
+    },
+    {
+      "why": "so is one over plain http, even on the visit site",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 1,
+        "verification_uri_complete": "http://device.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate",
+          "expiresInMs": 600000,
+          "intervalMs": 2000
+        }
+      }
+    },
+    {
+      "why": "and one of 2,048 characters or more",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 1,
+        "verification_uri_complete": "https://device.test/activate?c=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate",
+          "expiresInMs": 600000,
+          "intervalMs": 2000
+        }
+      }
+    },
+    {
+      "why": "a QR on a host below the visit site is on it",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "expires_in": 600,
+        "interval": 1,
+        "verification_uri_complete": "https://www.device.test/a"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://www.device.test/a",
+          "expiresInMs": 600000,
+          "intervalMs": 2000
+        }
+      }
+    },
+    {
+      "why": "an answer with no expiry takes the service's own",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "interval": 5,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 600000,
+          "intervalMs": 5000
+        }
+      }
+    },
+    {
+      "why": "so does one written as text",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "interval": 5,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH",
+        "expires_in": "900"
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 600000,
+          "intervalMs": 5000
+        }
+      }
+    },
+    {
+      "why": "an expiry the answer carries wins over the service's own",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "interval": 5,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH",
+        "expires_in": 900
+      },
+      "expect": {
+        "code": {
+          "id": "dc-123",
+          "userCode": "ABCD-EFGH",
+          "visit": "https://device.test/activate",
+          "qr": "https://device.test/activate?user_code=ABCD-EFGH",
+          "expiresInMs": 900000,
+          "intervalMs": 5000
+        }
+      }
+    },
+    {
+      "why": "and is held to the rules, never replaced by the service's own",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "device_code": "dc-123",
+        "user_code": "ABCD-EFGH",
+        "interval": 5,
+        "verification_uri_complete": "https://device.test/activate?user_code=ABCD-EFGH",
+        "expires_in": 5
+      },
+      "expect": {
+        "refused": "the start answered an expiry outside 10 seconds to an hour"
+      }
+    },
+    {
+      "why": "a service that reads no expiry from its answer uses its own",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "secret": "s-1",
+        "code": "QC12",
+        "expiresIn": 5
+      },
+      "expect": {
+        "code": {
+          "id": "s-1",
+          "userCode": "QC12",
+          "visit": "https://quick.test/link",
+          "qr": "https://quick.test/link?code=QC12",
+          "expiresInMs": 300000,
+          "intervalMs": 5000
+        }
+      }
+    },
+    {
+      "why": "an expiry too large to be a number is still the answer's, and refused, never replaced by the service's own",
+      "service": "device.test",
+      "status": 200,
+      "bodyText": "{\"device_code\":\"x\",\"user_code\":\"AB12\",\"expires_in\":1e400}",
+      "expect": {
+        "refused": "the start answered an expiry outside 10 seconds to an hour"
+      }
+    }
+  ],
+  "poll": [
+    {
+      "why": "a pin with no token yet is pending",
+      "about": "recorded from plex.tv on 2026-09-25 with no account; the pin's id, its code and our client identifier replaced, the location blanked",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": null,
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "pending"
+      }
+    },
+    {
+      "why": "a pin carrying a token is linked, and the token is what is kept",
+      "about": "NOT A RECORDING: written from Plex's documentation, since no account exists to link one",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "account-token-cccccccc",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "linked",
+        "credential": "account-token-cccccccc"
+      }
+    },
+    {
+      "why": "a pin that is gone has expired",
+      "service": "plex.tv",
+      "status": 404,
+      "bodyText": "",
+      "expect": {
+        "outcome": "expired"
+      }
+    },
+    {
+      "why": "any other status is a failed poll",
+      "service": "plex.tv",
+      "status": 503,
+      "bodyText": "",
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered 503"
+      }
+    },
+    {
+      "why": "a token shorter than eight characters is none a host keeps",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "short",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered a credential no host keeps"
+      }
+    },
+    {
+      "why": "seven characters is one short of the shortest",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "abcdefg",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered a credential no host keeps"
+      }
+    },
+    {
+      "why": "eight is the shortest",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "abcdefgh",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "linked",
+        "credential": "abcdefgh"
+      }
+    },
+    {
+      "why": "4,096 the longest",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "linked",
+        "credential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "why": "and 4,097 too long",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered a credential no host keeps"
+      }
+    },
+    {
+      "why": "a space is not printable ASCII a header can carry whole",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": "abcd efgh",
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered a credential no host keeps"
+      }
+    },
+    {
+      "why": "a token that is not a string is none",
+      "service": "plex.tv",
+      "status": 200,
+      "body": {
+        "id": 1000000001,
+        "code": "WXYZ",
+        "product": "Yonto",
+        "trusted": false,
+        "qr": "https://plex.tv/api/v2/pins/qr/WXYZ",
+        "clientIdentifier": "<host-client-id>",
+        "location": {
+          "code": "redacted",
+          "european_union_member": false,
+          "continent_code": "redacted",
+          "country": "redacted",
+          "city": "redacted",
+          "time_zone": "redacted",
+          "postal_code": "redacted",
+          "in_privacy_restricted_country": false,
+          "in_privacy_restricted_region": false,
+          "subdivisions": "redacted",
+          "coordinates": "redacted"
+        },
+        "expiresIn": 899,
+        "createdAt": "2026-09-24T20:15:20Z",
+        "expiresAt": "2026-09-24T20:30:20Z",
+        "authToken": 12345678,
+        "newRegistration": null
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered a credential no host keeps"
+      }
+    },
+    {
+      "why": "a success that is not JSON carries no token, so it is still pending",
+      "service": "plex.tv",
+      "status": 200,
+      "bodyText": "<html>",
+      "expect": {
+        "outcome": "pending"
+      }
+    },
+    {
+      "why": "a field can tell pending apart",
+      "service": "device.test",
+      "status": 400,
+      "body": {
+        "error": "authorization_pending"
+      },
+      "expect": {
+        "outcome": "pending"
+      }
+    },
+    {
+      "why": "and a viewer who said no",
+      "service": "device.test",
+      "status": 400,
+      "body": {
+        "error": "access_denied"
+      },
+      "expect": {
+        "outcome": "denied"
+      }
+    },
+    {
+      "why": "and an expired code",
+      "service": "device.test",
+      "status": 400,
+      "body": {
+        "error": "expired_token"
+      },
+      "expect": {
+        "outcome": "expired"
+      }
+    },
+    {
+      "why": "a field no outcome names is a failed poll",
+      "service": "device.test",
+      "status": 400,
+      "body": {
+        "error": "unsupported_grant_type"
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered 400"
+      }
+    },
+    {
+      "why": "the credential is read where the service says",
+      "service": "device.test",
+      "status": 200,
+      "body": {
+        "access_token": "device-token-1234"
+      },
+      "expect": {
+        "outcome": "linked",
+        "credential": "device-token-1234"
+      }
+    },
+    {
+      "why": "slow_down is pending, and asks for five seconds more",
+      "service": "device.test",
+      "status": 400,
+      "body": {
+        "error": "slow_down"
+      },
+      "expect": {
+        "outcome": "slower",
+        "byMs": 5000
+      }
+    },
+    {
+      "why": "a boolean tells pending apart",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": false
+      },
+      "expect": {
+        "outcome": "pending"
+      }
+    },
+    {
+      "why": "and linked",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": true,
+        "token": "quick-token-1234"
+      },
+      "expect": {
+        "outcome": "linked",
+        "credential": "quick-token-1234"
+      }
+    },
+    {
+      "why": "the text \"true\" is not true",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": "true",
+        "token": "quick-token-1234"
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered 200"
+      }
+    },
+    {
+      "why": "nor is 1",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": 1,
+        "token": "quick-token-1234"
+      },
+      "expect": {
+        "outcome": "failed",
+        "reason": "the poll answered 200"
+      }
+    },
+    {
+      "why": "a number tells denied apart",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": false,
+        "state": 2
+      },
+      "expect": {
+        "outcome": "denied"
+      }
+    },
+    {
+      "why": "2.0 is 2, as JSON reads it",
+      "service": "quick.test",
+      "status": 200,
+      "bodyText": "{\"authenticated\":false,\"state\":2.0}",
+      "expect": {
+        "outcome": "denied"
+      }
+    },
+    {
+      "why": "the text \"2\" is not 2",
+      "service": "quick.test",
+      "status": 200,
+      "body": {
+        "authenticated": false,
+        "state": "2"
+      },
+      "expect": {
+        "outcome": "pending"
+      }
+    }
+  ],
+  "widen": [
+    {
+      "why": "a slower answer adds its step to the wait",
+      "intervalMs": 5000,
+      "byMs": 5000,
+      "expect": 10000
+    },
+    {
+      "why": "and never past a minute",
+      "intervalMs": 58000,
+      "byMs": 5000,
+      "expect": 60000
+    }
+  ]
+}

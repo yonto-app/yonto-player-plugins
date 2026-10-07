@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://emby.example.com/emby/Genres?UserId=fixture-user-id&ParentId=5&IncludeItemTypes=Movie%2CSeries&Recursive=true",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-allow-private-network": "true",
+      "content-length": "594",
+      "content-type": "application/json; charset=utf-8",
+      "cross-origin-resource-policy": "cross-origin",
+      "date": "Wed, 23 Sep 2026 19:37:09 GMT",
+      "expires": "-1",
+      "private-network-access-id": "8d581b68dbcb42eaaffbca6937440bac",
+      "private-network-access-name": "170e069d5d91",
+      "server": "UPnP/1.0 DLNADOC/1.50"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siTmFtZSI6IkRyYW1hIiwiU2VydmVySWQiOiI4ZDU4MWI2OGRiY2I0MmVhYWZmYmNhNjkzNzQ0MGJhYyIsIklkIjoiMTUiLCJUeXBlIjoiR2VucmUiLCJVc2VyRGF0YSI6eyJQbGF5YmFja1Bvc2l0aW9uVGlja3MiOjAsIlBsYXlDb3VudCI6MCwiSXNGYXZvcml0ZSI6ZmFsc2UsIlBsYXllZCI6ZmFsc2V9LCJJbWFnZVRhZ3MiOnsiUHJpbWFyeSI6IjNmODE1MTUyNWVlZTIzZjcyMmIzYjA3ZmI2ZWZjM2VmXzYzOTI1Nzg4ODM1OTg5MzYzMiJ9LCJCYWNrZHJvcEltYWdlVGFncyI6W119LHsiTmFtZSI6IlNjaWVuY2UgRmljdGlvbiIsIlNlcnZlcklkIjoiOGQ1ODFiNjhkYmNiNDJlYWFmZmJjYTY5Mzc0NDBiYWMiLCJJZCI6IjE2IiwiVHlwZSI6IkdlbnJlIiwiVXNlckRhdGEiOnsiUGxheWJhY2tQb3NpdGlvblRpY2tzIjowLCJQbGF5Q291bnQiOjAsIklzRmF2b3JpdGUiOmZhbHNlLCJQbGF5ZWQiOmZhbHNlfSwiSW1hZ2VUYWdzIjp7IlByaW1hcnkiOiIzZjgxNTE1MjVlZWUyM2Y3MjJiM2IwN2ZiNmVmYzNlZl82MzkyNTc4ODgzNjA1Mzk2NjMifSwiQmFja2Ryb3BJbWFnZVRhZ3MiOltdfV0sIlRvdGFsUmVjb3JkQ291bnQiOjJ9",
+    "setCookie": []
+  }
+}
