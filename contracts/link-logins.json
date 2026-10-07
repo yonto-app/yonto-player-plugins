@@ -1,0 +1,56 @@
+{
+  "$comment": "The services whose link sign-in a host runs, by the name a manifest's linkLogin gives (`{ \"type\": \"linkLogin\", \"service\": \"plex.tv\" }`). Each is data both hosts' one sign-in engine reads, held to contracts/link-login.schema.json: the host alone makes these requests and holds what they win, and a plugin names a service and nothing else. Both hosts carry this file as it is: the CLI reads it here and the APK carries it as an asset. See docs/design/2026-09-24-a-code-the-viewer-links.md.",
+  "plex.tv": {
+    "$comment": "Plex's pin. Measured without an account on 2026-09-25 (tools/plugin-cli/conformance/link-login/): the start and a pending poll, and the resources list answering 401 to no token. The linked poll and the resources answer are written from Plex's documentation, since there is no account to record them with.",
+    "accountDomain": "plex.tv",
+    "visit": "https://plex.tv/link",
+    "headers": {
+      "Accept": "application/json",
+      "X-Plex-Product": "{product}",
+      "X-Plex-Client-Identifier": "{clientId}"
+    },
+    "begin": {
+      "method": "POST",
+      "url": "https://plex.tv/api/v2/pins",
+      "id": "id",
+      "code": "code",
+      "expiresIn": { "field": "expiresIn" },
+      "interval": { "seconds": 3 },
+      "qr": { "template": "https://www.plex.tv/link/?pin={code}" }
+    },
+    "poll": {
+      "method": "GET",
+      "url": "https://plex.tv/api/v2/pins/{id}",
+      "credential": "authToken",
+      "outcomes": [
+        { "status": [404], "is": "expired" },
+        { "status": [200], "present": "authToken", "is": "linked" },
+        { "status": [200], "is": "pending" }
+      ]
+    },
+    "accountHeader": { "name": "X-Plex-Token", "value": "{credential}" },
+    "discover": {
+      "method": "GET",
+      "url": "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1",
+      "servers": "",
+      "where": { "field": "provides", "includes": "server" },
+      "server": {
+        "name": "name",
+        "id": "clientIdentifier",
+        "owned": "owned",
+        "credential": "accessToken",
+        "connections": "connections"
+      },
+      "connection": {
+        "uri": "uri",
+        "address": "address",
+        "port": "port",
+        "protocol": "protocol",
+        "local": "local",
+        "relay": "relay"
+      }
+    },
+    "serverHeader": { "name": "X-Plex-Token", "value": "{credential}" },
+    "identity": { "method": "GET", "path": "/identity", "headers": { "Accept": "application/json" }, "id": "MediaContainer.machineIdentifier" }
+  }
+}

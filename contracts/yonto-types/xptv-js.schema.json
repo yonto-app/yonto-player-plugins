@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/yonto-types/xptv-js.schema.json",
+  "title": "xptv-js",
+  "description": "One XPTV catalog: a JavaScript program at `ext`, which the handler fetches and runs.",
+  "type": "object",
+  "properties": {
+    "ext": { "type": "string", "format": "uri", "x-yonto-field": "url" },
+    "className": {
+      "description": "The program's class name (`csp_wogg`), which names the implementation rather than the catalog. A numbered entry carries it as `api`, and the reader maps it here.",
+      "type": "string",
+      "x-yonto-field": "text"
+    }
+  },
+  "required": ["ext"],
+  "additionalProperties": true
+}

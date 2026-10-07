@@ -1,0 +1,204 @@
+{
+  "$comment": "What a call that throws ends in, on both hosts: the code the caller is handed and, where the plugin's own code stands, its message. Each case's `call` is handed to raised-plugin.js's `raise`. Both hosts run it over a transport that answers `redirectsToItself` with a 302 to itself, `answersTooLarge` with one byte more than limits.json's responseBodyBytes, and fails every other request, as a server that does not answer. test/raised.test.js walks it through the CLI's engine and PluginRaisedRecordTest through the device's runtime. A case with no `message` compares none, because the two hosts word METHOD_THREW and a failed transport differently. Add a case when a thrown value turns out to matter.",
+  "redirectsToItself": "https://loop.test/",
+  "answersTooLarge": "https://large.test/",
+  "cases": [
+    {
+      "why": "unreachable carries its code and the plugin's sentence",
+      "call": {
+        "raise": "unreachable",
+        "with": [
+          "一号站没有应答。"
+        ]
+      },
+      "code": "UNREACHABLE",
+      "message": "一号站没有应答。"
+    },
+    {
+      "why": "unreachable's reason is optional",
+      "call": {
+        "raise": "unreachable"
+      },
+      "code": "UNREACHABLE",
+      "message": ""
+    },
+    {
+      "why": "unreachable is the plugin's word: hand-built, it stands with no host function having failed in the call",
+      "call": {
+        "handBuilt": {
+          "code": "UNREACHABLE",
+          "message": "一号站没有应答。"
+        }
+      },
+      "code": "UNREACHABLE",
+      "message": "一号站没有应答。"
+    },
+    {
+      "why": "challenged carries its code and the URL that answered with a check",
+      "call": {
+        "raise": "challenged",
+        "with": [
+          "https://site.test/list"
+        ]
+      },
+      "code": "CHALLENGED",
+      "message": "https://site.test/list"
+    },
+    {
+      "why": "challenged is the plugin's word too: hand-built with the URL that answered with a check, it stands and carries the URL, and the host decides above it whether the viewer is offered a browser",
+      "call": {
+        "handBuilt": {
+          "code": "CHALLENGED",
+          "message": "https://site.test/list"
+        }
+      },
+      "code": "CHALLENGED",
+      "message": "https://site.test/list"
+    },
+    {
+      "why": "unreachable stands after the host refused a request in the same call, and is not taken for the host's verdict",
+      "call": {
+        "fetchFirst": "https://elsewhere.test/",
+        "raise": "unreachable",
+        "with": [
+          "一号站没有应答。"
+        ]
+      },
+      "code": "UNREACHABLE",
+      "message": "一号站没有应答。"
+    },
+    {
+      "why": "notFound is honoured",
+      "call": {
+        "raise": "notFound",
+        "with": [
+          "m1"
+        ]
+      },
+      "code": "NOT_FOUND",
+      "message": "not found: m1"
+    },
+    {
+      "why": "unauthenticated is honoured",
+      "call": {
+        "raise": "unauthenticated",
+        "with": [
+          "登录已过期。"
+        ]
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "登录已过期。"
+    },
+    {
+      "why": "unavailable is honoured",
+      "call": {
+        "raise": "unavailable",
+        "with": [
+          "站点正在维护。"
+        ]
+      },
+      "code": "UNAVAILABLE",
+      "message": "站点正在维护。"
+    },
+    {
+      "why": "misconfigured is honoured",
+      "call": {
+        "raise": "misconfigured",
+        "with": [
+          "请填写用户名。"
+        ]
+      },
+      "code": "MISCONFIGURED",
+      "message": "请填写用户名。"
+    },
+    {
+      "why": "a code no host knows is the plugin's own failure",
+      "call": {
+        "handBuilt": {
+          "code": "GONE",
+          "message": "一号站没有应答。"
+        }
+      },
+      "code": "METHOD_THREW"
+    },
+    {
+      "why": "a server that did not answer is REQUEST_FAILED, the host's code, let through the call",
+      "call": {
+        "fetch": "https://silent.test/"
+      },
+      "code": "REQUEST_FAILED"
+    },
+    {
+      "why": "a request the plugin built wrong is REQUEST_INVALID, the host's code, let through the call",
+      "call": {
+        "fetch": ""
+      },
+      "code": "REQUEST_INVALID",
+      "message": "the URL was empty"
+    },
+    {
+      "why": "a redirect chain the host gave up on is REDIRECT_REFUSED, the host's code, let through the call",
+      "call": {
+        "fetch": "https://loop.test/"
+      },
+      "code": "REDIRECT_REFUSED",
+      "message": "more than 20 redirects, ending at https://loop.test/"
+    },
+    {
+      "why": "a plugin cannot claim REQUEST_INVALID, a host code, when no host function gave it",
+      "call": {
+        "handBuilt": {
+          "code": "REQUEST_INVALID",
+          "message": "forged"
+        }
+      },
+      "code": "METHOD_THREW"
+    },
+    {
+      "why": "a plugin cannot claim REDIRECT_REFUSED, a host code, when no host function gave it",
+      "call": {
+        "handBuilt": {
+          "code": "REDIRECT_REFUSED",
+          "message": "forged"
+        }
+      },
+      "code": "METHOD_THREW"
+    },
+    {
+      "why": "a value the store will not keep is STORE_REFUSED, the host's code, let through the call; never REQUEST_FAILED",
+      "call": {
+        "storeKeyOf": 1025
+      },
+      "code": "STORE_REFUSED",
+      "message": "yonto.store.set refused: the key is 1025 characters, over the 1024 a store keeps"
+    },
+    {
+      "why": "a plugin cannot claim STORE_REFUSED, a host code, when no host function gave it",
+      "call": {
+        "handBuilt": {
+          "code": "STORE_REFUSED",
+          "message": "forged"
+        }
+      },
+      "code": "METHOD_THREW"
+    },
+    {
+      "why": "a body over the limit is RESPONSE_TOO_LARGE, the host's code, let through the call; never REQUEST_FAILED, since the server answered",
+      "call": {
+        "fetch": "https://large.test/"
+      },
+      "code": "RESPONSE_TOO_LARGE",
+      "message": "the response from https://large.test/ was larger than the 16 MB a plugin may read"
+    },
+    {
+      "why": "a plugin cannot claim RESPONSE_TOO_LARGE, a host code, when no host function gave it",
+      "call": {
+        "handBuilt": {
+          "code": "RESPONSE_TOO_LARGE",
+          "message": "forged"
+        }
+      },
+      "code": "METHOD_THREW"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/leaving",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "https://not-conformance.test/collect"
+    },
+    "bodyBase64": ""
+  }
+}

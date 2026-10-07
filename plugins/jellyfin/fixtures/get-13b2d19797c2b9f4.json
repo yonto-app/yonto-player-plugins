@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?searchTerm=bubble&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear&Limit=500",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJlZGIzOTM0MWM1MDM5NTUxYTUxNTdlNTFmZTRhMzM2NCIsIk5hbWUiOiJUaGUgQm95IGluIHRoZSBQbGFzdGljIEJ1YmJsZSIsIlR5cGUiOiJNb3ZpZSIsIkNvbnRhaW5lciI6Im1vdixtcDQiLCJPZmZpY2lhbFJhdGluZyI6IlBHIiwiT3ZlcnZpZXciOiJUb2QgTHViaXRjaCBpcyBib3JuIHdpdGggYSBkZWZpY2llbnQgaW1tdW5lIHN5c3RlbS4iLCJHZW5yZXMiOlsiVFYgTW92aWUiLCJEcmFtYSJdLCJDb21tdW5pdHlSYXRpbmciOjUuNywiUHJvZHVjdGlvblllYXIiOjE5NzYsIklzRm9sZGVyIjpmYWxzZSwiSW1hZ2VUYWdzIjp7IlByaW1hcnkiOiJhMTMxZmRiZGNhOWRkYWRjZGE3ZDNjODY3NTZjNmI2NyJ9LCJCYWNrZHJvcEltYWdlVGFncyI6WyI0MDhiZTJkZmMzNGYxY2U2MTEwOGNmMDQ5YTVhYTgyZSJdLCJVc2VyRGF0YSI6eyJQbGF5Q291bnQiOjEyLCJQbGF5ZWQiOnRydWV9fV0sIlRvdGFsUmVjb3JkQ291bnQiOjEsIlN0YXJ0SW5kZXgiOjB9"
+  }
+}

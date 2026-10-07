@@ -1,0 +1,16 @@
+{
+  "about": "hand-written for this suite",
+  "request": {
+    "method": "GET",
+    "url": "https://203-0-113-7.aaaa.plex.direct:32400/moved",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "https://203-0-113-7.aaaa.plex.direct:32400/next?X-Plex-Token=shared-token-aaaaaaaa"
+    },
+    "setCookie": [],
+    "bodyBase64": ""
+  }
+}

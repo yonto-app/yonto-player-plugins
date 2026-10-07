@@ -1,0 +1,4 @@
+{
+  "$comment": "The login pages a host can drive, by capability type. A capability naming any other page is accepted and ignored: driving a gate means knowing how it tells logged in from still on the form, which no manifest carries. lint warns about one; DrivenLoginsRecordTest holds the Android app's DdysLogin to this list. A linkLogin names a service in contracts/link-logins.json instead, which carries everything a host needs to run its sign-in. A browserCheck is not a login and is not listed: a host opens one at whatever site its manifest names, and the plugin, not a marker, judges when it has passed.",
+  "cookieLogin": ["https://ddys.app"]
+}

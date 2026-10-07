@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Sourdough Diaries</title>
+    <link>https://sourdough.example.com/</link>
+    <description>Bread, on camera.</description>
+    <item>
+      <title>My first sourdough loaf</title>
+      <link>https://sourdough.example.com/first-loaf/</link>
+      <guid isPermaLink="false">post-3</guid>
+      <pubDate>Sat, 07 Jun 2025 08:00:00 +0000</pubDate>
+      <description><![CDATA[Starter, flour, water & a lot of patience.]]></description>
+      <enclosure url="https://sourdough.example.com/video/first-loaf.mp4" length="48211032" type="video/mp4"/>
+      <media:thumbnail url="https://sourdough.example.com/img/first-loaf.jpg"/>
+    </item>
+    <item>
+      <title>Feeding the starter</title>
+      <link>https://sourdough.example.com/feeding/</link>
+      <guid isPermaLink="false">post-2</guid>
+      <pubDate>Sat, 24 May 2025 08:00:00 +0000</pubDate>
+      <description>How often, how much, and what the bubbles mean.</description>
+      <enclosure url="https://sourdough.example.com/video/feeding.mp4" length="30118222" type="video/mp4"/>
+      <media:thumbnail url="https://sourdough.example.com/img/feeding.jpg"/>
+    </item>
+    <item>
+      <title>Why I stopped using a Dutch oven (text only)</title>
+      <link>https://sourdough.example.com/dutch-oven/</link>
+      <guid isPermaLink="false">post-1</guid>
+      <pubDate>Sat, 10 May 2025 08:00:00 +0000</pubDate>
+      <description>No video this week, so this post is not a title.</description>
+    </item>
+  </channel>
+</rss>

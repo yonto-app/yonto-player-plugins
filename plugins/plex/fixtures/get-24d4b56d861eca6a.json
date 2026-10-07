@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/library/sections/2/all?X-Plex-Container-Start=0&X-Plex-Container-Size=60",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "cache-control": "no-cache",
+      "connection": "Keep-Alive",
+      "content-encoding": "gzip",
+      "content-length": "439",
+      "content-type": "application/json",
+      "date": "Wed, 23 Sep 2026 19:35:18 GMT",
+      "keep-alive": "timeout=20",
+      "x-plex-container-start": "0",
+      "x-plex-container-total-size": "1",
+      "x-plex-content-compressed-length": "439",
+      "x-plex-content-original-length": "696",
+      "x-plex-protocol": "1.0"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjoxLCJ0b3RhbFNpemUiOjEsIm9mZnNldCI6MCwiYWxsb3dTeW5jIjp0cnVlLCJhcnQiOiIvOi9yZXNvdXJjZXMvc2hvdy1mYW5hcnQuanBnIiwiaWRlbnRpZmllciI6ImNvbS5wbGV4YXBwLnBsdWdpbnMubGlicmFyeSIsImxpYnJhcnlTZWN0aW9uSUQiOjIsImxpYnJhcnlTZWN0aW9uVGl0bGUiOiJUViBTaG93cyIsImxpYnJhcnlTZWN0aW9uVVVJRCI6IjRiYTQ1MDQyLTA3MTQtNGEyMC1hZDYwLWEzZjQ4ODYwN2U5ZiIsIm1lZGlhVGFnUHJlZml4IjoiL3N5c3RlbS9idW5kbGUvbWVkaWEvZmxhZ3MvIiwibWVkaWFUYWdWZXJzaW9uIjoxNzg2OTE0NTEzLCJub2NhY2hlIjp0cnVlLCJ0aHVtYiI6Ii86L3Jlc291cmNlcy9zaG93LnBuZyIsInRpdGxlMSI6IlRWIFNob3dzIiwidGl0bGUyIjoiQWxsIFNob3dzIiwidmlld0dyb3VwIjoic2hvdyIsInZpZXdNb2RlIjo2NTU5MiwiTWV0YWRhdGEiOlt7InJhdGluZ0tleSI6IjMiLCJrZXkiOiIvbGlicmFyeS9tZXRhZGF0YS8zL2NoaWxkcmVuIiwiZ3VpZCI6ImxvY2FsOi8vMyIsInR5cGUiOiJzaG93IiwidGl0bGUiOiJCbGVuZGVyIFNob3J0cyIsInN1bW1hcnkiOiIiLCJpbmRleCI6MSwieWVhciI6MjAxMCwibGVhZkNvdW50IjoyLCJ2aWV3ZWRMZWFmQ291bnQiOjAsImNoaWxkQ291bnQiOjEsImFkZGVkQXQiOjE3OTAxOTE4ODJ9XX19",
+    "setCookie": []
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "entryOnTypedHost": "pong",
+  "entryOnAnotherHost": "HOST_NOT_ALLOWED: 192.168.1.61 is a private address, and nothing the viewer typed names it",
+  "redirectOffTypedHost": "HOST_NOT_ALLOWED: 192.168.1.61 is a private address, and nothing the viewer typed names it",
+  "viewerTyped": "pong",
+  "publicEntry": "pong",
+  "nobodyNamedIt": "HOST_NOT_ALLOWED: elsewhere.test is not in this plugin's allowedHosts [192.168.1.50, 192.168.1.60, 192.168.1.61, cms.test]",
+  "errorDuckTyped": "NOT_FOUND: hand-built, not yonto.error.notFound()"
+}

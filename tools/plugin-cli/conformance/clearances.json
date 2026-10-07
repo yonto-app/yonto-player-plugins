@@ -1,0 +1,160 @@
+{
+  "$comment": "What yonto.fetch does with a clearance the host holds, on both hosts: docs/design/2026-09-23-a-challenge-the-viewer-clears.md, *Where it is sent*. Each case runs one yonto.fetch of `url` with the plugin's `headers`, for a plugin whose manifest is `manifest`, on a host holding `clearance` (and `credential`, where a case gives one). `answers` is what each URL answers, and any URL not listed answers 200 with nothing. `sent` is each hop in order: its URL and the Cookie and User-Agent it carried, null where there was none, and a hop may carry at most one of each. `setCookie` is what the plugin was handed. test/clearance.test.js walks it through the CLI's yonto.fetch and PluginClearancesRecordTest through the device's.",
+  "cases": [
+    {
+      "why": "on its site the clearance's cookies join the plugin's in one Cookie header, over a cookie of the same name, whatever spelling the plugin used",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/list",
+      "headers": { "cookie": "mine=1; cf_clearance=forged", "COOKIE": "theirs=2", "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "https://site.test/list", "cookie": "mine=1; theirs=2; cf_clearance=held", "userAgent": "WebView/152" }],
+      "setCookie": []
+    },
+    {
+      "why": "a plugin that sends no cookie and no agent is sent the clearance's",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "__jsluid_s", "value": "v" }, { "name": "__jsl_clearance_s", "value": "c" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/",
+      "headers": {},
+      "sent": [{ "url": "https://site.test/", "cookie": "__jsluid_s=v; __jsl_clearance_s=c", "userAgent": "WebView/152" }],
+      "setCookie": []
+    },
+    {
+      "why": "another host gets nothing",
+      "manifest": { "allowedHosts": ["site.test", "other.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://other.test/",
+      "headers": { "Cookie": "mine=1", "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "https://other.test/", "cookie": "mine=1", "userAgent": "Plugin/1" }],
+      "setCookie": []
+    },
+    {
+      "why": "a subdomain of the site gets nothing",
+      "manifest": { "allowedHosts": ["site.test", "*.site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://www.site.test/",
+      "headers": { "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "https://www.site.test/", "cookie": null, "userAgent": "Plugin/1" }],
+      "setCookie": []
+    },
+    {
+      "why": "the same host over http gets nothing",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "http://site.test/",
+      "headers": { "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "http://site.test/", "cookie": null, "userAgent": "Plugin/1" }],
+      "setCookie": []
+    },
+    {
+      "why": "under a fromConfig check, which covers any site, an https clearance still never goes to the same host over http",
+      "manifest": { "allowedHosts": [], "hostsFromConfig": true, "capabilities": [{ "type": "browserCheck", "fromConfig": true }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "http://site.test/",
+      "headers": {},
+      "sent": [{ "url": "http://site.test/", "cookie": null, "userAgent": null }],
+      "setCookie": []
+    },
+    {
+      "why": "any port on the site's host is the site, as a browser scopes a cookie, a redirect onto another port included",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test:8443/go",
+      "headers": { "User-Agent": "Plugin/1" },
+      "answers": { "https://site.test:8443/go": { "status": 302, "location": "https://site.test:9443/landed" } },
+      "sent": [
+        { "url": "https://site.test:8443/go", "cookie": "cf_clearance=held", "userAgent": "WebView/152" },
+        { "url": "https://site.test:9443/landed", "cookie": "cf_clearance=held", "userAgent": "WebView/152" }
+      ],
+      "setCookie": []
+    },
+    {
+      "why": "a clearance for an IPv6 site, stored bracketed as the site prints, is sent there",
+      "manifest": { "allowedHosts": [], "hostsFromConfig": true, "capabilities": [{ "type": "browserCheck", "fromConfig": true }] },
+      "clearance": { "site": "https://[2606:4700::1]", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://[2606:4700::1]/list",
+      "headers": { "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "https://[2606:4700::1]/list", "cookie": "cf_clearance=held", "userAgent": "WebView/152" }],
+      "setCookie": []
+    },
+    {
+      "why": "a redirect off the site sends the next hop nothing of the clearance",
+      "manifest": { "allowedHosts": ["site.test", "other.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/go",
+      "headers": { "User-Agent": "Plugin/1" },
+      "answers": { "https://site.test/go": { "status": 302, "location": "https://other.test/landed" } },
+      "sent": [
+        { "url": "https://site.test/go", "cookie": "cf_clearance=held", "userAgent": "WebView/152" },
+        { "url": "https://other.test/landed", "cookie": null, "userAgent": "Plugin/1" }
+      ],
+      "setCookie": []
+    },
+    {
+      "why": "a redirect onto the site attaches it on that hop",
+      "manifest": { "allowedHosts": ["site.test", "other.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://other.test/go",
+      "headers": { "User-Agent": "Plugin/1" },
+      "answers": { "https://other.test/go": { "status": 302, "location": "https://site.test/landed" } },
+      "sent": [
+        { "url": "https://other.test/go", "cookie": null, "userAgent": "Plugin/1" },
+        { "url": "https://site.test/landed", "cookie": "cf_clearance=held", "userAgent": "WebView/152" }
+      ],
+      "setCookie": []
+    },
+    {
+      "why": "on its site a Set-Cookie naming a clearance cookie is withheld, and the plugin's own cookie there still reaches it",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/",
+      "headers": {},
+      "answers": { "https://site.test/": { "status": 200, "setCookie": ["cf_clearance=reissued; Path=/; Secure", "PHPSESSID=abc; Path=/"] } },
+      "sent": [{ "url": "https://site.test/", "cookie": "cf_clearance=held", "userAgent": "WebView/152" }],
+      "setCookie": ["PHPSESSID=abc; Path=/"]
+    },
+    {
+      "why": "the same name set by another site reaches the plugin",
+      "manifest": { "allowedHosts": ["site.test", "other.test"], "capabilities": [{ "type": "browserCheck", "url": "https://site.test/" }] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://other.test/",
+      "headers": {},
+      "answers": { "https://other.test/": { "status": 200, "setCookie": ["cf_clearance=theirs; Path=/"] } },
+      "sent": [{ "url": "https://other.test/", "cookie": null, "userAgent": null }],
+      "setCookie": ["cf_clearance=theirs; Path=/"]
+    },
+    {
+      "why": "a fromConfig check clears any public https site, so the clearance for one is sent there",
+      "manifest": { "allowedHosts": [], "hostsFromConfig": true, "capabilities": [{ "type": "browserCheck", "fromConfig": true }] },
+      "clearance": { "site": "https://catalog.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://catalog.test/",
+      "headers": { "User-Agent": "Plugin/1" },
+      "sent": [{ "url": "https://catalog.test/", "cookie": "cf_clearance=held", "userAgent": "WebView/152" }],
+      "setCookie": []
+    },
+    {
+      "why": "a clearance whose check the manifest no longer declares is neither sent nor withheld",
+      "manifest": { "allowedHosts": ["site.test"], "capabilities": [] },
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/",
+      "headers": { "User-Agent": "Plugin/1" },
+      "answers": { "https://site.test/": { "status": 200, "setCookie": ["cf_clearance=reissued; Path=/"] } },
+      "sent": [{ "url": "https://site.test/", "cookie": null, "userAgent": "Plugin/1" }],
+      "setCookie": ["cf_clearance=reissued; Path=/"]
+    },
+    {
+      "why": "on the cookieLogin site the session is sent and the clearance is not, since no check clears there",
+      "manifest": {
+        "allowedHosts": [], "hostsFromConfig": true,
+        "capabilities": [{ "type": "browserCheck", "fromConfig": true }, { "type": "cookieLogin", "url": "https://site.test/login" }]
+      },
+      "credential": "sid=session",
+      "clearance": { "site": "https://site.test", "cookies": [{ "name": "cf_clearance", "value": "held" }], "userAgent": "WebView/152" },
+      "url": "https://site.test/",
+      "headers": { "User-Agent": "Plugin/1" },
+      "answers": { "https://site.test/": { "status": 200, "setCookie": ["PHPSESSID=abc; Path=/"] } },
+      "sent": [{ "url": "https://site.test/", "cookie": "sid=session", "userAgent": "Plugin/1" }],
+      "setCookie": []
+    }
+  ]
+}

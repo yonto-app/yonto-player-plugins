@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/mixed-case",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "text/html; charset=gbk",
+      "X-Served-By": "edge-1",
+      "Set-Cookie": "c=1"
+    },
+    "setCookie": [
+      "c=1"
+    ],
+    "bodyBase64": "bWl4ZWQ="
+  }
+}

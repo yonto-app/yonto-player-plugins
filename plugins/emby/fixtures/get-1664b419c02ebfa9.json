@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items/11?Fields=Genres%2COverview%2CProductionYear%2COfficialRating",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-allow-private-network": "true",
+      "content-encoding": "deflate",
+      "content-length": "709",
+      "content-type": "application/json; charset=utf-8",
+      "cross-origin-resource-policy": "cross-origin",
+      "date": "Wed, 23 Sep 2026 19:37:08 GMT",
+      "expires": "-1",
+      "private-network-access-id": "8d581b68dbcb42eaaffbca6937440bac",
+      "private-network-access-name": "170e069d5d91",
+      "server": "UPnP/1.0 DLNADOC/1.50",
+      "vary": "Accept-Encoding"
+    },
+    "bodyBase64": "eyJOYW1lIjoiUGlvbmVlciBDbGlwcyIsIlNlcnZlcklkIjoiOGQ1ODFiNjhkYmNiNDJlYWFmZmJjYTY5Mzc0NDBiYWMiLCJJZCI6IjExIiwiRXRhZyI6IjkyMmZjMWIyMDYxMTY4NmY3MmMyNDUzY2Y5ZTBkYmFkIiwiRGF0ZUNyZWF0ZWQiOiIyMDI2LTA5LTIzVDE5OjMxOjE5LjAxNTc3NDRaIiwiRGF0ZU1vZGlmaWVkIjoiMjAyNi0wOS0yM1QxOTozMToxOS4wMTU3NzQ0WiIsIkNhbkRlbGV0ZSI6dHJ1ZSwiQ2FuRG93bmxvYWQiOmZhbHNlLCJQcmVzZW50YXRpb25VbmlxdWVLZXkiOiJiNTVkOTY3ZTgyNWEyYTM4MDM0OTUyZWUyZmVjMzNmZCIsIlN1cHBvcnRzU3luYyI6dHJ1ZSwiU29ydE5hbWUiOiJQaW9uZWVyIENsaXBzIiwiRm9yY2VkU29ydE5hbWUiOiJQaW9uZWVyIENsaXBzIiwiRXh0ZXJuYWxVcmxzIjpbXSwiUGF0aCI6Ii9tbnQvbWVkaWEvU2hvd3MvUGlvbmVlciBDbGlwcyIsIk92ZXJ2aWV3IjoiVHdvIHNob3J0IGNsaXBzIGFzIG9uZSBzZXJpZXMuIiwiVGFnbGluZXMiOltdLCJHZW5yZXMiOlsiRHJhbWEiLCJTY2llbmNlIEZpY3Rpb24iXSwiQ29tbXVuaXR5UmF0aW5nIjo4LjEsIkZpbGVOYW1lIjoiUGlvbmVlciBDbGlwcyIsIlByb2R1Y3Rpb25ZZWFyIjoyMDEwLCJSZW1vdGVUcmFpbGVycyI6W10sIlByb3ZpZGVySWRzIjp7fSwiSXNGb2xkZXIiOnRydWUsIlBhcmVudElkIjoiNiIsIlR5cGUiOiJTZXJpZXMiLCJQZW9wbGUiOltdLCJTdHVkaW9zIjpbXSwiR2VucmVJdGVtcyI6W3siTmFtZSI6IkRyYW1hIiwiSWQiOjE1fSx7Ik5hbWUiOiJTY2llbmNlIEZpY3Rpb24iLCJJZCI6MTZ9XSwiVGFnSXRlbXMiOltdLCJMb2NhbFRyYWlsZXJDb3VudCI6MCwiVXNlckRhdGEiOnsiVW5wbGF5ZWRJdGVtQ291bnQiOjIsIlBsYXliYWNrUG9zaXRpb25UaWNrcyI6MCwiUGxheUNvdW50IjowLCJJc0Zhdm9yaXRlIjpmYWxzZSwiUGxheWVkIjpmYWxzZX0sIkNoaWxkQ291bnQiOjEsIkRpc3BsYXlQcmVmZXJlbmNlc0lkIjoiZjYzMDMzZmY2ODg2ZWNjNzA4M2E2OTZjYmVjZWQxYjAiLCJBaXJEYXlzIjpbXSwiUHJpbWFyeUltYWdlQXNwZWN0UmF0aW8iOjAuNjY2NjY2NjY2NjY2NjY2NiwiRGlzcGxheU9yZGVyIjoiQWlyZWQiLCJJbWFnZVRhZ3MiOnsiUHJpbWFyeSI6IjViMDRiMDBlMGFkNTRlYTVmZGJmZDY1MTU5Yjk3YTM2XzYzOTI1Nzg4NzcwNzAwODkwMSJ9LCJCYWNrZHJvcEltYWdlVGFncyI6WyIyZDAxMzczMzYzNTk3Njk5ZjlmMzk3OTZkZTNmNDIzNF82MzkyNTc4ODc3MDcxNTU1NDAiXSwiTG9ja2VkRmllbGRzIjpbXSwiTG9ja0RhdGEiOnRydWV9",
+    "setCookie": []
+  }
+}

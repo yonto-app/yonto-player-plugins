@@ -1,0 +1,140 @@
+{
+  "$comment": "What a held credential becomes, on both hosts: in anything the plugin is handed it is `yonto-held-credential`, and in plugin text crossing into the host (a log line, a thrown message, a reason, a partial sentence) it is `‹credential›`. Each held value is found as the service writes it, JSON-escaped (with and without `\\/`), percent-encoded and form-encoded as a sign-in's form body is (either case of hex), longest first; a value under eight characters is never looked for, which is shorter than any credential a host keeps. test/link-login.test.js walks it through src/host/mask.js and CredentialMaskRecordTest through CredentialMask.kt.",
+  "cases": [
+    {
+      "why": "verbatim",
+      "held": [
+        "tok-12345678"
+      ],
+      "text": "x tok-12345678 y",
+      "masked": "x yonto-held-credential y",
+      "redacted": "x ‹credential› y"
+    },
+    {
+      "why": "every occurrence",
+      "held": [
+        "tok-12345678"
+      ],
+      "text": "tok-12345678tok-12345678",
+      "masked": "yonto-held-credentialyonto-held-credential",
+      "redacted": "‹credential›‹credential›"
+    },
+    {
+      "why": "JSON-escaped",
+      "held": [
+        "ab\"cd\\efgh"
+      ],
+      "text": "{\"t\":\"ab\\\"cd\\\\efgh\"}",
+      "masked": "{\"t\":\"yonto-held-credential\"}",
+      "redacted": "{\"t\":\"‹credential›\"}"
+    },
+    {
+      "why": "JSON-escaped with its slashes escaped too",
+      "held": [
+        "abc/defgh"
+      ],
+      "text": "\"abc\\/defgh\"",
+      "masked": "\"yonto-held-credential\"",
+      "redacted": "\"‹credential›\""
+    },
+    {
+      "why": "percent-encoded",
+      "held": [
+        "abc/def+gh="
+      ],
+      "text": "?t=abc%2Fdef%2Bgh%3D&x=1",
+      "masked": "?t=yonto-held-credential&x=1",
+      "redacted": "?t=‹credential›&x=1"
+    },
+    {
+      "why": "percent-encoded in lower-case hex",
+      "held": [
+        "abc/def+gh="
+      ],
+      "text": "?t=abc%2fdef%2bgh%3d",
+      "masked": "?t=yonto-held-credential",
+      "redacted": "?t=‹credential›"
+    },
+    {
+      "why": "the unreserved characters are not encoded",
+      "held": [
+        "a-b.c_d~e!f"
+      ],
+      "text": "a-b.c_d~e%21f",
+      "masked": "yonto-held-credential",
+      "redacted": "‹credential›"
+    },
+    {
+      "why": "each of several held values",
+      "held": [
+        "first-token-1",
+        "second-token-2"
+      ],
+      "text": "first-token-1,second-token-2",
+      "masked": "yonto-held-credential,yonto-held-credential",
+      "redacted": "‹credential›,‹credential›"
+    },
+    {
+      "why": "the longer of two overlapping values first, so no tail of it is left",
+      "held": [
+        "abcdefgh",
+        "abcdefgh-ijkl"
+      ],
+      "text": "abcdefgh-ijkl",
+      "masked": "yonto-held-credential",
+      "redacted": "‹credential›"
+    },
+    {
+      "why": "a value under eight characters is not looked for",
+      "held": [
+        "short12"
+      ],
+      "text": "short12",
+      "masked": "short12",
+      "redacted": "short12"
+    },
+    {
+      "why": "eight is",
+      "held": [
+        "short123"
+      ],
+      "text": "short123",
+      "masked": "yonto-held-credential",
+      "redacted": "‹credential›"
+    },
+    {
+      "why": "case matters in the value itself",
+      "held": [
+        "Token-ABCDEF"
+      ],
+      "text": "token-abcdef",
+      "masked": "token-abcdef",
+      "redacted": "token-abcdef"
+    },
+    {
+      "why": "nothing held changes nothing",
+      "held": [],
+      "text": "tok-12345678",
+      "masked": "tok-12345678",
+      "redacted": "tok-12345678"
+    },
+    {
+      "why": "form-encoded, as a sign-in's form body writes it: * kept, ~ escaped, in either case of hex",
+      "held": [
+        "a*b~c/d=12"
+      ],
+      "text": "f=a*b%7Ec%2Fd%3D12&g=a*b%7ec%2fd%3d12",
+      "masked": "f=yonto-held-credential&g=yonto-held-credential",
+      "redacted": "f=‹credential›&g=‹credential›"
+    },
+    {
+      "why": "and a space as +",
+      "held": [
+        "dc/secret 1234"
+      ],
+      "text": "device_code=dc%2Fsecret+1234&client_id=c",
+      "masked": "device_code=yonto-held-credential&client_id=c",
+      "redacted": "device_code=‹credential›&client_id=c"
+    }
+  ]
+}

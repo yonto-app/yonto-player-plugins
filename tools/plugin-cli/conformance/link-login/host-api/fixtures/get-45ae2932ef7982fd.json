@@ -1,0 +1,17 @@
+{
+  "about": "hand-written for this suite",
+  "request": {
+    "method": "GET",
+    "url": "https://203-0-113-7.aaaa.plex.direct:32400/echo",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "x-echo": "shared-token-aaaaaaaa"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJ0b2tlbiI6InNoYXJlZC10b2tlbi1hYWFhYWFhYSIsImFjY291bnQiOiJhY2NvdW50LXRva2VuLWNjY2NjY2NjIiwicGF0aCI6Ii9hL2FjY291bnQtdG9rZW4tY2NjY2NjY2MvYiJ9"
+  }
+}

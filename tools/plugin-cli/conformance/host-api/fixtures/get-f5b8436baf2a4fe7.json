@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://conformance.test/cookies",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/plain",
+      "Set-Cookie": "a=1; Path=/; Expires=Wed, 09 Jun 2027 10:18:14 GMT, b=2; HttpOnly"
+    },
+    "setCookie": [
+      "a=1; Path=/; Expires=Wed, 09 Jun 2027 10:18:14 GMT",
+      "b=2; HttpOnly"
+    ],
+    "bodyBase64": "Y29va2llcw=="
+  }
+}

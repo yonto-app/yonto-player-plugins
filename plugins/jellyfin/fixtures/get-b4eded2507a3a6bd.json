@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Views",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJsaWItbW92aWVzIiwiTmFtZSI6Ik1vdmllcyIsIlR5cGUiOiJDb2xsZWN0aW9uRm9sZGVyIiwiQ29sbGVjdGlvblR5cGUiOiJtb3ZpZXMiLCJJbWFnZVRhZ3MiOnsiUHJpbWFyeSI6Im1vdmllc1ByaW1hcnlUYWcifX0seyJJZCI6ImxpYi1zaG93cyIsIk5hbWUiOiJTaG93cyIsIlR5cGUiOiJDb2xsZWN0aW9uRm9sZGVyIiwiQ29sbGVjdGlvblR5cGUiOiJ0dnNob3dzIn0seyJJZCI6ImxpYi1tdXNpYyIsIk5hbWUiOiJNdXNpYyIsIlR5cGUiOiJDb2xsZWN0aW9uRm9sZGVyIiwiQ29sbGVjdGlvblR5cGUiOiJtdXNpYyJ9XSwiVG90YWxSZWNvcmRDb3VudCI6MywiU3RhcnRJbmRleCI6MH0="
+  }
+}

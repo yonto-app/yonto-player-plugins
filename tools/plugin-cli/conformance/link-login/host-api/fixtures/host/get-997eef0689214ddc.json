@@ -1,0 +1,15 @@
+{
+  "about": "hand-written for this suite",
+  "request": {
+    "method": "GET",
+    "url": "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "W3sibmFtZSI6IkZyaWVuZCdzIHNlcnZlciIsImNsaWVudElkZW50aWZpZXIiOiJzZXJ2ZXItZnJpZW5kIiwicHJvdmlkZXMiOiJzZXJ2ZXIiLCJvd25lZCI6ZmFsc2UsImFjY2Vzc1Rva2VuIjoic2hhcmVkLXRva2VuLWFhYWFhYWFhIiwiY29ubmVjdGlvbnMiOlt7InByb3RvY29sIjoiaHR0cHMiLCJhZGRyZXNzIjoiMjAzLjAuMTEzLjciLCJwb3J0IjozMjQwMCwidXJpIjoiaHR0cHM6Ly8yMDMtMC0xMTMtNy5hYWFhLnBsZXguZGlyZWN0OjMyNDAwIiwibG9jYWwiOmZhbHNlLCJyZWxheSI6ZmFsc2V9XX0seyJuYW1lIjoiTWluZSwgdG9rZW4gb3duZWQtdG9rZW4tYmJiYmJiYmIiLCJjbGllbnRJZGVudGlmaWVyIjoic2VydmVyLW1pbmUiLCJwcm92aWRlcyI6InNlcnZlciIsIm93bmVkIjp0cnVlLCJhY2Nlc3NUb2tlbiI6Im93bmVkLXRva2VuLWJiYmJiYmJiIiwiY29ubmVjdGlvbnMiOlt7InByb3RvY29sIjoiaHR0cHMiLCJhZGRyZXNzIjoiMjAzLjAuMTEzLjkiLCJwb3J0IjozMjQwMCwidXJpIjoiaHR0cHM6Ly8yMDMtMC0xMTMtOS5iYmJiLnBsZXguZGlyZWN0OjMyNDAwIiwibG9jYWwiOmZhbHNlLCJyZWxheSI6ZmFsc2V9XX0seyJuYW1lIjoiQnJva2VuIiwiY2xpZW50SWRlbnRpZmllciI6InNlcnZlci1icm9rZW4iLCJwcm92aWRlcyI6InNlcnZlciIsIm93bmVkIjpmYWxzZSwiYWNjZXNzVG9rZW4iOiJicm9rZW4tdG9rZW4tZWVlZWVlZWUiLCJjb25uZWN0aW9ucyI6W3sicHJvdG9jb2wiOiJodHRwcyIsImFkZHJlc3MiOiIyMDMuMC4xMTMuMTEiLCJwb3J0IjoiMzI0MDAiLCJ1cmkiOiJodHRwczovL3gucGxleC5kaXJlY3QiLCJsb2NhbCI6ZmFsc2UsInJlbGF5IjpmYWxzZX1dfSx7Im5hbWUiOiJMaXZpbmcgcm9vbSBUViIsImNsaWVudElkZW50aWZpZXIiOiJwbGF5ZXItMSIsInByb3ZpZGVzIjoicGxheWVyIiwib3duZWQiOnRydWUsImNvbm5lY3Rpb25zIjpbXX1d"
+  }
+}

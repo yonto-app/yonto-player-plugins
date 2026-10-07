@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/manifest.schema.json",
+  "title": "Yonto plugin manifest",
+  "type": "object",
+  "required": ["kind", "id", "name", "version", "contractVersion", "allowedHosts", "provides"],
+  "$comment": "Strict here and lenient on a device: an author's typo is refused where it can still be fixed, and a television drops a key it does not know so a manifest from a later contract still loads. The same holds for configSchema's items and their options.",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "$comment": "A plugin whose hosts come out of its own configuration document declares that, and then nothing checks where it goes — so a list of hosts in its manifest would be one nobody reads. Every other plugin's list is enforced, empty or not; empty means it reaches only what the viewer configured.",
+      "if": {
+        "properties": { "hostsFromConfig": { "const": true } },
+        "required": ["hostsFromConfig"]
+      },
+      "then": {
+        "properties": { "allowedHosts": { "maxItems": 0 } }
+      }
+    }
+  ],
+  "properties": {
+    "kind": { "const": "content-source" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,31}$" },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "contractVersion": { "type": "integer", "minimum": 1 },
+    "description": { "type": "string" },
+    "iconUrl": { "type": "string", "format": "uri" },
+    "probeQuery": { "type": "string", "minLength": 1 },
+    "probeCategory": {
+      "$comment": "Read by `doctor` and by nothing on a device, which drops a key it does not know — so it costs no contract version.",
+      "description": "The id of the category `doctor` lists and pages, when the first one would not exercise paging. Absent, it takes the first.",
+      "type": "string",
+      "minLength": 1
+    },
+    "pagination": { "enum": ["page", "cursor"] },
+    "allowedHosts": {
+      "description": "Hosts this plugin may reach, before the host adds any the viewer configured. Empty is legal and means the plugin reaches nothing on its own — which is what a source pointed at a server only its owner can name (a Jellyfin box, a 仓 config URL) declares.",
+      "type": "array",
+      "minItems": 0,
+      "items": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9.-]+$" }
+    },
+    "hostsFromConfig": { "type": "boolean" },
+    "runsFetchedCode": {
+      "$comment": "Nothing checks this and nothing can: `lint` reads a plugin's own source, and code a plugin downloads at run time is not in it. So it is a declaration an author makes, the install dialog repeats it, and its absence means only that nobody said so — never that the plugin does not. Absent is false so a manifest written before this existed goes on meaning what it always meant, which is also why the dialog can only ever add a line rather than withdraw one. See contracts/content-source-http.md's \"A source that runs code it fetched\".",
+      "description": "Whether this plugin downloads further code at run time and executes it — an XPTV index names a JavaScript file per catalog. A self-declaration, repeated on the install dialog, that no host verifies.",
+      "type": "boolean"
+    },
+    "playbackTokens": {
+      "$comment": "Nothing in a plugin's source says it will return a `pan` option, so this is the only way a host can place the floor — the same shape as catalogsAreRemote and runsFetchedCode. Absent is false, which is what every source written before this one was: every option it answers carries a `stream`. A host too old to understand a token would decode such an option with `stream` required and fail the whole title, which is why this is a version gate rather than a key an older host drops. See contracts/content-source-http.md's \"A source whose option is not a URL yet\".",
+      "description": "Whether this source may answer a playback option that is not a URL yet — a `pan` share for the host to open, or a `track` for its own getStream to redeem.",
+      "type": "boolean"
+    },
+    "catalogsAreRemote": {
+      "$comment": "Absent is false, and false is the rule every source written before this one kept: getSubSources answers from what the source already knows. A host meeting this on a manifest it is too old to understand drops it and asks the way it always did, which is the behaviour that was there before rather than a new failure. See contracts/content-source-http.md's \"A source whose catalog list is itself remote\".",
+      "description": "Whether this source's library list lives somewhere it has to go and read — an XPTV or TVBox index at a URL. Such a source may fetch inside getSubSources, and the host owes it a visible wait over an empty picker in exchange.",
+      "type": "boolean"
+    },
+    "provides": {
+      "$comment": "Required here and not on a device. A plugin bundled before this field existed must stay installable, and `source-type` is what every such plugin already was — so the contract makes an author say it and a host that meets a manifest without it reads the conservative answer rather than refusing the plugin.",
+      "description": "Whether this plugin is a source, or a kind of source. `source` means it knows its own address and is a source for as long as it is on the box. `source-type` means the viewer names the instance — a Jellyfin lives only where its owner put it — so installing it offers to set one up, and there may be several.",
+      "enum": ["source", "source-type"]
+    },
+    "handles": {
+      "$comment": "No contract version: an app that predates it drops the key, and a handler is still an ordinary source-type plugin there. `lint` holds the names to contracts/yonto-types/ and the plugin to the types it claims. See docs/design/2026-09-23-the-app-reads-every-index.md, *Types*.",
+      "description": "The Yonto types this plugin reads an index entry of: a bare name with a file in contracts/yonto-types/, or somebody else's reverse-DNS name (`io.github.someone.alist`).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "yonto-type-name.schema.json" }
+    },
+    "configSchema": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$" },
+          "label": { "type": "string", "minLength": 1 },
+          "type": { "enum": ["text", "secret", "url", "choice", "bool"] },
+          "required": { "type": "boolean", "default": false },
+          "default": { "type": "string" },
+          "placeholder": { "type": "string", "minLength": 1 },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "label"],
+              "additionalProperties": false,
+              "properties": { "id": { "type": "string" }, "label": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "$comment": "A cookieLogin's session belongs to the host: it is kept beside the profile, attached by yonto.fetch to this capability's own site per redirect hop, and never handed to the plugin. `writesTo` — the config field a capability used to write it into, where the plugin's own JavaScript read it — went with that, and additionalProperties refuses it rather than ignoring it. See docs/design/2026-09-20-the-host-holds-the-session.md. A browserCheck names where a plugin may send the viewer to pass a site's browser check, by `url` for one https site or by `fromConfig` for any public https site a hostsFromConfig plugin reaches; what it wins is the host's in the same way. See docs/design/2026-09-23-a-challenge-the-viewer-clears.md. A linkLogin is a sign-in the viewer finishes on a phone, run by the host for a service contracts/link-logins.json names; the credential it wins is the host's and never reaches the plugin. See docs/design/2026-09-24-a-code-the-viewer-links.md. pointerLogin was a name with nothing behind it and is refused rather than accepted and ignored.",
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["cookieLogin", "browserCheck", "linkLogin"] },
+          "url": { "type": "string", "format": "uri" },
+          "cookieName": { "type": "string" },
+          "fromConfig": { "const": true },
+          "service": { "type": "string", "minLength": 1 }
+        },
+        "allOf": [
+          {
+            "$comment": "A linkLogin names a service in contracts/link-logins.json and nothing else: where its sign-in and its server list are, what their answers look like and which field is a credential are the host's to know, so no manifest can name them.",
+            "if": { "properties": { "type": { "const": "linkLogin" } } },
+            "then": {
+              "required": ["service"],
+              "not": { "anyOf": [{ "required": ["url"] }, { "required": ["cookieName"] }, { "required": ["fromConfig"] }] }
+            },
+            "else": { "not": { "required": ["service"] } }
+          },
+          {
+            "if": { "properties": { "type": { "const": "browserCheck" } } },
+            "then": {
+              "not": { "required": ["cookieName"] },
+              "oneOf": [
+                {
+                  "required": ["url"],
+                  "not": { "required": ["fromConfig"] },
+                  "properties": { "url": { "pattern": "^https://" } }
+                },
+                { "required": ["fromConfig"], "not": { "required": ["url"] } }
+              ]
+            },
+            "else": { "not": { "required": ["fromConfig"] } }
+          }
+        ]
+      }
+    }
+  }
+}

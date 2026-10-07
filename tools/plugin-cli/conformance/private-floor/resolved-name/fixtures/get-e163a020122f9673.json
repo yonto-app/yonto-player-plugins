@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://typed-name.test/moved",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "https://lan-name.test/ping"
+    },
+    "bodyBase64": ""
+  }
+}

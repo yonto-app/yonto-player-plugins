@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/yonto-type-name.schema.json",
+  "title": "Yonto type name",
+  "description": "A short id for Yonto's own type (maccms-json), or anybody else's reverse-DNS name (io.github.someone.alist): lowercase RFC 1123 labels, letters and digits with hyphens only inside, two or more of them for reverse-DNS, and 253 characters at most in all.",
+  "$comment": "The one grammar for a type name, $ref'd by the manifest's `handles` and the index's `ext.yontoType` so the two can never disagree. tools/plugin-cli/conformance/yonto-type-names.json holds the cases.",
+  "type": "string",
+  "maxLength": 253,
+  "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$"
+}

@@ -1,0 +1,5 @@
+{
+  "typedUrl": "http://192.168.1.50:8096/",
+  "defaultedUrl": "http://192.168.1.2/config.json",
+  "schemelessDefault": "http://192.168.1.3:8080"
+}

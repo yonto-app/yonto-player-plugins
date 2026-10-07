@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yonto.app/plugin-contract/content-source.schema.json",
+  "title": "Yonto content source contract v1",
+  "$defs": {
+    "category": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "thumbnailUrl": { "type": "string" }
+      }
+    },
+    "filter": {
+      "type": "object",
+      "required": ["id", "name", "options"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+          }
+        },
+        "init": {
+          "$comment": "The option this group is already on when a listing is first asked for, named by one of this group's own option ids (the CLI refuses any other, and an empty one; a device ignores either). A group with an init has no unrestricted state: the host opens on it, sends its id like any choice, and offers no implicit All.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "posterUrl": { "type": "string" },
+        "backdropUrl": { "type": "string" },
+        "year": { "type": "string" },
+        "rating": { "type": "string" }
+      }
+    },
+    "mediaListResult": {
+      "oneOf": [
+        { "type": "array", "items": { "$ref": "#/$defs/summary" } },
+        {
+          "type": "object",
+          "required": ["items"],
+          "properties": {
+            "items": { "type": "array", "items": { "$ref": "#/$defs/summary" } },
+            "nextCursor": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "stream": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "mimeType": { "type": "string" },
+        "headers": { "$ref": "#/$defs/headers" }
+      }
+    },
+    "headers": {
+      "$comment": "A name is RFC 9110's token and a value is printable ASCII, space or a tab, which is what OkHttp sends and nothing else. A host refuses a stream whose headers break this, and drops such an entry from getImageHeaders while sending the rest.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$" },
+      "additionalProperties": { "type": "string", "pattern": "^[\\t\\x20-\\x7e]*$" }
+    },
+    "pan": {
+      "$comment": "A cloud-drive share, redeemed by the host and never by the plugin. It carries no drive name: which client opens it is decided by the share URL's own host, so that nothing a plugin writes selects which of the host's code runs.",
+      "type": "object",
+      "required": ["share"],
+      "properties": {
+        "share": { "type": "string", "minLength": 1 },
+        "password": { "type": "string" }
+      }
+    },
+    "playbackOption": {
+      "$comment": "Exactly one of `stream`, `pan` or `track`, and the field names who redeems it: `stream` plays now, `pan` is redeemed by the host against the drive, `track` is redeemed by asking this same source's `getStream`. `oneOf` rather than `anyOf` because an option carrying two satisfies two branches and is refused, which is what exactly-one means. There is no `kind` field, deliberately: a kind would be a plugin-written string selecting which of the host's code runs, where a field name is read by the host's own parser and cannot be.",
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "stream": { "$ref": "#/$defs/stream" },
+        "pan": { "$ref": "#/$defs/pan" },
+        "track": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "line": { "type": "string" },
+        "season": { "type": "integer" }
+      },
+      "oneOf": [{ "required": ["stream"] }, { "required": ["pan"] }, { "required": ["track"] }]
+    },
+    "detail": {
+      "type": "object",
+      "required": ["id", "title", "playbackOptions"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "posterUrl": { "type": "string" },
+        "backdropUrl": { "type": "string" },
+        "year": { "type": "string" },
+        "rating": { "type": "string" },
+        "genres": { "type": "array", "items": { "type": "string" } },
+        "synopsis": { "type": "string" },
+        "playbackOptions": { "type": "array", "items": { "$ref": "#/$defs/playbackOption" } }
+      }
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string" },
+        "usable": { "type": "boolean" }
+      }
+    },
+    "subSources": {
+      "$comment": "The interchangeable libraries one source is made of, and which of them it is actually reading. `activeId` may name a different one to the id the host handed in — a source falls through when the chosen one cannot be reached — and is what a host shows rather than what it stores.",
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 },
+              "available": { "type": "boolean" }
+            }
+          }
+        },
+        "activeId": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "properties": {
+    "getCategories":      { "type": "array", "items": { "$ref": "#/$defs/category" } },
+    "getFilters":         { "type": "array", "items": { "$ref": "#/$defs/filter" } },
+    "getMediaList":       { "$ref": "#/$defs/mediaListResult" },
+    "getMediaDetail":     { "$ref": "#/$defs/detail" },
+    "search":             { "type": "array", "items": { "$ref": "#/$defs/summary" } },
+    "getRecommendations": { "type": "array", "items": { "$ref": "#/$defs/summary" } },
+    "checkHealth":        { "$ref": "#/$defs/health" },
+    "getImageHeaders":    { "$ref": "#/$defs/headers" },
+    "onImageHeadersRefused": {
+      "$comment": "What a source did about a refusal of the headers it last gave: whether asking again can now win a different credential. False means only the viewer can replace it, so the host stops asking.",
+      "type": "object",
+      "required": ["renewable"],
+      "properties": { "renewable": { "type": "boolean" } }
+    },
+    "getSubSources":      { "$ref": "#/$defs/subSources" },
+    "getStream": {
+      "$comment": "What a `track` token redeems to. The same `$defs/stream` an option carries directly, never another option: an option that came back could carry another token, and nothing would bound the redemption. A source that cannot produce a URL throws rather than answering without one — an absent `url` fails this schema and is reported as a malformed result, which is the sentence its author can act on.",
+      "$ref": "#/$defs/stream"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+[
+  { "address": "http://192.168.1.60:8080/index.json", "typedHost": "192.168.1.60" },
+  { "address": "192.168.1.60:8080/index.json", "typedHost": "192.168.1.60" },
+  { "address": "nas.example/index.json", "typedHost": "nas.example" },
+  { "address": "HTTP://NAS.Example/index.json", "typedHost": "nas.example" },
+  { "address": "http://nas.local./index.json", "typedHost": "nas.local" },
+  { "address": "http://[::1]:8080/index.json", "typedHost": "::1" },
+  { "address": "[::1]/index.json", "typedHost": "::1" },
+  { "address": "[::1]:8080", "typedHost": "::1" },
+  { "address": "http://user:pass@nas.example/index.json", "typedHost": "nas.example" },
+  { "address": "https://token@192.168.1.60:9/index.json", "typedHost": "192.168.1.60" },
+  { "address": "http://0xc0a8013c/index.json#sha256=aa", "typedHost": "192.168.1.60" },
+  { "address": "  http://nas.example/index.json  ", "typedHost": "nas.example" },
+  { "address": "ftp://nas.example/index.json", "typedHost": null },
+  { "address": "", "typedHost": null }
+]

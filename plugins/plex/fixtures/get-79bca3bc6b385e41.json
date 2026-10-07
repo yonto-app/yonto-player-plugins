@@ -1,0 +1,24 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/library/sections/all",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "cache-control": "no-cache",
+      "connection": "Keep-Alive",
+      "content-encoding": "gzip",
+      "content-length": "496",
+      "content-type": "application/json",
+      "date": "Wed, 23 Sep 2026 19:35:17 GMT",
+      "keep-alive": "timeout=20",
+      "x-plex-content-compressed-length": "496",
+      "x-plex-content-original-length": "1369",
+      "x-plex-protocol": "1.0"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjozLCJhbGxvd1N5bmMiOmZhbHNlLCJ0aXRsZTEiOiJQbGV4IExpYnJhcnkiLCJEaXJlY3RvcnkiOlt7ImFsbG93U3luYyI6ZmFsc2UsImZpbHRlcnMiOnRydWUsInJlZnJlc2hpbmciOmZhbHNlLCJrZXkiOiIxIiwidHlwZSI6Im1vdmllIiwidGl0bGUiOiJNb3ZpZXMiLCJhZ2VudCI6InR2LnBsZXguYWdlbnRzLm1vdmllIiwic2Nhbm5lciI6IlBsZXggTW92aWUiLCJsYW5ndWFnZSI6ImVuLVVTIiwibWV0YWRhdGFBZ2VudFByb3ZpZGVyR3JvdXBJZCI6MSwidXVpZCI6IjkwZDlhNzNhLTUwMWYtNDBmYS05MTY0LTFkYWZmYTliNzFjNCIsInVwZGF0ZWRBdCI6MTc5MDE5MTU2OCwiY3JlYXRlZEF0IjoxNzkwMTkxNTY4LCJzY2FubmVkQXQiOjE3OTAxOTE4ODEsImNvbnRlbnQiOnRydWUsImRpcmVjdG9yeSI6dHJ1ZSwiY29udGVudENoYW5nZWRBdCI6NiwiaGlkZGVuIjowLCJMb2NhdGlvbiI6W3siaWQiOjEsInBhdGgiOiIvZGF0YS9Nb3ZpZXMifV19LHsiYWxsb3dTeW5jIjpmYWxzZSwiZmlsdGVycyI6dHJ1ZSwicmVmcmVzaGluZyI6ZmFsc2UsImtleSI6IjIiLCJ0eXBlIjoic2hvdyIsInRpdGxlIjoiVFYgU2hvd3MiLCJhZ2VudCI6InR2LnBsZXguYWdlbnRzLnNlcmllcyIsInNjYW5uZXIiOiJQbGV4IFRWIFNlcmllcyIsImxhbmd1YWdlIjoiZW4tVVMiLCJtZXRhZGF0YUFnZW50UHJvdmlkZXJHcm91cElkIjoyLCJ1dWlkIjoiNGJhNDUwNDItMDcxNC00YTIwLWFkNjAtYTNmNDg4NjA3ZTlmIiwidXBkYXRlZEF0IjoxNzkwMTkxNTY4LCJjcmVhdGVkQXQiOjE3OTAxOTE1NjgsInNjYW5uZWRBdCI6MTc5MDE5MTg4MiwiY29udGVudCI6dHJ1ZSwiZGlyZWN0b3J5Ijp0cnVlLCJjb250ZW50Q2hhbmdlZEF0IjoxNiwiaGlkZGVuIjowLCJMb2NhdGlvbiI6W3siaWQiOjIsInBhdGgiOiIvZGF0YS9UViBTaG93cyJ9XX0seyJhbGxvd1N5bmMiOmZhbHNlLCJmaWx0ZXJzIjp0cnVlLCJyZWZyZXNoaW5nIjpmYWxzZSwia2V5IjoiMyIsInR5cGUiOiJhcnRpc3QiLCJ0aXRsZSI6Ik11c2ljIiwiYWdlbnQiOiJ0di5wbGV4LmFnZW50cy5tdXNpYyIsInNjYW5uZXIiOiJQbGV4IE11c2ljIiwibGFuZ3VhZ2UiOiJlbi1VUyIsIm1ldGFkYXRhQWdlbnRQcm92aWRlckdyb3VwSWQiOjMsInV1aWQiOiJjMjVjOGY1NC0xZDdiLTQ2YmMtOGMzNC1lYzEyMjYzNjE0ZDkiLCJ1cGRhdGVkQXQiOjE3OTAxOTIxMTcsImNyZWF0ZWRBdCI6MTc5MDE5MjExNywic2Nhbm5lZEF0IjoxNzkwMTkyMTE3LCJjb250ZW50Ijp0cnVlLCJkaXJlY3RvcnkiOnRydWUsImNvbnRlbnRDaGFuZ2VkQXQiOi0xLCJoaWRkZW4iOjAsIkxvY2F0aW9uIjpbeyJpZCI6MywicGF0aCI6Ii9kYXRhL011c2ljIn1dfV19fQ==",
+    "setCookie": []
+  }
+}

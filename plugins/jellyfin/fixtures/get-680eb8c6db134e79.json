@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?ParentId=s1&IncludeItemTypes=Episode&Recursive=true&SortBy=ParentIndexNumber%2CIndexNumber&SortOrder=Ascending",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "setCookie": [],
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJlcDEiLCJOYW1lIjoiRWFydGhmYWxsIiwiVHlwZSI6IkVwaXNvZGUiLCJJbmRleE51bWJlciI6MSwiUGFyZW50SW5kZXhOdW1iZXIiOjEsIlNlcmllc0lkIjoiczEiLCJTZXJpZXNOYW1lIjoiUGlvbmVlciBPbmUiLCJQYXJlbnRCYWNrZHJvcEl0ZW1JZCI6InMxIiwiUGFyZW50QmFja2Ryb3BJbWFnZVRhZ3MiOlsicGlvbmVlckJhY2tkcm9wVGFnIl19LHsiSWQiOiJlcDIiLCJOYW1lIjoiQ2FjaGVzIiwiVHlwZSI6IkVwaXNvZGUiLCJJbmRleE51bWJlciI6MiwiUGFyZW50SW5kZXhOdW1iZXIiOjEsIlNlcmllc0lkIjoiczEiLCJTZXJpZXNOYW1lIjoiUGlvbmVlciBPbmUiLCJQYXJlbnRCYWNrZHJvcEl0ZW1JZCI6InMxIiwiUGFyZW50QmFja2Ryb3BJbWFnZVRhZ3MiOlsicGlvbmVlckJhY2tkcm9wVGFnIl19XSwiVG90YWxSZWNvcmRDb3VudCI6MiwiU3RhcnRJbmRleCI6MH0="
+  }
+}

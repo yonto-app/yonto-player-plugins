@@ -1,0 +1,225 @@
+{
+  "$comment": "Services the conformance walks beside contracts/link-logins.json's, which exercise what the engine reads that plex.tv's declaration does not. sign-in.json, discovery.json and attach.json name one of these, or a service in the registry. None is a real service.",
+  "device.test": {
+    "$comment": "RFC 8628's device grant, with a server list: a form body on the start and the poll (§3.1, §3.4) naming the client id the service registered as a literal, outcomes told apart by the error field, slow_down widening every later wait by five seconds (§3.5), an expiry the answer carries or the declaration's own, a QR and an interval carried in the answer, a Bearer credential header, servers that name no owner, and an identity request with headers of its own.",
+    "accountDomain": "device.test",
+    "visit": "https://device.test/activate",
+    "headers": {
+      "Accept": "application/json",
+      "User-Agent": "{product}"
+    },
+    "begin": {
+      "method": "POST",
+      "url": "https://device.test/device/code",
+      "body": {
+        "form": {
+          "client_id": "yonto-device-test"
+        }
+      },
+      "id": "device_code",
+      "code": "user_code",
+      "expiresIn": {
+        "field": "expires_in",
+        "seconds": 600
+      },
+      "interval": {
+        "seconds": 5,
+        "field": "interval"
+      },
+      "qr": {
+        "field": "verification_uri_complete"
+      }
+    },
+    "poll": {
+      "method": "POST",
+      "url": "https://device.test/token",
+      "body": {
+        "form": {
+          "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+          "device_code": "{id}",
+          "client_id": "yonto-device-test"
+        }
+      },
+      "credential": "access_token",
+      "outcomes": [
+        {
+          "status": [
+            200
+          ],
+          "present": "access_token",
+          "is": "linked"
+        },
+        {
+          "status": [
+            400
+          ],
+          "field": "error",
+          "equals": "authorization_pending",
+          "is": "pending"
+        },
+        {
+          "status": [
+            400
+          ],
+          "field": "error",
+          "equals": "slow_down",
+          "is": "slower",
+          "bySeconds": 5
+        },
+        {
+          "status": [
+            400
+          ],
+          "field": "error",
+          "equals": "access_denied",
+          "is": "denied"
+        },
+        {
+          "status": [
+            400
+          ],
+          "field": "error",
+          "equals": "expired_token",
+          "is": "expired"
+        }
+      ]
+    },
+    "accountHeader": {
+      "name": "Authorization",
+      "value": "Bearer {credential}"
+    },
+    "discover": {
+      "method": "GET",
+      "url": "https://api.device.test/servers",
+      "servers": "data.servers",
+      "server": {
+        "name": "title",
+        "id": "uuid",
+        "credential": "key",
+        "connections": "urls"
+      },
+      "connection": {
+        "uri": "href",
+        "address": "ip",
+        "port": "port",
+        "protocol": "scheme",
+        "local": "lan",
+        "relay": "proxied"
+      }
+    },
+    "serverHeader": {
+      "name": "Authorization",
+      "value": "Bearer {credential}"
+    },
+    "identity": {
+      "method": "GET",
+      "path": "/whoami",
+      "headers": {
+        "Accept": "application/json",
+        "X-Asked-By": "Yonto"
+      },
+      "id": "id"
+    }
+  },
+  "quick.test": {
+    "$comment": "A service that answers in JSON flags and numbers and gives no expiry: a JSON body on the start and the poll, whose Content-Type replaces the one its headers name, outcomes told apart by a boolean and by a number, an expiry the declaration alone gives, and an identity asked with a POST and no headers.",
+    "accountDomain": "quick.test",
+    "visit": "https://quick.test/link",
+    "headers": {
+      "Accept": "application/json",
+      "content-type": "text/plain"
+    },
+    "begin": {
+      "method": "POST",
+      "url": "https://quick.test/connect/initiate",
+      "body": {
+        "json": {
+          "client": "{clientId}",
+          "app": "{product}"
+        }
+      },
+      "id": "secret",
+      "code": "code",
+      "expiresIn": {
+        "seconds": 300
+      },
+      "interval": {
+        "seconds": 5
+      },
+      "qr": {
+        "template": "https://quick.test/link?code={code}"
+      }
+    },
+    "poll": {
+      "method": "POST",
+      "url": "https://quick.test/connect/state",
+      "body": {
+        "json": {
+          "secret": "{id}"
+        }
+      },
+      "credential": "token",
+      "outcomes": [
+        {
+          "status": [
+            200
+          ],
+          "present": "token",
+          "field": "authenticated",
+          "equals": true,
+          "is": "linked"
+        },
+        {
+          "status": [
+            200
+          ],
+          "field": "state",
+          "equals": 2,
+          "is": "denied"
+        },
+        {
+          "status": [
+            200
+          ],
+          "field": "authenticated",
+          "equals": false,
+          "is": "pending"
+        }
+      ]
+    },
+    "accountHeader": {
+      "name": "X-Quick-Token",
+      "value": "{credential}"
+    },
+    "discover": {
+      "method": "GET",
+      "url": "https://quick.test/servers",
+      "servers": "",
+      "server": {
+        "name": "name",
+        "id": "id",
+        "owned": "owner",
+        "credential": "token",
+        "connections": "connections"
+      },
+      "connection": {
+        "uri": "uri",
+        "address": "address",
+        "port": "port",
+        "protocol": "protocol",
+        "local": "local",
+        "relay": "relay"
+      }
+    },
+    "serverHeader": {
+      "name": "X-Quick-Token",
+      "value": "{credential}"
+    },
+    "identity": {
+      "method": "POST",
+      "path": "/system/info",
+      "headers": {},
+      "id": "Id"
+    }
+  }
+}

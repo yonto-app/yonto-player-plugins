@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://anywhere.test/moved",
+    "body": null
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "location": "https://elsewhere.test/landed"
+    },
+    "bodyBase64": ""
+  }
+}

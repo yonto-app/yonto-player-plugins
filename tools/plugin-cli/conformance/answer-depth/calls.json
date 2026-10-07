@@ -1,0 +1,30 @@
+{
+  "$comment": "How deep a call's answer may nest, on both hosts: an answer as deep as limits.json's answerDepth is read, and one deeper is METHOD_THREW in the device's sentence, and the call after it answers. `nested` answers with arrays nested `depth` deep, where `limit` is answerDepth, as is `{limit}` in a message; an `answer` of `nested` is that value. The calls run in order on one runtime. test/answer-depth.test.js walks it through the CLI's engine and PluginAnswerDepthRecordTest through the device's runtime.",
+  "calls": [
+    {
+      "why": "an answer as deep as the limit is read",
+      "method": "nested",
+      "depth": "limit",
+      "answer": "nested"
+    },
+    {
+      "why": "an answer one deeper than the limit is refused unread",
+      "method": "nested",
+      "depth": "limit+1",
+      "code": "METHOD_THREW",
+      "message": "the plugin's answer nests more than {limit} levels deep"
+    },
+    {
+      "why": "an answer far deeper than the limit is refused the same way",
+      "method": "nested",
+      "depth": 1000,
+      "code": "METHOD_THREW",
+      "message": "the plugin's answer nests more than {limit} levels deep"
+    },
+    {
+      "why": "the call after a refused answer answers",
+      "method": "ok",
+      "answer": "still here"
+    }
+  ]
+}

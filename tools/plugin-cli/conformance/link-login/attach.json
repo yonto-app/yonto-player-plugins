@@ -1,0 +1,1954 @@
+{
+  "$comment": "Where yonto.fetch sends a server's credential for a linkLogin plugin, and what it hands back, on both hosts. Each case links the source with `account`, lets the host read `hostAnswers` (the account's server list, and a server's identity at a typed address), then fetches `url` with `headers`. `sent` is each hop the plugin's request made, with the value of the service's server header (its name from the manifest's service, in contracts/link-logins.json or declarations.json), Range and If-Range it carried; `answer` is what the plugin was handed, and `refused` the code and words it was refused with. test/link-login.test.js walks it through the CLI's yonto.fetch and PluginSessionAttachRecordTest through the device's.",
+  "cases": [
+    {
+      "why": "a server's credential goes on the hop to a host it is bound to, over any spelling of its header the plugin set, and Range and If-Range go from that hop",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/library/sections",
+      "headers": {
+        "x-plex-token": "typed-by-the-viewer",
+        "X-PLEX-TOKEN": "another",
+        "Range": "bytes=0-99",
+        "If-Range": "\"e\"",
+        "Accept": "application/json"
+      },
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/library/sections": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/library/sections",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "a host no server is bound to gets nothing from the host, and keeps the plugin's own header and range",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-9.bbbb.plex.direct:32400/library",
+      "headers": {
+        "X-Plex-Token": "typed-by-the-viewer",
+        "Range": "bytes=0-99"
+      },
+      "answers": {
+        "https://203-0-113-9.bbbb.plex.direct:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-9.bbbb.plex.direct:32400/library",
+          "credential": "typed-by-the-viewer",
+          "range": "bytes=0-99",
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "a redirect off the bound host carries nothing to the next",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://203-0-113-9.bbbb.plex.direct:32400/landed"
+          },
+          "body": ""
+        },
+        "https://203-0-113-9.bbbb.plex.direct:32400/landed": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://203-0-113-9.bbbb.plex.direct:32400/landed",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "and one back onto it carries it again",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-9.bbbb.plex.direct:32400/go",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-9.bbbb.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://203-0-113-7.aaaa.plex.direct:32400/back"
+          },
+          "body": ""
+        },
+        "https://203-0-113-7.aaaa.plex.direct:32400/back": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-9.bbbb.plex.direct:32400/go",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/back",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "a redirect off an origin drops the plugin's own spelling of the service's credential headers, as it drops authorization and cookie, from an unbound host to an unbound one",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://198-51-100-4.dddd.plex.direct:32400/go",
+      "headers": {
+        "X-Plex-Token": "typed-token-dddddddd"
+      },
+      "answers": {
+        "https://198-51-100-4.dddd.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://198-51-100-5.eeee.plex.direct:32400/landed"
+          },
+          "body": ""
+        },
+        "https://198-51-100-5.eeee.plex.direct:32400/landed": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://198-51-100-4.dddd.plex.direct:32400/go",
+          "credential": "typed-token-dddddddd",
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://198-51-100-5.eeee.plex.direct:32400/landed",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "and from one bound host to another across origins, each hop carries its own server's credential over the plugin's header",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+      "headers": {
+        "X-Plex-Token": "typed-token-dddddddd"
+      },
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://192-168-1-5.aaaa.plex.direct:32400/landed"
+          },
+          "body": ""
+        },
+        "https://192-168-1-5.aaaa.plex.direct:32400/landed": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://192-168-1-5.aaaa.plex.direct:32400/landed",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "and from an unbound host to a bound one, the plugin's header goes on the first hop and the server's credential on the second",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://198-51-100-4.dddd.plex.direct:32400/go",
+      "headers": {
+        "X-Plex-Token": "typed-token-dddddddd"
+      },
+      "answers": {
+        "https://198-51-100-4.dddd.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://203-0-113-7.aaaa.plex.direct:32400/landed"
+          },
+          "body": ""
+        },
+        "https://203-0-113-7.aaaa.plex.direct:32400/landed": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://198-51-100-4.dddd.plex.direct:32400/go",
+          "credential": "typed-token-dddddddd",
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/landed",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "the bound host over http is another place",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "http://203-0-113-7.aaaa.plex.direct:32400/library",
+      "headers": {},
+      "answers": {
+        "http://203-0-113-7.aaaa.plex.direct:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "http://203-0-113-7.aaaa.plex.direct:32400/library",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "and so is another port on it",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct/library",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct/library",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "an owned server is bound to nothing",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-9.bbbb.plex.direct:32400/identity",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-9.bbbb.plex.direct:32400/identity": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-9.bbbb.plex.direct:32400/identity",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "the address the viewer typed carries its server's credential once the server there says it is that server",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {
+        "serverUrl": "http://192.168.1.5:32400"
+      },
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        },
+        "http://192.168.1.5:32400/identity": {
+          "status": 200,
+          "body": {
+            "MediaContainer": {
+              "machineIdentifier": "server-friend"
+            }
+          }
+        }
+      },
+      "url": "http://192.168.1.5:32400/library",
+      "headers": {},
+      "answers": {
+        "http://192.168.1.5:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "http://192.168.1.5:32400/library",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "and nothing when another server answers there",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {
+        "serverUrl": "http://192.168.1.5:32400"
+      },
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        },
+        "http://192.168.1.5:32400/identity": {
+          "status": 200,
+          "body": {
+            "MediaContainer": {
+              "machineIdentifier": "somebody-else"
+            }
+          }
+        }
+      },
+      "url": "http://192.168.1.5:32400/library",
+      "headers": {},
+      "answers": {
+        "http://192.168.1.5:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "http://192.168.1.5:32400/library",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "or when nothing says who it is",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {
+        "serverUrl": "http://192.168.1.5:32400"
+      },
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        },
+        "http://192.168.1.5:32400/identity": {
+          "status": 404,
+          "body": ""
+        }
+      },
+      "url": "http://192.168.1.5:32400/library",
+      "headers": {},
+      "answers": {
+        "http://192.168.1.5:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "http://192.168.1.5:32400/library",
+          "credential": null,
+          "range": null,
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "with no session nothing is bound",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": null,
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/library",
+      "headers": {
+        "Range": "bytes=0-1"
+      },
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/library": {
+          "status": 200,
+          "headers": {},
+          "body": "ok"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/library",
+          "credential": null,
+          "range": "bytes=0-1",
+          "ifRange": null
+        }
+      ]
+    },
+    {
+      "why": "every held credential is masked in everything the plugin is handed, in each spelling",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/echo",
+      "headers": {},
+      "redirect": "manual",
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/echo": {
+          "status": 302,
+          "headers": {
+            "location": "https://203-0-113-7.aaaa.plex.direct:32400/next?t=shared-token-aaaaaaaa",
+            "X-Echo": "account-token-cccccccc"
+          },
+          "setCookie": [
+            "t=shared-token-aaaaaaaa; Path=/"
+          ],
+          "body": "{\"token\":\"shared-token-aaaaaaaa\",\"account\":\"account-token-cccccccc\",\"url\":\"https://x.test/?t=shared-token-aaaaaaaa\"}"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/echo",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ],
+      "answer": {
+        "status": 302,
+        "url": "https://203-0-113-7.aaaa.plex.direct:32400/echo",
+        "location": "https://203-0-113-7.aaaa.plex.direct:32400/next?t=yonto-held-credential",
+        "headers": {
+          "location": "https://203-0-113-7.aaaa.plex.direct:32400/next?t=yonto-held-credential",
+          "x-echo": "yonto-held-credential"
+        },
+        "setCookie": [
+          "t=yonto-held-credential; Path=/"
+        ],
+        "body": "{\"token\":\"yonto-held-credential\",\"account\":\"yonto-held-credential\",\"url\":\"https://x.test/?t=yonto-held-credential\"}"
+      }
+    },
+    {
+      "why": "a URL carrying a held credential is refused before anything is sent",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/library?X-Plex-Token=shared-token-aaaaaaaa",
+      "headers": {},
+      "answers": {},
+      "sent": [],
+      "refused": {
+        "code": "REQUEST_INVALID",
+        "message": "the URL carries a credential the host holds, and one never goes in a URL"
+      }
+    },
+    {
+      "why": "a server's refusal the host puts in words is masked too",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "gopher://x/?t=shared-token-aaaaaaaa"
+          },
+          "body": ""
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ],
+      "refused": {
+        "code": "REDIRECT_REFUSED",
+        "message": "https://203-0-113-7.aaaa.plex.direct:32400/go redirected to something that is not a URL: gopher://x/?t=yonto-held-credential"
+      }
+    },
+    {
+      "why": "a redirect whose target carries a held credential is refused before it is followed, wherever it points",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "elsewhere.test"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://elsewhere.test/c?t=shared-token-aaaaaaaa"
+          },
+          "body": ""
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ],
+      "refused": {
+        "code": "REDIRECT_REFUSED",
+        "message": "https://203-0-113-7.aaaa.plex.direct:32400/go redirected to a URL carrying a credential the host holds"
+      }
+    },
+    {
+      "why": "a later hop's redirect carrying a held credential is refused too, after a first hop between bound hosts is followed",
+      "manifest": {
+        "allowedHosts": [
+          "*.plex.direct",
+          "elsewhere.test"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "plex.tv"
+          }
+        ],
+        "configSchema": [
+          {
+            "id": "serverUrl",
+            "label": "Server",
+            "type": "url"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://clients.plex.tv/api/v2/resources?includeHttps=1&includeRelay=1": {
+          "status": 200,
+          "body": [
+            {
+              "name": "Friend's server",
+              "clientIdentifier": "server-friend",
+              "provides": "server",
+              "owned": false,
+              "accessToken": "shared-token-aaaaaaaa",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.7",
+                  "port": 32400,
+                  "uri": "https://203-0-113-7.aaaa.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                },
+                {
+                  "protocol": "https",
+                  "address": "192.168.1.5",
+                  "port": 32400,
+                  "uri": "https://192-168-1-5.aaaa.plex.direct:32400",
+                  "local": true,
+                  "relay": false
+                }
+              ]
+            },
+            {
+              "name": "My server",
+              "clientIdentifier": "server-mine",
+              "provides": "server",
+              "owned": true,
+              "accessToken": "owned-token-bbbbbbbb",
+              "connections": [
+                {
+                  "protocol": "https",
+                  "address": "203.0.113.9",
+                  "port": 32400,
+                  "uri": "https://203-0-113-9.bbbb.plex.direct:32400",
+                  "local": false,
+                  "relay": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+      "headers": {},
+      "answers": {
+        "https://203-0-113-7.aaaa.plex.direct:32400/go": {
+          "status": 302,
+          "headers": {
+            "location": "https://192-168-1-5.aaaa.plex.direct:32400/next"
+          },
+          "body": ""
+        },
+        "https://192-168-1-5.aaaa.plex.direct:32400/next": {
+          "status": 302,
+          "headers": {
+            "location": "https://elsewhere.test/c?t=shared-token-aaaaaaaa"
+          },
+          "body": ""
+        }
+      },
+      "sent": [
+        {
+          "url": "https://203-0-113-7.aaaa.plex.direct:32400/go",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        },
+        {
+          "url": "https://192-168-1-5.aaaa.plex.direct:32400/next",
+          "credential": "shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ],
+      "refused": {
+        "code": "REDIRECT_REFUSED",
+        "message": "https://192-168-1-5.aaaa.plex.direct:32400/next redirected to a URL carrying a credential the host holds"
+      }
+    },
+    {
+      "why": "a server header's template carries the credential, over any spelling of that header the plugin set, and the credential is masked out of it wherever an answer echoes it",
+      "manifest": {
+        "allowedHosts": [
+          "media.example.test"
+        ],
+        "capabilities": [
+          {
+            "type": "linkLogin",
+            "service": "device.test"
+          }
+        ]
+      },
+      "config": {},
+      "account": "account-token-cccccccc",
+      "hostAnswers": {
+        "https://api.device.test/servers": {
+          "status": 200,
+          "body": {
+            "data": {
+              "servers": [
+                {
+                  "title": "Shared",
+                  "uuid": "server-shared",
+                  "key": "shared-token-aaaaaaaa",
+                  "urls": [
+                    {
+                      "href": "https://media.example.test",
+                      "ip": "203.0.113.7",
+                      "port": 443,
+                      "scheme": "https",
+                      "lan": false,
+                      "proxied": false
+                    }
+                  ]
+                },
+                {
+                  "title": "Says it is mine",
+                  "uuid": "server-mine",
+                  "mine": true,
+                  "owned": true,
+                  "key": "mine-token-bbbbbbbb",
+                  "urls": [
+                    {
+                      "href": "https://other.example.test",
+                      "ip": "203.0.113.8",
+                      "port": 443,
+                      "scheme": "https",
+                      "lan": false,
+                      "proxied": false
+                    }
+                  ]
+                },
+                {
+                  "title": "The account",
+                  "uuid": "server-account",
+                  "key": "account-token-cccccccc",
+                  "urls": [
+                    {
+                      "href": "https://third.example.test",
+                      "ip": "203.0.113.9",
+                      "port": 443,
+                      "scheme": "https",
+                      "lan": false,
+                      "proxied": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "url": "https://media.example.test/library",
+      "headers": {
+        "authorization": "Bearer typed-by-the-plugin",
+        "Accept": "application/json"
+      },
+      "answers": {
+        "https://media.example.test/library": {
+          "status": 200,
+          "headers": {
+            "X-Echo": "Bearer shared-token-aaaaaaaa"
+          },
+          "body": "you sent Bearer shared-token-aaaaaaaa"
+        }
+      },
+      "sent": [
+        {
+          "url": "https://media.example.test/library",
+          "credential": "Bearer shared-token-aaaaaaaa",
+          "range": null,
+          "ifRange": null
+        }
+      ],
+      "answer": {
+        "status": 200,
+        "url": "https://media.example.test/library",
+        "location": null,
+        "headers": {
+          "x-echo": "Bearer yonto-held-credential"
+        },
+        "setCookie": [],
+        "body": "you sent Bearer yonto-held-credential"
+      }
+    }
+  ]
+}

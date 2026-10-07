@@ -1,0 +1,4 @@
+{
+  "$comment": "What the host holds for this suite, as YONTO_PLUGIN_SESSION carries it: the account credential, linked under the probe's own manifest.",
+  "credential": "account-token-cccccccc"
+}

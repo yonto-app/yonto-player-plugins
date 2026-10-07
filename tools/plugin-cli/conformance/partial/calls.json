@@ -1,0 +1,126 @@
+{
+  "$comment": "What a host shows for yonto.partial after a sequence of calls to partial-plugin.js, each call handing it `says` in order and then throwing if it `throws`. `keeps` is the sentence shown for the last call, or null for none. test/partial.test.js walks it through the CLI's host, engine and partialShown, and PluginPartialRecordTest through the device's adapter. Add a case when a sequence turns out to matter.",
+  "cases": [
+    {
+      "why": "the last sentence a call says is the one kept",
+      "calls": [{ "method": "getMediaList", "says": ["一号站没有回应。", "四个站点中有一个没有回应。"] }],
+      "keeps": "四个站点中有一个没有回应。"
+    },
+    {
+      "why": "a search keeps its sentence",
+      "calls": [{ "method": "search", "says": ["搜索只问到了三个站点。"] }],
+      "keeps": "搜索只问到了三个站点。"
+    },
+    {
+      "why": "a detail keeps its sentence",
+      "calls": [{ "method": "getMediaDetail", "says": ["第二条线路暂时无法获取。"] }],
+      "keeps": "第二条线路暂时无法获取。"
+    },
+    {
+      "why": "a blank sentence takes it back",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "  "] }],
+      "keeps": null
+    },
+    {
+      "why": "an empty sentence takes it back",
+      "calls": [{ "method": "getMediaList", "says": ["一号站没有回应。", ""] }],
+      "keeps": null
+    },
+    {
+      "why": "a number takes it back",
+      "calls": [{ "method": "getMediaDetail", "says": ["一号站没有回应。", 42] }],
+      "keeps": null
+    },
+    {
+      "why": "null takes it back",
+      "calls": [{ "method": "getMediaList", "says": ["一号站没有回应。", null] }],
+      "keeps": null
+    },
+    {
+      "why": "each call starts with none",
+      "calls": [
+        { "method": "getMediaList", "says": ["一号站没有回应。"] },
+        { "method": "getMediaList", "says": [] }
+      ],
+      "keeps": null
+    },
+    {
+      "why": "a call's sentence replaces the one before's",
+      "calls": [
+        { "method": "search", "says": ["一号站没有回应。"] },
+        { "method": "search", "says": ["二号站没有回应。"] }
+      ],
+      "keeps": "二号站没有回应。"
+    },
+    {
+      "why": "a call that throws keeps nothing it said on the way",
+      "calls": [{ "method": "getMediaList", "says": ["一号站没有回应。"], "throws": true }],
+      "keeps": null
+    },
+    {
+      "why": "a method no screen draws it under drops it",
+      "calls": [{ "method": "getFilters", "says": ["一号站没有回应。"] }],
+      "keeps": null
+    },
+    {
+      "why": "a sentence is cleaned as a line: an override and a bell go, a CR LF pair and a tab each become a space",
+      "calls": [{ "method": "getMediaList", "says": ["一号站\r\n没有\t回应\u202e\u0007。"] }],
+      "keeps": "一号站 没有 回应。"
+    },
+    {
+      "why": "a sentence that is only a bell is blank once cleaned",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u0007"] }],
+      "keeps": null
+    },
+    {
+      "why": "blank is what Kotlin's isBlank says, which counts no-break spaces: U+00A0",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u00a0"] }],
+      "keeps": null
+    },
+    {
+      "why": "blank counts U+2007, a no-break space Java's isWhitespace alone would not",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u2007"] }],
+      "keeps": null
+    },
+    {
+      "why": "blank counts U+202F, a no-break space Java's isWhitespace alone would not",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u202f"] }],
+      "keeps": null
+    },
+    {
+      "why": "blank counts U+3000, the ideographic space",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u3000"] }],
+      "keeps": null
+    },
+    {
+      "why": "blank counts U+2028, a line separator and not a space",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u2028"] }],
+      "keeps": null
+    },
+    {
+      "why": "U+FEFF is not blank, though JavaScript's trim() strips it",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\ufeff"] }],
+      "keeps": "\ufeff"
+    },
+    {
+      "why": "U+200B is not blank: it is a format character, not a space",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u200b"] }],
+      "keeps": "\u200b"
+    },
+    {
+      "why": "U+2060 is not blank: it is a format character, not a space",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u2060"] }],
+      "keeps": "\u2060"
+    },
+    {
+      "why": "U+180E is not blank: Unicode stopped calling it a space in 6.3",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u180e"] }],
+      "keeps": "\u180e"
+    },
+    {
+      "why": "U+0085 is not blank: it is a control character display-text.json keeps",
+      "calls": [{ "method": "search", "says": ["一号站没有回应。", "\u0085"] }],
+      "keeps": "\u0085"
+    }
+  ]
+}

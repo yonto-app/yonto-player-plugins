@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items?ParentId=3&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2COfficialRating&SortBy=SortName&SortOrder=Ascending&StartIndex=0&Limit=500",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "Accept, Accept-Language, Authorization, Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Length, Content-MD5, Content-Range, Content-Type, Date, Host, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, Origin, OriginToken, Pragma, Range, Slug, Transfer-Encoding, Want-Digest, X-MediaBrowser-Token, X-Emby-Token, X-Emby-Client, X-Emby-Client-Version, X-Emby-Device-Id, X-Emby-Device-Name, X-Emby-Authorization",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "access-control-allow-origin": "*",
+      "access-control-allow-private-network": "true",
+      "content-length": "794",
+      "content-type": "application/json; charset=utf-8",
+      "cross-origin-resource-policy": "cross-origin",
+      "date": "Wed, 23 Sep 2026 19:37:08 GMT",
+      "expires": "-1",
+      "private-network-access-id": "8d581b68dbcb42eaaffbca6937440bac",
+      "private-network-access-name": "170e069d5d91",
+      "server": "UPnP/1.0 DLNADOC/1.50"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siTmFtZSI6IkJsdWUgSG91ciIsIlNlcnZlcklkIjoiOGQ1ODFiNjhkYmNiNDJlYWFmZmJjYTY5Mzc0NDBiYWMiLCJJZCI6IjkiLCJPZmZpY2lhbFJhdGluZyI6Ik0iLCJSdW5UaW1lVGlja3MiOjUwMDAwMDAwLCJQcm9kdWN0aW9uWWVhciI6MjAxNCwiSXNGb2xkZXIiOmZhbHNlLCJUeXBlIjoiTW92aWUiLCJVc2VyRGF0YSI6eyJQbGF5YmFja1Bvc2l0aW9uVGlja3MiOjAsIlBsYXlDb3VudCI6MCwiSXNGYXZvcml0ZSI6ZmFsc2UsIlBsYXllZCI6ZmFsc2V9LCJJbWFnZVRhZ3MiOnt9LCJCYWNrZHJvcEltYWdlVGFncyI6W10sIk1lZGlhVHlwZSI6IlZpZGVvIn0seyJOYW1lIjoiVGVzdCBQYXR0ZXJuIiwiU2VydmVySWQiOiI4ZDU4MWI2OGRiY2I0MmVhYWZmYmNhNjkzNzQ0MGJhYyIsIklkIjoiMTAiLCJPZmZpY2lhbFJhdGluZyI6IlBHIiwiUnVuVGltZVRpY2tzIjo5MDAwMDAwMDAsIlByb2R1Y3Rpb25ZZWFyIjoyMDEwLCJJc0ZvbGRlciI6ZmFsc2UsIlR5cGUiOiJNb3ZpZSIsIlVzZXJEYXRhIjp7IlBsYXliYWNrUG9zaXRpb25UaWNrcyI6MCwiUGxheUNvdW50IjowLCJJc0Zhdm9yaXRlIjpmYWxzZSwiUGxheWVkIjpmYWxzZX0sIkltYWdlVGFncyI6eyJQcmltYXJ5IjoiMDkyYTFjNjhiYTk2NWNjOWU1MDVlMjMzMjJjMTA1NGFfNjM5MjU3ODg3NzA3NDA1OTI1In0sIkJhY2tkcm9wSW1hZ2VUYWdzIjpbImZjZTgzYTIxMDdhYWQ3NTc1ZWI5NGNhNjU0ZDJlYTBmXzYzOTI1Nzg4NzcwNzUxMzY4NCJdLCJNZWRpYVR5cGUiOiJWaWRlbyJ9XSwiVG90YWxSZWNvcmRDb3VudCI6Mn0=",
+    "setCookie": []
+  }
+}

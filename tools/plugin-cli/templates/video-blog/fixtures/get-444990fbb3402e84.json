@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:8765/feed.xml",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-length": "1606",
+      "content-type": "application/xml",
+      "date": "Sat, 03 Oct 2026 19:03:43 GMT",
+      "last-modified": "Sat, 03 Oct 2026 19:03:35 GMT",
+      "server": "SimpleHTTP/0.6 Python/3.14.7"
+    },
+    "bodyBase64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHJzcyB2ZXJzaW9uPSIyLjAiIHhtbG5zOm1lZGlhPSJodHRwOi8vc2VhcmNoLnlhaG9vLmNvbS9tcnNzLyI+CiAgPGNoYW5uZWw+CiAgICA8dGl0bGU+U291cmRvdWdoIERpYXJpZXM8L3RpdGxlPgogICAgPGxpbms+aHR0cHM6Ly9zb3VyZG91Z2guZXhhbXBsZS5jb20vPC9saW5rPgogICAgPGRlc2NyaXB0aW9uPkJyZWFkLCBvbiBjYW1lcmEuPC9kZXNjcmlwdGlvbj4KICAgIDxpdGVtPgogICAgICA8dGl0bGU+TXkgZmlyc3Qgc291cmRvdWdoIGxvYWY8L3RpdGxlPgogICAgICA8bGluaz5odHRwczovL3NvdXJkb3VnaC5leGFtcGxlLmNvbS9maXJzdC1sb2FmLzwvbGluaz4KICAgICAgPGd1aWQgaXNQZXJtYUxpbms9ImZhbHNlIj5wb3N0LTM8L2d1aWQ+CiAgICAgIDxwdWJEYXRlPlNhdCwgMDcgSnVuIDIwMjUgMDg6MDA6MDAgKzAwMDA8L3B1YkRhdGU+CiAgICAgIDxkZXNjcmlwdGlvbj48IVtDREFUQVtTdGFydGVyLCBmbG91ciwgd2F0ZXIgJiBhIGxvdCBvZiBwYXRpZW5jZS5dXT48L2Rlc2NyaXB0aW9uPgogICAgICA8ZW5jbG9zdXJlIHVybD0iaHR0cHM6Ly9zb3VyZG91Z2guZXhhbXBsZS5jb20vdmlkZW8vZmlyc3QtbG9hZi5tcDQiIGxlbmd0aD0iNDgyMTEwMzIiIHR5cGU9InZpZGVvL21wNCIvPgogICAgICA8bWVkaWE6dGh1bWJuYWlsIHVybD0iaHR0cHM6Ly9zb3VyZG91Z2guZXhhbXBsZS5jb20vaW1nL2ZpcnN0LWxvYWYuanBnIi8+CiAgICA8L2l0ZW0+CiAgICA8aXRlbT4KICAgICAgPHRpdGxlPkZlZWRpbmcgdGhlIHN0YXJ0ZXI8L3RpdGxlPgogICAgICA8bGluaz5odHRwczovL3NvdXJkb3VnaC5leGFtcGxlLmNvbS9mZWVkaW5nLzwvbGluaz4KICAgICAgPGd1aWQgaXNQZXJtYUxpbms9ImZhbHNlIj5wb3N0LTI8L2d1aWQ+CiAgICAgIDxwdWJEYXRlPlNhdCwgMjQgTWF5IDIwMjUgMDg6MDA6MDAgKzAwMDA8L3B1YkRhdGU+CiAgICAgIDxkZXNjcmlwdGlvbj5Ib3cgb2Z0ZW4sIGhvdyBtdWNoLCBhbmQgd2hhdCB0aGUgYnViYmxlcyBtZWFuLjwvZGVzY3JpcHRpb24+CiAgICAgIDxlbmNsb3N1cmUgdXJsPSJodHRwczovL3NvdXJkb3VnaC5leGFtcGxlLmNvbS92aWRlby9mZWVkaW5nLm1wNCIgbGVuZ3RoPSIzMDExODIyMiIgdHlwZT0idmlkZW8vbXA0Ii8+CiAgICAgIDxtZWRpYTp0aHVtYm5haWwgdXJsPSJodHRwczovL3NvdXJkb3VnaC5leGFtcGxlLmNvbS9pbWcvZmVlZGluZy5qcGciLz4KICAgIDwvaXRlbT4KICAgIDxpdGVtPgogICAgICA8dGl0bGU+V2h5IEkgc3RvcHBlZCB1c2luZyBhIER1dGNoIG92ZW4gKHRleHQgb25seSk8L3RpdGxlPgogICAgICA8bGluaz5odHRwczovL3NvdXJkb3VnaC5leGFtcGxlLmNvbS9kdXRjaC1vdmVuLzwvbGluaz4KICAgICAgPGd1aWQgaXNQZXJtYUxpbms9ImZhbHNlIj5wb3N0LTE8L2d1aWQ+CiAgICAgIDxwdWJEYXRlPlNhdCwgMTAgTWF5IDIwMjUgMDg6MDA6MDAgKzAwMDA8L3B1YkRhdGU+CiAgICAgIDxkZXNjcmlwdGlvbj5ObyB2aWRlbyB0aGlzIHdlZWssIHNvIHRoaXMgcG9zdCBpcyBub3QgYSB0aXRsZS48L2Rlc2NyaXB0aW9uPgogICAgPC9pdGVtPgogIDwvY2hhbm5lbD4KPC9yc3M+Cg==",
+    "setCookie": []
+  }
+}

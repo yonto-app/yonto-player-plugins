@@ -1,0 +1,5 @@
+{
+  "serverUrl": "https://jellyfin.example.com",
+  "apiKey": "fixture-api-key",
+  "userId": "fixture-user-id"
+}
