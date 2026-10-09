@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runDoctor } from '../src/doctor.js';
+import { NOT_LOGGED_IN, runDoctor } from '../src/doctor.js';
 import { Code, PluginError } from '../src/errors.js';
 
 function fakeEngine(impl) {
@@ -579,6 +579,22 @@ test('a page 2 that failed for any other reason stays a failure, however the plu
 
   assert.equal(step.ok, false);
   assert.equal(step.code, Code.UNAVAILABLE);
+});
+
+test('signed out, a page 2 refused with signIn false fails with the plugin\'s words rather than needing the login', async () => {
+  const refusing = (signIn) => fakeEngine({ ...healthy, getMediaList: (categoryId, options) => {
+    if (options.page === 2) throw Object.assign(new PluginError(Code.UNAUTHENTICATED, 'The server refused the token.'), { signIn });
+    return [{ id: '1', title: 'A' }];
+  } });
+
+  const declined = await runDoctor({ engine: refusing(false), requests: [], loggedOut: true });
+  const offered = await runDoctor({ engine: refusing(true), requests: [], loggedOut: true });
+  const pageTwo = (report) => report.steps.find((s) => s.method === 'getMediaList (next page)');
+
+  assert.equal(declined.ok, false);
+  assert.deepEqual({ ok: pageTwo(declined).ok, code: pageTwo(declined).code, message: pageTwo(declined).message },
+    { ok: false, code: Code.UNAUTHENTICATED, message: 'The server refused the token.' });
+  assert.equal(pageTwo(offered).message, NOT_LOGGED_IN);
 });
 
 test('a page 2 that shares most of page 1 is a site that moved, not one ignoring the page', async () => {

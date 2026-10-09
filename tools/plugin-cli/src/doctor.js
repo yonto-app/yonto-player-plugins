@@ -54,7 +54,9 @@ export const NOT_LOGGED_IN = 'not logged in: run `yonto-plugin link`';
 
 /**
  * [loggedOut] is a linkLogin plugin run with no session: a step raising `unauthenticated` is
- * named as needing the login rather than failed, and so is each step it left with no input.
+ * named as needing the login rather than failed, and so is each step it left with no input. Not
+ * one raised with `{ signIn: false }`, which the plugin says no login answers: that step fails
+ * with the plugin's own words.
  */
 export async function runDoctor({
   engine, requests, logs = [], takePartial = () => null, query = 'a', category = null, sources = {},
@@ -74,7 +76,7 @@ export async function runDoctor({
   let needsLogin = false;
   const record = ({ answered = false, ...found }) => {
     const partial = takePartial();
-    const notLoggedIn = loggedOut && !found.ok && found.code === Code.UNAUTHENTICATED;
+    const notLoggedIn = loggedOut && !found.ok && found.code === Code.UNAUTHENTICATED && found.signIn !== false;
     needsLogin ||= notLoggedIn;
     const step = notLoggedIn ? { ...found, ok: true, code: null, message: NOT_LOGGED_IN } : found;
     steps.push({
@@ -197,7 +199,7 @@ export async function runDoctor({
     } catch (error) {
       const failure = asFailure(error);
       record({ method, ok: false, skipped: false, code: failure.code, message: failure.message,
-        detail: failure.detail, ms: Date.now() - started, requests: requests.length - before });
+        signIn: failure.signIn, detail: failure.detail, ms: Date.now() - started, requests: requests.length - before });
       continue;
     }
 
@@ -303,7 +305,7 @@ async function nextPage(engine, categoryId, first, pagination, requests) {
       return done({ ok: true, skipped: true, code: null,
         message: 'skipped — no fixture recorded for page 2; run with --record to check paging' });
     }
-    return done({ ok: false, code: failure.code, message: failure.message, detail: failure.detail });
+    return done({ ok: false, code: failure.code, message: failure.message, signIn: failure.signIn, detail: failure.detail });
   }
 
   const { valid, errors } = validateResult(method, result);

@@ -41,6 +41,8 @@ Everything past a link is **unverified**: no Plex account exists, so the resourc
   Plex also reads it from a query argument of the same name, and this plugin never uses that, because a URL ends up in logs and caches.
 - Artwork of the typed server is signed because it is the typed host: the host signs `getImageHeaders()` for a profile's `url` fields and never for a `*.` entry (`ImageRequestHeaders.signableHosts`). A shared server's artwork is signed by the host with the server's own token.
 - A 401 or 403 from the typed server is `unauthenticated`, with a sentence that depends on whether a token is saved: check it, or add one.
+  Signed out it is raised with `{ signIn: false }`, since nothing is bound to a typed server then and no plex.tv sign-in can answer it: the app shows the sentence as refused access and offers no login (kangzj/yonto#1458).
+  Signed in it is not, and the plugin calls `yonto.session.refused()` first: a typed IP literal matching one of the account's servers' connections is bound to that server's plex.tv credential (`LinkSignIn.bindingsOf`), which the host sends over the typed token once `/identity` confirms the server, so the refusal may be plex.tv's.
   `onImageHeadersRefused` answers `renewable: false`, since only the viewer can replace a typed token.
 - Every call also sends `X-Plex-Product: Yonto` and `X-Plex-Client-Identifier: lantern-<installId>`, which is how Plex tells clients apart in its dashboard.
 

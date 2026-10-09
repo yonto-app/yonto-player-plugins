@@ -235,6 +235,21 @@ test('doctor runs a signed-out plugin to the end, naming each step that needs th
   assert.equal(report.steps.find((s) => s.method === 'getMediaList').message, `skipped — ${NOT_LOGGED_IN}`);
 });
 
+/** An engine refusing as a typed server does: the plugin says no login answers it. */
+const typedRefused = {
+  async exports() { return ['getCategories', 'getMediaList', 'getMediaDetail', 'search']; },
+  async call() { throw Object.assign(new PluginError(Code.UNAUTHENTICATED, 'The server refused the token.'), { signIn: false }); },
+};
+
+test('a refusal the plugin says no login answers fails with its own words, signed out or not', async () => {
+  for (const loggedOut of [true, false]) {
+    const report = await runDoctor({ engine: typedRefused, requests: [], loggedOut });
+    const step = report.steps.find((s) => s.method === 'getCategories');
+    assert.equal(report.ok, false, `loggedOut ${loggedOut}`);
+    assert.deepEqual({ code: step.code, message: step.message }, { code: Code.UNAUTHENTICATED, message: 'The server refused the token.' });
+  }
+});
+
 test('a plugin that has a session and is refused anyway still fails', async () => {
   const report = await runDoctor({ engine: signedOut, requests: [], loggedOut: false });
   assert.equal(report.ok, false);

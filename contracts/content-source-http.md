@@ -372,6 +372,20 @@ again, and *Connection: Authentication failed* for any other source
 (kangzj/yonto#459); an `unauthenticated()` with no message leaves the row
 with the fixed line alone.
 
+**`unauthenticated(message, { signIn: false })` declines the host's sign-in.** For a
+plugin whose login a host runs (a `linkLogin`, or 低调影视's cookie login), every
+`unauthenticated` raised while the host holds no session is offered to the viewer as that
+sign-in, whatever it refused: the host cannot tell what a refusal was about. A `linkLogin`
+plugin can ask `yonto.session.linked()` whether one is held; a cookie login's plugin is not
+told. A refusal no such sign-in would
+answer, a typed server refusing the token typed beside it while signed out, says so with `{ signIn: false }`
+(or `signIn: false` on a hand-built `{ code: 'UNAUTHENTICATED' }`): the app then shows the
+sentence as refused access, offers no login for it, and `doctor` run signed out counts the step
+as failed rather than as needing the login. Only `false` declines; anything else, or nothing, is
+the offer as before, so a plugin can decline the sign-in and never add one. The plugin is the one
+reader that knows what it refused, which is why the host does not guess it from the servers the
+call reached (kangzj/yonto#1458).
+
 **`unreachable` is the plugin's word, and arrived in contract version 16.**
 `yonto.error.unreachable(reason)` says the server this source reads did not
 answer, where `unavailable` cannot tell that from a server that answered and
@@ -467,7 +481,9 @@ has that server to solve this on.
   a generic error: *login has expired* for 低调影视, whose Settings row offers
   to log in again, and *refused access* for any other source, which is sent
   to its editor. Pass a message saying what to do when editing the source
-  can't fix it, since the message wins over that fallback.
+  can't fix it, since the message wins over that fallback. Where a host runs
+  the source's login and the refusal is one it would not answer (a typed
+  server's token while signed out), raise it with `{ signIn: false }`, above.
 - Raise `unavailable(reason)` for anything else the plugin can't recover
   from itself: the site is unreachable, its markup no longer matches what
   the plugin expects, or it answered with something the plugin can't parse.
@@ -1770,7 +1786,8 @@ offers the sign-in from a press only, never because a plugin asked: the source e
 row, **Log in** on the source's page in Settings, and **Log in** on the error screen. A plugin
 that raises `unauthenticated` while the host holds no session for it reads *Not logged in*, with
 the site to log in at, and never *expired*; one that raises it while a session is held reads as a
-login that expired. The sign-in screen shows the code, where to type it, a QR of the service's
+login that expired. One raised with `{ signIn: false }` (*Yonto plugin errors* above) reads as
+refused access with the plugin's sentence, held session or none, and offers no login for it. The sign-in screen shows the code, where to type it, a QR of the service's
 link and a countdown where the code has an expiry, asks every interval (wider after a `slower`
 answer), takes a new code when one expires, and stops after half an hour; Back ends it and keeps
 nothing. A session won in the
@@ -2158,6 +2175,9 @@ and an older app, with no limit and an eager `bodyBase64`, runs a plugin that re
 its call exactly as a newer one does. `REQUEST_FAILED` keeps meaning no usable answer on every
 app. What changed, changed on a newer app for a plugin that fetched more than 16 MB or read
 `bodyBase64` after its call, and no number a plugin declares could have protected either.
+`unauthenticated`'s `{ signIn: false }` (kangzj/yonto#1458) is versionless the same way: an
+older app ignores the option and offers the sign-in for that refusal, as it did for every
+refusal, and the plugin runs on it exactly as before, so a version would gate nothing.
 
 Everything else has been there since version 1.
 

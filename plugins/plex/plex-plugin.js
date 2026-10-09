@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "contractVersion": 21,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
@@ -330,7 +330,13 @@ async function get(target, path, what, params) {
       yonto.session.refused();
       throw yonto.error.unavailable(SHARED_REFUSED_MESSAGE);
     }
-    throw yonto.error.unauthenticated(token() ? TOKEN_REFUSED_MESSAGE : TOKEN_WANTED_MESSAGE);
+    const message = token() ? TOKEN_REFUSED_MESSAGE : TOKEN_WANTED_MESSAGE;
+    // Signed out, nothing is bound to a typed server, so no sign-in answers this. Signed in, the
+    // host may have bound a shared server's credential over the typed token (an IP literal that
+    // matches one), so the refusal may be plex.tv's: ask again and leave the sign-in offered.
+    if (!yonto.session.linked()) throw yonto.error.unauthenticated(message, { signIn: false });
+    yonto.session.refused();
+    throw yonto.error.unauthenticated(message);
   }
   if (response.status === 404) throw yonto.error.notFound(what);
   if (response.status < 200 || response.status >= 300) {

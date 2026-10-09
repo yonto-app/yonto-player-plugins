@@ -263,7 +263,8 @@ globalThis.yonto = {
   partial(reason) { raw.__host_partial(typeof reason === 'string' ? reason : ''); },
   error: {
     notFound: (id) => Object.assign(new Error('not found: ' + id), { code: 'NOT_FOUND' }),
-    unauthenticated: (message) => Object.assign(new Error(message), { code: 'UNAUTHENTICATED' }),
+    unauthenticated: (message, options) =>
+      Object.assign(new Error(message), { code: 'UNAUTHENTICATED' }, options && options.signIn === false ? { signIn: false } : {}),
     unavailable: (reason) => Object.assign(new Error(reason), { code: 'UNAVAILABLE' }),
     misconfigured: (reason) => Object.assign(new Error(reason), { code: 'MISCONFIGURED' }),
     unreachable: (reason) => Object.assign(new Error(reason), { code: 'UNREACHABLE' }),
@@ -287,14 +288,30 @@ if (raw.__host_sessionLinked) {
 // The plugin's namespace is held here, out of the realm's reach, and handed over through the
 // function this bootstrap evaluates to: on a global, the engine's own write and read of it ran
 // any setter or getter a module body put there, untimed.
+//
+// A call's thrown value is held here until the engine has read its code, so whether it declines
+// the host's sign-in is read in the realm, as the device's failure envelope reads it, and a
+// getter or a Proxy answers the same on both hosts.
 let plugin;
-globalThis.__yontoInvoke = async (method, argsJson) => {
+const thrown = Object.create(null);
+globalThis.__yontoInvoke = async (method, argsJson, call) => {
   const impl = plugin.default[method];
   if (typeof impl !== 'function') {
     return stringify({ ok: false, code: 'MISSING_EXPORT', message: 'the plugin does not export ' + method });
   }
-  const value = await impl(...parse(argsJson));
+  let value;
+  try {
+    value = await impl(...parse(argsJson));
+  } catch (error) {
+    thrown[call] = error;
+    throw error;
+  }
   return stringify({ ok: true, value });
+};
+globalThis.__yontoDeclined = (call, read) => {
+  const error = thrown[call];
+  delete thrown[call];
+  return read && error !== null && error !== undefined && error.signIn === false;
 };
 globalThis.__yontoExports = () => stringify(Object.keys(plugin.default));
 return (namespace) => { plugin = namespace; };
@@ -482,6 +499,7 @@ export function createEngine({
   // backtracking, which a busy machine does not stretch the way it stretches time
   // (kangzj/lantern-tv#746). Work inside a C builtin such as `slice` is not counted.
   let polls = 0;
+  let calls = 0;
   const startVerdicts = () => {
     call += 1;
     verdicts.clear();
@@ -924,9 +942,11 @@ export function createEngine({
     // Plugin text crossing into the host, with every held credential taken out.
     const message = redact(messageOf(cause));
     const stack = redact(authors(cause?.stack ?? ''));
-    return stands(cause?.code)
-      ? new PluginError(cause.code, message, { method, stack })
-      : new PluginError(Code.METHOD_THREW, `${method} threw: ${message}`, { method, stack });
+    if (!stands(cause?.code)) return new PluginError(Code.METHOD_THREW, `${method} threw: ${message}`, { method, stack });
+    const error = new PluginError(cause.code, message, { method, stack });
+    // The one thing a plugin may say beside its code, read in the realm by [withSignIn].
+    if (cause.code === Code.UNAUTHENTICATED) error.signIn = true;
+    return error;
   }
 
   /**
@@ -992,11 +1012,32 @@ export function createEngine({
     }
   }
 
-  async function invokeOnce({ vm, pump, timed, dumpThrown, outcome }, record, method, args) {
+  /**
+   * [error] as the realm reads its thrown value's `signIn`, which only an UNAUTHENTICATED is asked
+   * for: a getter that throws makes the call the plugin's own failure, as on the device. The
+   * value is let go either way.
+   */
+  function withSignIn({ vm, timed, dumpThrown }, call, error, method) {
+    const read = error.code === Code.UNAUTHENTICATED;
+    let asked;
+    try {
+      asked = timed(() => vm.evalCode(`__yontoDeclined(${call}, ${read})`, 'yonto:call'));
+    } catch {
+      return error;
+    }
+    if (asked.error) return asPluginError(dumpThrown(asked.error), method);
+    if (read && vm.dump(asked.value) === true) error.signIn = false;
+    asked.value.dispose();
+    return error;
+  }
+
+  async function invokeOnce(engine, record, method, args) {
+    const { vm, pump, timed, dumpThrown, outcome } = engine;
     // Timed as a run of the call, which is what reads `plugin[method]` — a getter, or a
     // Proxy trap, is plugin code with nothing above it — as well as running the method.
+    const call = ++calls;
     const started = timed(() => vm.evalCode(
-      `__yontoInvoke(${JSON.stringify(method)}, ${JSON.stringify(JSON.stringify(args))})`,
+      `__yontoInvoke(${JSON.stringify(method)}, ${JSON.stringify(JSON.stringify(args))}, ${call})`,
       'yonto:call'));
     if (started.error) throw asPluginError(dumpThrown(started.error), method);
 
@@ -1009,7 +1050,7 @@ export function createEngine({
     pump();
 
     const settled = await settling;
-    if ('thrown' in settled) throw asPluginError(settled.thrown, method);
+    if ('thrown' in settled) throw withSignIn(engine, call, asPluginError(settled.thrown, method), method);
     const envelope = vm.typeof(settled.value) === 'string' ? vm.getString(settled.value) : undefined;
     settled.value.dispose();
     return answerOf(envelope, method);
