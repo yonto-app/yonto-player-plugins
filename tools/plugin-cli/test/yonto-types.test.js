@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import { YONTO_TYPES, PLUGIN_TYPE, handlesRefusals } from '../src/yonto-types.js';
+import { YONTO_TYPES, handlesRefusals } from '../src/yonto-types.js';
 import { typeNameSchema, validateManifest } from '../src/manifest.js';
 
 const manifestSchema = JSON.parse(readFileSync(new URL('../../../contracts/manifest.schema.json', import.meta.url), 'utf8'));
@@ -24,9 +24,9 @@ function refusalsOf(overrides, exports = EXPORTS) {
   return handlesRefusals({ ...maccms, ...overrides }, exports);
 }
 
-test('the registry is the five types the design names', () => {
+test('the registry is the four catalog types the design names, and no plugin', () => {
   assert.deepEqual([...YONTO_TYPES.keys()].sort(),
-    ['jellyfin-server', 'maccms-json', 'maccms-xml', 'plugin', 'xptv-js']);
+    ['jellyfin-server', 'maccms-json', 'maccms-xml', 'xptv-js']);
 });
 
 test('every type is a 2020-12 schema titled by its file name, open to fields added later', () => {
@@ -44,7 +44,6 @@ test('every type is a 2020-12 schema titled by its file name, open to fields add
 
 test('every catalog type names a real field type for each property, and a const is a choice', () => {
   for (const [name, schema] of YONTO_TYPES) {
-    if (name === PLUGIN_TYPE) continue;
     for (const [property, spec] of Object.entries(schema.properties)) {
       assert.ok(FIELD_TYPES.includes(spec['x-yonto-field']), `${name}.${property}: ${spec['x-yonto-field']}`);
       if ('const' in spec) assert.equal(spec['x-yonto-field'], 'choice', `${name}.${property}`);
@@ -74,46 +73,12 @@ function validator(name) {
 test('no property is typed two ways by two catalog types', () => {
   const seen = new Map();
   for (const [name, schema] of YONTO_TYPES) {
-    if (name === PLUGIN_TYPE) continue;
     for (const [property, spec] of Object.entries(schema.properties)) {
       const earlier = seen.get(property);
       if (earlier) assert.equal(spec['x-yonto-field'], earlier.field, `${property}: ${earlier.name} and ${name}`);
       else seen.set(property, { name, field: spec['x-yonto-field'] });
     }
   }
-});
-
-// #626's index copies these by hand into what it checks before an install; drift would let an
-// index list a plugin the install then refuses.
-test('a plugin payload describes id, version, contractVersion, provides and handles as the manifest does', () => {
-  const pluginSchema = YONTO_TYPES.get('plugin');
-  const plugin = pluginSchema.properties;
-  const rules = ({ $comment, description, ...rest }) => rest;
-  for (const key of ['id', 'version', 'contractVersion', 'provides']) {
-    assert.deepEqual(rules(plugin[key]), rules(manifestSchema.properties[key]), key);
-  }
-  // The same grammar, reached from each schema's own place under contracts/.
-  const refOf = (schema, property) => new URL(property.items.$ref, schema.$id).href;
-  const { items: _, ...pluginHandles } = rules(plugin.handles);
-  const { items: __, ...manifestHandles } = rules(manifestSchema.properties.handles);
-  assert.deepEqual(pluginHandles, manifestHandles);
-  assert.equal(refOf(pluginSchema, plugin.handles), refOf(manifestSchema, manifestSchema.properties.handles));
-});
-
-test('a plugin payload needs all four of what the install checks, and may carry more', () => {
-  const valid = validator('plugin');
-  const payload = { id: 'maccms', version: '1.0.0', contractVersion: 21, provides: 'source-type' };
-  assert.equal(valid(payload), true);
-  assert.equal(valid({ ...payload, description: 'x', addedLater: true }), true);
-  assert.equal(valid({ ...payload, handles: ['maccms-json', 'io.github.someone.alist'] }), true);
-  assert.equal(valid({ ...payload, handles: ['Not A Type'] }), false);
-  assert.equal(valid({ ...payload, handles: ['maccms-json', 'maccms-json'] }), false);
-  for (const key of Object.keys(payload)) {
-    const { [key]: _, ...without } = payload;
-    assert.equal(valid(without), false, `without ${key}`);
-  }
-  assert.equal(valid({ ...payload, version: '1.0' }), false);
-  assert.equal(valid({ ...payload, provides: 'handler' }), false);
 });
 
 test('an xptv-js config needs its program, and its class name is any text', () => {
@@ -173,9 +138,9 @@ test('handles takes exactly the names the shared grammar does', () => {
   }
 });
 
-test('plugin is refused, since a plugin entry is installed rather than handled', () => {
+test('plugin is refused as a short id with no schema, since a plugin is installed rather than handled', () => {
   assert.deepEqual(refusalsOf({ handles: ['plugin'] }),
-    ['plugin is not a catalog type: a plugin entry is installed, never handed to a plugin']);
+    ["plugin is a short id, which is Yonto's, and contracts/yonto-types/ has no plugin.schema.json — somebody else's type takes a reverse-DNS name (io.github.someone.alist)"]);
 });
 
 test('a handler may not offer catalogs of its own', () => {

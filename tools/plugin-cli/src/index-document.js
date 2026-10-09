@@ -10,8 +10,6 @@ import { LATEST, OLDEST } from './contract-version.js';
 import { readIndex, text } from './index-reader.js';
 import { entryFile, loadManifest, typeNameSchema } from './manifest.js';
 
-export const YONTO_ENTRY_TYPE = 50;
-export const PLUGIN = 'plugin';
 
 /** The same ceiling the app puts on a download, for the index and for each plugin. */
 export const MAX_DOWNLOAD_BYTES = 1024 * 1024;
@@ -19,7 +17,6 @@ export const MAX_DOWNLOAD_BYTES = 1024 * 1024;
 const contract = (path) => JSON.parse(readFileSync(new URL(`../../../contracts/${path}`, import.meta.url), 'utf8'));
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 ajv.addSchema(typeNameSchema);
-ajv.addSchema(contract('yonto-types/plugin.schema.json'));
 const validate = ajv.compile(contract('index.schema.json'));
 
 const SHA256_FRAGMENT = /#sha256=([0-9a-f]{64})$/i;
@@ -29,29 +26,18 @@ export function versionedUrl(baseUrl, id, version) {
   return `${baseUrl.replace(/\/+$/, '')}/${id}/${id}-${version}.zip`;
 }
 
-/** The entry an index lists a built plugin under: a `plugin` type with its payload in `ext.config`. */
+/** The entry an index lists a built plugin under, in its `plugins` list. */
 export function pluginEntry(manifest, url, sha256) {
   return {
-    key: `yonto:${manifest.id}`,
+    id: manifest.id,
     name: manifest.name,
-    type: YONTO_ENTRY_TYPE,
-    api: `${url}#sha256=${sha256}`,
-    ext: {
-      yontoType: PLUGIN,
-      config: {
-        id: manifest.id,
-        version: manifest.version,
-        contractVersion: manifest.contractVersion,
-        provides: manifest.provides,
-        ...(manifest.description ? { description: manifest.description } : {}),
-        // So a repo can offer a type's handler without downloading every zip it lists.
-        ...(manifest.handles?.length ? { handles: manifest.handles } : {}),
-      },
-    },
-    hide: 1,
-    searchable: 0,
-    quickSearch: 0,
-    changeable: 0,
+    version: manifest.version,
+    contractVersion: manifest.contractVersion,
+    provides: manifest.provides,
+    ...(manifest.description ? { description: manifest.description } : {}),
+    // So a repo can offer a type's handler without downloading every zip it lists.
+    ...(manifest.handles?.length ? { handles: manifest.handles } : {}),
+    url: `${url}#sha256=${sha256}`,
   };
 }
 
@@ -62,7 +48,7 @@ export function pluginEntry(manifest, url, sha256) {
  * never the plugin's `dist/`, which is Gradle's output.
  */
 export async function buildIndex({ pluginsDir, baseUrl, only }) {
-  const sites = [];
+  const plugins = [];
   const dirs = readdirSync(pluginsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory() && (only === undefined || only.includes(d.name)))
     .map((d) => join(pluginsDir, d.name))
@@ -75,79 +61,68 @@ export async function buildIndex({ pluginsDir, baseUrl, only }) {
     for (const dir of dirs) {
       const manifest = loadManifest(dir);
       const { sha256 } = await bundlePlugin({ dir, outDir });
-      sites.push(pluginEntry(manifest, versionedUrl(baseUrl, manifest.id, manifest.version), sha256));
+      plugins.push(pluginEntry(manifest, versionedUrl(baseUrl, manifest.id, manifest.version), sha256));
     }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
-  return { sites };
+  return { plugins };
 }
 
 /**
- * What is wrong with [document] as an author wrote it, without fetching anything: the schema,
- * and a plugin entry keyed for another id. Somebody else's entries are held to nothing more,
- * and what a reader only skips ([pluginEntries]) is not a problem here.
+ * What is wrong with [document] as an author wrote it, without fetching anything: the schema.
+ * Somebody else's entries are held to nothing more, and what a reader only skips
+ * ([pluginEntries]) is not a problem here.
  */
 export function indexProblems(document) {
   const problems = [];
   if (!validate(document)) {
     for (const e of validate.errors) {
-      // An `if`/`then` failure only restates the errors under it.
-      if (e.keyword === 'if') continue;
+      // An `if`/`then` failure only restates the errors under it; an `anyOf` one the two arms'.
+      if (e.keyword === 'if' || e.keyword === 'anyOf') continue;
       problems.push(`${e.instancePath || '/'} ${e.message}${e.params?.allowedValue !== undefined ? `: ${e.params.allowedValue}` : ''}`);
     }
   }
-  (Array.isArray(document?.sites) ? document.sites : []).forEach((site, i) => {
-    const id = site?.ext?.config?.id;
-    if (isPlugin(site) && typeof id === 'string' && site.key !== `yonto:${id}`) {
-      problems.push(`/sites/${i} is keyed ${site.key} and is the plugin ${id}, so its key is yonto:${id}`);
-    }
-  });
   return [...new Set(problems)];
 }
 
-export function isPlugin(site) {
-  return site?.type === YONTO_ENTRY_TYPE && site.ext?.yontoType === PLUGIN;
-}
-
 /**
- * [document] as the app reads it, through `readIndex` (#648): every entry it keeps, what it
- * skips and why, and each plugin entry as written, marked with whether a reader offers it.
- * A plugin entry a reader passes over is still returned, so a check can fetch it too.
+ * [document] as the app reads it, through `readIndex` (#648): every catalog entry it keeps,
+ * what it skips and why, and each `plugins` entry as written, marked with whether a reader
+ * offers it. One a reader passes over is still returned, so a check can fetch it too.
  * A list of repos is answered as `{ list }`, since it names no entries of its own.
  */
 export function pluginEntries(document) {
   const read = readIndex(Buffer.from(JSON.stringify(document)));
   if (read.refused) return { refused: read.refused };
   if (read.list) return { list: read.list };
-  const unclaimed = read.entries.filter((entry) => entry.yontoType === PLUGIN);
-  const plugins = (Array.isArray(document.sites) ? document.sites : []).filter(isPlugin).map((site) => {
-    const address = text(site.api);
-    const at = unclaimed.findIndex((entry) => entry.address === address && entry.key === (text(site.key) || address));
-    return { site, offered: at >= 0 && unclaimed.splice(at, 1).length === 1 };
+  const unclaimed = [...read.plugins];
+  const plugins = (Array.isArray(document.plugins) ? document.plugins : []).map((plugin) => {
+    const at = unclaimed.findIndex((offered) => offered.id === text(plugin?.id) && offered.url === text(plugin?.url));
+    return { plugin, offered: at >= 0 && unclaimed.splice(at, 1).length === 1 };
   });
   return { entries: read.entries, skipped: read.skipped, plugins };
 }
 
 /**
- * Downloads one plugin entry and holds it to what the entry says: the sha256 in its `api`,
+ * Downloads one plugin entry and holds it to what the entry says: the sha256 in its `url`,
  * then the downloaded manifest's id, version and contract, which is the check the app makes
  * before anything reaches the install dialog. Answers the problems found, none when it holds.
  */
-export async function entryProblems(site, fetchBytes) {
-  const config = site.ext?.config ?? {};
-  const where = site.key ?? config.id ?? '(no key)';
+export async function entryProblems(plugin, fetchBytes) {
+  const config = plugin ?? {};
+  const where = config.id ?? '(no id)';
   // Refused before anything is fetched, as the app refuses it: no host runs a contract outside these.
   if (config.contractVersion < OLDEST || config.contractVersion > LATEST) {
     return [`${where}: the index says contractVersion ${config.contractVersion}, and no host runs a plugin outside ${OLDEST}–${LATEST}`];
   }
-  const expected =SHA256_FRAGMENT.exec(site.api ?? '')?.[1]?.toLowerCase();
-  if (!expected) return [`${where}: its api carries no #sha256=, so nothing could check the download`];
+  const expected = SHA256_FRAGMENT.exec(config.url ?? '')?.[1]?.toLowerCase();
+  if (!expected) return [`${where}: its url carries no #sha256=, so nothing could check the download`];
   let bytes;
   try {
-    bytes = await fetchBytes(site.api.replace(/#.*$/, ''));
+    bytes = await fetchBytes(config.url.replace(/#.*$/, ''));
   } catch (error) {
-    return [`${where}: couldn't fetch ${site.api.replace(/#.*$/, '')}: ${error.message}`];
+    return [`${where}: couldn't fetch ${config.url.replace(/#.*$/, '')}: ${error.message}`];
   }
   const actual = createHash('sha256').update(bytes).digest('hex');
   if (actual !== expected) return [`${where}: the index says sha256 ${expected}, the file is ${actual}`];

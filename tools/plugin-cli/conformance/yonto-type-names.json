@@ -3,7 +3,7 @@
   "cases": [
     { "name": "maccms-json", "accepted": true, "why": "a short id, Yonto's own" },
     { "name": "maccms-json-2", "accepted": true, "why": "a breaking change is a new short id" },
-    { "name": "plugin", "accepted": true, "why": "a short id; lint refuses it in handles for another reason" },
+    { "name": "plugin", "accepted": true, "why": "a short id by the grammar, and no type: a plugin is listed under `plugins`, so a type-50 entry naming it is skipped and lint refuses it in handles as a short id with no schema" },
     { "name": "com.example", "accepted": true, "why": "two labels is enough for reverse-DNS" },
     { "name": "io.alist", "accepted": true, "why": "two labels, as above" },
     { "name": "io.github.someone.alist", "accepted": true, "why": "the design's own example" },

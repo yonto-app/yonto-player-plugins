@@ -940,7 +940,7 @@ test('lint refuses a handler for every rule it breaks, all at once', () => {
   assert.equal(status, 1);
   assert.match(stderr, /MANIFEST_INVALID {2}handles is refused/);
   for (const reason of [
-    /plugin is not a catalog type/,
+    /plugin is a short id, which is Yonto's, and contracts\/yonto-types\/ has no plugin\.schema\.json/,
     /maccms-jsn is a short id/,
     /maccms-xml's api is a url field, and configSchema declares it as text/,
     /maccms-xml fills dialect with xml/,

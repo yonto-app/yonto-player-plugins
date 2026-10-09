@@ -819,12 +819,14 @@
           }
         }
       ],
+      "plugins": [],
       "skipped": {
         "spider": 0,
         "type": 0,
         "address": 0,
         "duplicate": 0,
-        "unknownType": 0
+        "unknownType": 0,
+        "plugin": 0
       }
     }
   },
@@ -1189,12 +1191,14 @@
           }
         }
       ],
+      "plugins": [],
       "skipped": {
         "spider": 46,
         "type": 0,
         "address": 0,
         "duplicate": 0,
-        "unknownType": 0
+        "unknownType": 0,
+        "plugin": 0
       }
     }
   }
