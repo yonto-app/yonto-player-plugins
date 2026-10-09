@@ -155,7 +155,7 @@ test('search keeps the movie and show hubs', async () => {
   assert.deepEqual(found.map((item) => [item.id, item.type]), [['1', 'MOVIE'], ['3', 'SERIES']]);
 });
 
-test('a refused token says to check it, and a missing one says to add one', async () => {
+test('a refused token says to check it, a missing one says to add one, and neither offers the plex.tv sign-in', async () => {
   const refused = await answering(401, {}).engine.call('getCategories', []).catch((error) => error);
   const wanted = await engineOver({
     async request() {
@@ -167,6 +167,8 @@ test('a refused token says to check it, and a missing one says to add one', asyn
   assert.equal(wanted.code, 'UNAUTHENTICATED');
   assert.match(refused.message, /refused the token/);
   assert.match(wanted.message, /asks for a Plex token/);
+  assert.equal(refused.signIn, false);
+  assert.equal(wanted.signIn, false);
 });
 
 test('a server error rests the source, and a missing title is not found', async () => {
@@ -223,6 +225,7 @@ test('a 403 is a refused token too, not an outage', async () => {
 
   assert.equal(error.code, 'UNAUTHENTICATED');
   assert.match(error.message, /refused the token/);
+  assert.equal(error.signIn, false);
 });
 
 test('a refused poster is not renewable, since only the viewer can replace a typed token', async () => {
@@ -351,8 +354,19 @@ test('signed out with no typed server, every call says to log in and asks nothin
     const error = await engine.call(method, args).catch((e) => e);
     assert.equal(error.code, 'UNAUTHENTICATED', method);
     assert.match(error.message, /Log in/, method);
+    assert.equal(error.signIn, true, method);
   }
   assert.deepEqual(asked, []);
+});
+
+test('signed in, a typed server refusing its token leaves the plex.tv sign-in offered, since the host may have bound its credential there', async () => {
+  const { engine } = linked({ config: { ...RECORDED, token: TOKEN }, answers: { [baseOf(RECORDED.serverUrl)]: 401 } });
+
+  const error = await engine.call('getCategories', []).catch((e) => e);
+
+  assert.equal(error.code, 'UNAUTHENTICATED');
+  assert.match(error.message, /refused the token/);
+  assert.equal(error.signIn, true);
 });
 
 test('the typed catalog is read as it always was, with the session never asked', async () => {

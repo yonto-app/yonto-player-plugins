@@ -31,7 +31,7 @@ test('a thrown value ends in what conformance/raised/raised.json says', async ()
   });
   const engine = createEngine({ dir, host });
 
-  for (const { why, call, code, message } of record.cases) {
+  for (const { why, call, code, message, signIn } of record.cases) {
     const thrown = await engine.call('raise', [JSON.stringify(call)]).then(
       () => assert.fail(`${why}: the call did not throw`),
       (error) => error,
@@ -39,5 +39,6 @@ test('a thrown value ends in what conformance/raised/raised.json says', async ()
 
     assert.equal(thrown.code, code, why);
     if (message !== undefined) assert.equal(thrown.message, message, why);
+    if (signIn !== undefined) assert.equal(thrown.signIn, signIn, why);
   }
 });

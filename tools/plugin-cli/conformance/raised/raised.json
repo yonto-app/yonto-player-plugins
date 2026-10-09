@@ -1,8 +1,103 @@
 {
-  "$comment": "What a call that throws ends in, on both hosts: the code the caller is handed and, where the plugin's own code stands, its message. Each case's `call` is handed to raised-plugin.js's `raise`. Both hosts run it over a transport that answers `redirectsToItself` with a 302 to itself, `answersTooLarge` with one byte more than limits.json's responseBodyBytes, and fails every other request, as a server that does not answer. test/raised.test.js walks it through the CLI's engine and PluginRaisedRecordTest through the device's runtime. A case with no `message` compares none, because the two hosts word METHOD_THREW and a failed transport differently. Add a case when a thrown value turns out to matter.",
+  "$comment": "What a call that throws ends in, on both hosts: the code the caller is handed and, where the plugin's own code stands, its message. Each case's `call` is handed to raised-plugin.js's `raise`. Both hosts run it over a transport that answers `redirectsToItself` with a 302 to itself, `answersTooLarge` with one byte more than limits.json's responseBodyBytes, and fails every other request, as a server that does not answer. test/raised.test.js walks it through the CLI's engine and PluginRaisedRecordTest through the device's runtime. A case with no `message` compares none, because the two hosts word METHOD_THREW and a failed transport differently; `signIn` is compared where a case names it, and only an UNAUTHENTICATED carries one. Add a case when a thrown value turns out to matter.",
   "redirectsToItself": "https://loop.test/",
   "answersTooLarge": "https://large.test/",
   "cases": [
+    {
+      "why": "unauthenticated offers the host's sign-in unless the plugin declines it",
+      "call": {
+        "raise": "unauthenticated",
+        "with": [
+          "登录已过期。"
+        ]
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "登录已过期。",
+      "signIn": true
+    },
+    {
+      "why": "unauthenticated with signIn false is a refusal no sign-in the host runs answers, and says so",
+      "call": {
+        "raise": "unauthenticated",
+        "with": [
+          "服务器拒绝了这个令牌。",
+          {
+            "signIn": false
+          }
+        ]
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "服务器拒绝了这个令牌。",
+      "signIn": false
+    },
+    {
+      "why": "a hand-built unauthenticated declines the sign-in the same way, and only false declines it",
+      "call": {
+        "handBuilt": {
+          "code": "UNAUTHENTICATED",
+          "message": "服务器拒绝了这个令牌。",
+          "signIn": false
+        }
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "服务器拒绝了这个令牌。",
+      "signIn": false
+    },
+    {
+      "why": "a signIn that is not false, whatever it is, declines nothing",
+      "call": {
+        "handBuilt": {
+          "code": "UNAUTHENTICATED",
+          "message": "登录已过期。",
+          "signIn": "no"
+        }
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "登录已过期。",
+      "signIn": true
+    },
+    {
+      "why": "a signIn false read through a getter declines the sign-in, as the realm reads it",
+      "call": {
+        "declining": "getter"
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "服务器拒绝了这个令牌。",
+      "signIn": false
+    },
+    {
+      "why": "a non-enumerable signIn false declines it too",
+      "call": {
+        "declining": "hidden"
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "服务器拒绝了这个令牌。",
+      "signIn": false
+    },
+    {
+      "why": "so does a Proxy answering false for signIn",
+      "call": {
+        "declining": "proxy"
+      },
+      "code": "UNAUTHENTICATED",
+      "message": "服务器拒绝了这个令牌。",
+      "signIn": false
+    },
+    {
+      "why": "a signIn getter that throws is the plugin's own failure, as a code getter that throws is",
+      "call": {
+        "declining": "throwingGetter"
+      },
+      "code": "METHOD_THREW"
+    },
+    {
+      "why": "only an UNAUTHENTICATED's signIn is read, so a throwing one on any other code changes nothing",
+      "call": {
+        "declining": "notFoundThrowingGetter"
+      },
+      "code": "NOT_FOUND",
+      "message": "not found: m"
+    },
     {
       "why": "unreachable carries its code and the plugin's sentence",
       "call": {

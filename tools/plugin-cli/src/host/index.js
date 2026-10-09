@@ -187,7 +187,8 @@ export function createHost({
     // contracts/content-source-http.md's Yonto plugin errors section.
     error: {
       notFound: (id) => Object.assign(new Error(`not found: ${id}`), { code: Code.NOT_FOUND }),
-      unauthenticated: (message) => Object.assign(new Error(message), { code: Code.UNAUTHENTICATED }),
+      unauthenticated: (message, options) =>
+        Object.assign(new Error(message), { code: Code.UNAUTHENTICATED }, options?.signIn === false ? { signIn: false } : {}),
       unavailable: (reason) => Object.assign(new Error(reason), { code: Code.UNAVAILABLE }),
       misconfigured: (reason) => Object.assign(new Error(reason), { code: Code.MISCONFIGURED }),
       unreachable: (reason) => Object.assign(new Error(reason), { code: Code.UNREACHABLE }),

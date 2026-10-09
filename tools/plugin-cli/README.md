@@ -70,7 +70,7 @@ Its one line of stdout is `export YONTO_PLUGIN_SESSION='…'`, which `eval` puts
 `run` and `doctor` then hold that session as a television does: the host lists the account's servers for `yonto.session.servers()`, attaches each server's own credential to requests to its hosts, and masks every held credential out of what the plugin is handed and says.
 The identifier the host gives the service is its own, derived from the plugin's directory, and never the plugin's `installId()`.
 
-With no session, `doctor` on such a plugin makes one real start and one poll of the service, checks both against the rules every service's answers are held to, expects the poll to be pending, and reports each step that raises `unauthenticated` as ``not logged in: run `yonto-plugin link` `` rather than as a failure.
+With no session, `doctor` on such a plugin makes one real start and one poll of the service, checks both against the rules every service's answers are held to, expects the poll to be pending, and reports each step that raises `unauthenticated` as ``not logged in: run `yonto-plugin link` `` rather than as a failure, unless the plugin raised it with `{ signIn: false }`, a refusal no login answers, which fails with its own words.
 Under `--replay` it skips that check, since a sign-in is only ever checked live.
 A report never prints a held credential, nor any service's credential header's value.
 
