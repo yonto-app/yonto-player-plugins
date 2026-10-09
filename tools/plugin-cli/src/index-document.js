@@ -56,16 +56,20 @@ export function pluginEntry(manifest, url, sha256) {
 }
 
 /**
- * Bundles every plugin under [pluginsDir] and lists each at its versioned address. Bundled
- * into a directory of its own, never the plugin's `dist/`, which is Gradle's output.
+ * Bundles every plugin under [pluginsDir], or just the ids in [only], and lists each at its
+ * versioned address. An id in [only] with no plugin is refused rather than left out, since a
+ * publisher naming one it cannot find has the wrong list. Bundled into a directory of its own,
+ * never the plugin's `dist/`, which is Gradle's output.
  */
-export async function buildIndex({ pluginsDir, baseUrl }) {
+export async function buildIndex({ pluginsDir, baseUrl, only }) {
   const sites = [];
   const dirs = readdirSync(pluginsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    .filter((d) => d.isDirectory() && (only === undefined || only.includes(d.name)))
     .map((d) => join(pluginsDir, d.name))
     .filter((dir) => existsSync(entryFile(dir)))
     .sort();
+  const missing = (only ?? []).filter((id) => !dirs.includes(join(pluginsDir, id)));
+  if (missing.length > 0) throw new Error(`no plugin under ${pluginsDir} for ${missing.join(', ')}`);
   const outDir = mkdtempSync(join(tmpdir(), 'yonto-index-'));
   try {
     for (const dir of dirs) {

@@ -63,6 +63,16 @@ test('an index built from plugins/ names each versioned zip with the sha256 bund
   assert.equal(listed.ext.config.contractVersion, manifest.contractVersion);
 });
 
+test('--only keeps the index to the ids named, and refuses one with no plugin', async () => {
+  const document = await buildIndex({ pluginsDir, baseUrl: 'https://plugins.example/download/', only: ['plex', 'jellyfin'] });
+  assert.deepEqual(document.sites.map((site) => site.ext.config.id), ['jellyfin', 'plex']);
+
+  await assert.rejects(
+    buildIndex({ pluginsDir, baseUrl: 'https://plugins.example/download/', only: ['jellyfin', 'nope'] }),
+    /no plugin under .* for nope/,
+  );
+});
+
 test('building an index writes nothing into a plugin\'s dist/, which is Gradle\'s output', async () => {
   const plugins = scratchDir('lp-index-plugins-');
   cpSync(okDir, join(plugins, 'ok'), { recursive: true, filter: (path) => !path.includes('/dist') });

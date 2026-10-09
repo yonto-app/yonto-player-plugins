@@ -72,13 +72,12 @@ It is exported from the app's private repository, so some of what you read point
 
 - `kangzj/yonto#123` is an issue in that repository, and a path under `app/`, `core/` or `docs/` is a file in it.
 - Lantern is Yonto's earlier name, and `kangzj/lantern-tv#123` an issue from before the repository was renamed to `kangzj/yonto`.
-- Two plugins are not here: `ddys` and `iyingshi` read particular websites rather than a format anybody can run.
+- Two plugins are not here, nor among the releases: `ddys` and `iyingshi` read particular websites rather than a format anybody can run.
 - `plugins/xptv-js` has no fixtures here. Its recordings embed XPTV catalogs, programs from a repository that carries no licence, so they cannot be published under this one. The suite's recorded indexes (`conformance/index-reading/recorded-*.json`) are kept: they are lists of names and addresses, not anybody's code.
 
 ## Licence
 
-MIT, in `LICENSE`, for the files in this tree.
-It does not cover the release files: some of them build plugins whose source is not here, such as `ddys` and `iyingshi`, and those are not offered under any licence.
+MIT, in `LICENSE`, for the files in this tree, and for the releases built from them.
 Recorded responses are not ours to licence: the `fixtures/` directories and the `recorded-*.json` files under `tools/plugin-cli/conformance/` hold what third-party servers answered, kept as test inputs, and remain their owners'.
 
 `CONTRIBUTING.md` says how a change gets in, and how the contract here relates to the apps people have installed.
