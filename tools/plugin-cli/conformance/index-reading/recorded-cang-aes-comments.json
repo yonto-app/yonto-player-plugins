@@ -59,12 +59,14 @@
           }
         }
       ],
+      "plugins": [],
       "skipped": {
         "spider": 106,
         "type": 0,
         "address": 0,
         "duplicate": 0,
-        "unknownType": 0
+        "unknownType": 0,
+        "plugin": 0
       }
     }
   }

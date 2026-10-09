@@ -2,11 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yonto.app/plugin-contract/index.schema.json",
   "title": "Yonto index",
-  "description": "A TVBox 仓 / XPTV index document, `{\"sites\": [...]}`, as far as Yonto reads it (kangzj/lantern-tv#606, docs/design/2026-09-23-the-app-reads-every-index.md). Yonto's own entries are `type` 50 and say what they are in `ext.yontoType`, with the type's payload in `ext.config`; every other entry is somebody else's and is described only enough to be told apart.",
-  "$comment": "Lenient about everyone else's entries, because a curator merging ours into a stranger's 仓 must not be refused for the stranger's fields, and a reader skips and counts what it can't use rather than refusing the document. A type-50 entry's config is described by contracts/yonto-types/<yontoType>.schema.json where Yonto defines that type.",
+  "description": "A repo's document, as far as Yonto reads it (kangzj/lantern-tv#606, docs/design/2026-09-23-the-app-reads-every-index.md). `plugins` lists the plugins to install, Yonto's own list. `sites` is the TVBox 仓 / XPTV list of catalogs, where Yonto's own entries are `type` 50 and say what they are in `ext.yontoType`, with the type's payload in `ext.config`; every other entry is somebody else's and is described only enough to be told apart. A document carries either list or both.",
+  "$comment": "Lenient about everyone else's entries, because a curator merging ours into a stranger's 仓 must not be refused for the stranger's fields, and a reader skips and counts what it can't use rather than refusing the document. A type-50 entry's config is described by contracts/yonto-types/<yontoType>.schema.json. A plugin is never a `sites` entry (kangzj/yonto, 2026-10-09): a plugin is not a site, and a TVBox player ignores a key it does not know, so `plugins` needs none of the fields that used to keep one out of that player's site list.",
   "type": "object",
-  "required": ["sites"],
+  "anyOf": [
+    { "required": ["plugins"] },
+    { "required": ["sites"] }
+  ],
   "properties": {
+    "plugins": {
+      "description": "Mirrored as IndexReader's MAX_ENTRIES on a device, which refuses a longer list rather than reading part of it.",
+      "type": "array",
+      "maxItems": 2000,
+      "items": { "$ref": "#/$defs/plugin" }
+    },
     "sites": {
       "description": "Mirrored as IndexReader's MAX_ENTRIES on a device, which refuses a longer list rather than reading part of it.",
       "type": "array",
@@ -15,6 +24,27 @@
     }
   },
   "$defs": {
+    "plugin": {
+      "description": "A plugin to install: enough to list it and compare versions without downloading anything, and checked against the downloaded manifest before anything installs. `url` is the versioned zip with its sha256, exactly the link a viewer could paste. A reader skips and counts one it cannot read, and a second entry for an id already listed.",
+      "type": "object",
+      "required": ["id", "name", "version", "contractVersion", "provides", "url"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,31}$" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "contractVersion": { "type": "integer", "minimum": 1 },
+        "provides": { "enum": ["source", "source-type"] },
+        "description": { "type": "string" },
+        "handles": {
+          "$comment": "Copied from the manifest, so a repo can offer the handler of a type without downloading every zip it lists (docs/design/2026-09-23-the-app-reads-every-index.md, *Types*).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "yonto-type-name.schema.json" }
+        },
+        "url": { "type": "string", "pattern": "^https?://[^\\s#]+#sha256=[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    },
     "entry": {
       "type": "object",
       "not": {
@@ -29,7 +59,7 @@
       "then": { "$ref": "#/$defs/yontoEntry" }
     },
     "yontoEntry": {
-      "description": "A Yonto entry. 50 is the only number Yonto takes; a new kind of entry is a new `yontoType`, never a new number.",
+      "description": "A Yonto catalog entry. 50 is the only number Yonto takes; a new kind of entry is a new `yontoType`, never a new number.",
       "type": "object",
       "required": ["key", "name", "type", "api", "ext"],
       "properties": {
@@ -48,33 +78,6 @@
             "config": { "type": "object" }
           }
         }
-      },
-      "if": {
-        "required": ["ext"],
-        "properties": { "ext": { "required": ["yontoType"], "properties": { "yontoType": { "const": "plugin" } } } }
-      },
-      "then": { "$ref": "#/$defs/pluginEntry" }
-    },
-    "pluginEntry": {
-      "description": "A `plugin` entry. `api` is the versioned zip with its sha256, exactly the link a viewer could paste. The four FongMi fields keep it out of that player's site list and search, which would otherwise read the zip as a CMS; they are required here and on no other Yonto type, whose catalogs FongMi may well read.",
-      "type": "object",
-      "required": ["hide", "searchable", "quickSearch", "changeable"],
-      "properties": {
-        "key": {
-          "description": "`yonto:<id>`, so a merged document can also carry somebody else's entry for the same site.",
-          "type": "string",
-          "pattern": "^yonto:[a-z0-9][a-z0-9-]{1,31}$"
-        },
-        "api": { "type": "string", "pattern": "^https?://[^\\s#]+#sha256=[0-9a-f]{64}$" },
-        "ext": {
-          "properties": {
-            "config": { "$ref": "yonto-types/plugin.schema.json" }
-          }
-        },
-        "hide": { "const": 1 },
-        "searchable": { "const": 0 },
-        "quickSearch": { "const": 0 },
-        "changeable": { "const": 0 }
       }
     }
   }

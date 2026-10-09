@@ -23,10 +23,10 @@ node src/cli.js index  <plugins-dir> --base-url <url> [--only <ids>]   an index 
 node src/cli.js index  --check <file-or-url>   an index's schema, then each plugin it lists downloaded and held to it
 ```
 
-`index` writes the document `contracts/index.schema.json` describes: the 仓/XPTV envelope, each plugin a `type` 50 entry with `ext.yontoType` `plugin` and its payload in `ext.config` (`contracts/yonto-types/plugin.schema.json`), listed at `<url>/<id>/<id>-<version>.zip` with the sha256 `bundle` printed.
+`index` writes the document `contracts/index.schema.json` describes: a `plugins` list, each plugin one entry (its id, name, version, contract, `provides`, description and `handles` from its manifest, and its `url`), listed at `<url>/<id>/<id>-<version>.zip` with the sha256 `bundle` printed. A plugin is never a `sites` entry, which is the 仓/XPTV list of catalogs (Jasper, 2026-10-09).
 It bundles into a directory of its own, never a plugin's `dist/`, which is Gradle's.
 `index --check` is `doctor` for a repo, and what a third-party repo author runs: it refuses a plugin entry with no sha256, a download that doesn't match it, a manifest whose id, version or contract isn't the entry's, a `yontoType` that is neither a short id nor reverse-DNS, and a Yonto entry typed `"50"`, and reports every one rather than the first.
-It reads the document through `src/index-reader.js`, the reader the app's is held to, and what that reader only skips it reports and does not refuse: an entry of a type no reader takes, one with no http address, a 仓 spider, and a key an earlier entry already has.
+It reads the document through `src/index-reader.js`, the reader the app's is held to, and what that reader only skips it reports and does not refuse: an entry of a type no reader takes, one with no http address, a 仓 spider, a key an earlier entry already has, a plugin entry missing what an install needs, and a plugin id an earlier entry already has.
 Every plugin entry is fetched and held to its sha256, one a reader passes over included, and one that can't be fetched or doesn't match fails the check.
 An index address or file path carrying its own `#sha256=` is checked before anything it lists is fetched.
 

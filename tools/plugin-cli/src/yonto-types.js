@@ -4,15 +4,12 @@ import { PROVIDES_SOURCE, editDistance } from './manifest.js';
 const registryDir = new URL('../../../contracts/yonto-types/', import.meta.url);
 const SCHEMA_SUFFIX = '.schema.json';
 
-/** Yonto's own types by name: the directory is the registry. */
+/** Yonto's own catalog types by name: the directory is the registry. A plugin is not one; an index lists its plugins under `plugins`. */
 export const YONTO_TYPES = new Map(
   readdirSync(registryDir)
     .filter((file) => file.endsWith(SCHEMA_SUFFIX))
     .map((file) => [file.slice(0, -SCHEMA_SUFFIX.length), JSON.parse(readFileSync(new URL(file, registryDir), 'utf8'))]),
 );
-
-/** An index entry to install, never one to hand to a handler. */
-export const PLUGIN_TYPE = 'plugin';
 
 /** The numeric `type` of an entry that names its Yonto type in `ext.yontoType`, in either dialect. */
 export const YONTO_ENTRY_TYPE = 50;
@@ -55,9 +52,6 @@ export function handlesRefusals(manifest, exports) {
 
 /** A name with no dot is a short id, which is Yonto's; one with dots is somebody else's reverse-DNS name. */
 function nameRefusals(name, configSchema) {
-  if (name === PLUGIN_TYPE) {
-    return ['plugin is not a catalog type: a plugin entry is installed, never handed to a plugin'];
-  }
   if (name.includes('.')) return [];
   const schema = YONTO_TYPES.get(name);
   if (!schema) {

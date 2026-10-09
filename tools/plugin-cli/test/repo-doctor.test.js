@@ -176,7 +176,7 @@ function run(...args) {
 test('doctor takes a repo address where it takes a plugin directory', async () => {
   const good = await run('doctor', `${base}/svip`);
   assert.equal(good.status, 0, good.out);
-  assert.match(good.out, /仓, 111 named, 5 a source can be made of/);
+  assert.match(good.out, /仓, 111 named, 5 a source can be made of, 0 plugins to install/);
 
   const empty = await run('doctor', `${base}/spiders`);
   assert.equal(empty.status, 1, empty.out);

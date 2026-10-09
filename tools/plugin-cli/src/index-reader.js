@@ -3,20 +3,26 @@ import { YONTO_ENTRY_TYPE, YONTO_TYPES, TVBOX_ENTRY_TYPES, XPTV_ENTRY_TYPES, isT
 
 /**
  * Reads an index the way the app's `IndexReader` does: a TVBox 仓, an XPTV index or a Yonto
- * index, unwrapped from its disguise, parsed leniently, its dialect sniffed, and every entry
- * typed or counted as skipped (docs/design/2026-09-23-the-app-reads-every-index.md, *The
- * reader*). `conformance/index-reading/` holds the two readers to one answer per document.
+ * index, unwrapped from its disguise, parsed leniently, its dialect sniffed, every `sites`
+ * entry typed or counted as skipped, and every `plugins` entry read or counted
+ * (docs/design/2026-09-23-the-app-reads-every-index.md, *The reader*). The plugins to install
+ * are the document's own `plugins` list, never a `sites` entry: a plugin is not a site.
+ * `conformance/index-reading/` holds the two readers to one answer per document.
  *
- * A document with no `sites` that is a list of repos, a 多仓's `storeHouse` or a 多线路's `urls`,
- * reads as `{ list }`; the two chain, a 多仓 naming 多线路 lists that name 仓s (#786).
+ * A document with neither list that is a list of repos, a 多仓's `storeHouse` or a 多线路's
+ * `urls`, reads as `{ list }`; the two chain, a 多仓 naming 多线路 lists that name 仓s (#786).
  */
 
 export const DIALECT = Object.freeze({ CANG: 'cang', XPTV: 'xptv', YONTO: 'yonto' });
 
 export const REFUSAL = Object.freeze({ NOT_AN_INDEX: 'not-an-index', TOO_MANY_ENTRIES: 'too-many-entries' });
 
-/** Mirrors `sites.maxItems` in `contracts/index.schema.json` (kangzj/lantern-tv#626). */
+/** Mirrors `maxItems` of `sites` and of `plugins` in `contracts/index.schema.json` (kangzj/lantern-tv#626). */
 const MAX_ENTRIES = 2000;
+
+// The manifest's id grammar, as `PluginManifests.ID_PATTERN` has it.
+const PLUGIN_ID = /^[a-z0-9][a-z0-9-]{1,31}$/;
+const SHA256_FRAGMENT = /#sha256=[0-9a-f]{64}$/i;
 
 // Nine is the deepest any document in #572's corpus or XPTV's files nests; the Kotlin parser
 // recurses, and this keeps both readers well inside its stack (kangzj/lantern-tv#648).
@@ -50,22 +56,33 @@ const OPENS_AS_OBJECT = /^[ \t\n\r]*(?:\{|\/[/*])/;
 
 /**
  * [bytes] read as an index, pinned to [dialect] when the repo already has one, sniffed
- * otherwise. Answers `{ dialect, named, entries, skipped }`, `{ list }` for a list of repos, or
- * `{ refused }` when the document is neither: one entry it can't use is counted, never a refusal.
+ * otherwise. Answers `{ dialect, named, entries, skipped, plugins }`, `{ list }` for a list of
+ * repos, or `{ refused }` when the document is neither: one entry it can't use is counted,
+ * never a refusal.
  */
 export function readIndex(bytes, dialect = null) {
   const root = documentOf(bytes);
   if (root === null) return { refused: REFUSAL.NOT_AN_INDEX };
-  if (!Array.isArray(root.sites)) {
+  const listedPlugins = Array.isArray(root.plugins) ? root.plugins : null;
+  const sites = Array.isArray(root.sites) ? root.sites : null;
+  if (listedPlugins === null && sites === null) {
     const list = listedIn(root);
     return list === null ? { refused: REFUSAL.NOT_AN_INDEX } : { list };
   }
-  if (root.sites.length > MAX_ENTRIES) return { refused: REFUSAL.TOO_MANY_ENTRIES };
-  const read = dialect ?? sniff(root);
-  const skipped = { spider: 0, type: 0, address: 0, duplicate: 0, unknownType: 0 };
+  if ((listedPlugins ?? []).length > MAX_ENTRIES || (sites ?? []).length > MAX_ENTRIES) return { refused: REFUSAL.TOO_MANY_ENTRIES };
+  const read = dialect ?? sniff(root, sites ?? []);
+  const skipped = { spider: 0, type: 0, address: 0, duplicate: 0, unknownType: 0, plugin: 0 };
+  const plugins = [];
+  const ids = new Set();
+  for (const item of listedPlugins ?? []) {
+    const plugin = pluginOf(item);
+    if (plugin === null) skipped.plugin += 1;
+    else if (ids.has(plugin.id)) skipped.duplicate += 1;
+    else { ids.add(plugin.id); plugins.push(plugin); }
+  }
   const entries = [];
   const keys = new Set();
-  for (const site of root.sites) {
+  for (const site of sites ?? []) {
     const { yontoType, skip } = typeOf(site, read);
     if (skip) { skipped[skip] += 1; continue; }
     const address = text(addressOf(site, yontoType));
@@ -76,7 +93,37 @@ export function readIndex(bytes, dialect = null) {
     const type = dialectNamedBy(yontoType, site, address);
     entries.push({ key, name: text(site.name) || key, yontoType: type, address, config: configOf(type, site, address) });
   }
-  return { dialect: read, named: root.sites.length, entries, skipped };
+  return { dialect: read, named: (listedPlugins ?? []).length + (sites ?? []).length, entries, skipped, plugins };
+}
+
+/**
+ * A `plugins` entry with what an install needs, or null: an id in the manifest's grammar, a
+ * version, a contract version that is a number (never the string "21"), and an http address
+ * pinned by `#sha256=`. A nameless one is named by its id.
+ */
+function pluginOf(item) {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return null;
+  const id = string(item.id);
+  if (!PLUGIN_ID.test(id)) return null;
+  const version = string(item.version);
+  if (version === '') return null;
+  if (!(typeof item.contractVersion === 'number' && Number.isInteger(item.contractVersion) && item.contractVersion >= 1)) return null;
+  const url = text(item.url);
+  if (!HTTP_ADDRESS.test(url) || !SHA256_FRAGMENT.test(url)) return null;
+  const description = string(item.description);
+  return {
+    id,
+    name: string(item.name) || id,
+    version,
+    contractVersion: item.contractVersion,
+    ...(description ? { description } : {}),
+    url,
+  };
+}
+
+/** A string, trimmed as JavaScript trims; anything else, a number included, is empty. */
+function string(value) {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 /**
@@ -118,13 +165,16 @@ function dialectNamedBy(yontoType, site, address) {
 }
 
 /**
- * A 仓 has a `spider` or a `type` 0 entry; a Yonto index names only type-50 entries, whatever
- * else it carries; a document with a key only a 仓 has (`lives`, `parses`, `rules`) is a 仓 too;
- * the rest is XPTV. It only matters for `type` 3, a CatVod spider in a 仓 and a script in XPTV.
+ * A 仓 has a `spider` or a `type` 0 entry; past those, a document with a `plugins` list is
+ * Yonto's, as is one whose sites are all type-50 entries, whatever else it carries; a document with a key
+ * only a 仓 has (`lives`, `parses`, `rules`) is a 仓 too; the rest is XPTV. It only matters for
+ * `type` 3, a CatVod spider in a 仓 and a script in XPTV, and the 仓 markers come first so a 仓
+ * that lists plugins reads its sites as a 仓's whether its dialect was pinned or sniffed.
  */
-function sniff(root) {
-  if (Object.hasOwn(root, 'spider') || root.sites.some((site) => numericType(site?.type) === 0)) return DIALECT.CANG;
-  if (root.sites.length > 0 && root.sites.every((site) => site?.type === YONTO_ENTRY_TYPE)) return DIALECT.YONTO;
+function sniff(root, sites) {
+  if (Object.hasOwn(root, 'spider') || sites.some((site) => numericType(site?.type) === 0)) return DIALECT.CANG;
+  if (Array.isArray(root.plugins)) return DIALECT.YONTO;
+  if (sites.length > 0 && sites.every((site) => site?.type === YONTO_ENTRY_TYPE)) return DIALECT.YONTO;
   if (CANG_ONLY_KEYS.some((key) => Object.hasOwn(root, key))) return DIALECT.CANG;
   return DIALECT.XPTV;
 }

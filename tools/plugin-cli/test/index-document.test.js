@@ -15,22 +15,25 @@ import {
 } from '../src/index-document.js';
 import { scratchDir } from '../src/scratch-dir.js';
 
+const manifestSchema = JSON.parse(readFileSync(new URL('../../../contracts/manifest.schema.json', import.meta.url), 'utf8'));
+const indexSchema = JSON.parse(readFileSync(new URL('../../../contracts/index.schema.json', import.meta.url), 'utf8'));
+
 const cli = fileURLToPath(new URL('../src/cli.js', import.meta.url));
 const pluginsDir = fileURLToPath(new URL('../../../plugins/', import.meta.url));
 const okDir = fileURLToPath(new URL('../test-plugins/ok/', import.meta.url));
 
 const SHA = 'a'.repeat(64);
 
-function entry(overrides = {}, config = {}) {
-  const site = pluginEntry(
+function entry(overrides = {}) {
+  const plugin = pluginEntry(
     { id: 'demo', name: 'Demo', version: '1.0.0', contractVersion: 21, provides: 'source' },
     'https://plugins.example/demo/demo-1.0.0.zip',
     SHA,
   );
-  return { ...site, ...overrides, ext: { ...site.ext, config: { ...site.ext.config, ...config } } };
+  return { ...plugin, ...overrides };
 }
 
-/** A type-50 entry of a type other than `plugin`, with none of the FongMi fields. */
+/** A type-50 catalog entry. */
 function catalog(yontoType, overrides = {}) {
   return {
     key: 'home-jf', name: '家里的 Jellyfin', type: 50, api: 'https://jf.example.com',
@@ -53,19 +56,21 @@ test('an index built from plugins/ names each versioned zip with the sha256 bund
     .filter((d) => d.isDirectory() && existsSync(join(pluginsDir, d.name, `${d.name}-plugin.js`)))
     .map((d) => loadManifest(join(pluginsDir, d.name)).id)
     .sort();
-  assert.deepEqual(document.sites.map((site) => site.ext.config.id), published);
+  assert.deepEqual(document.plugins.map((plugin) => plugin.id), published);
+  assert.equal(document.sites, undefined);
   // The last one, so a build that stopped early or hashed the wrong file can't pass.
   const last = published.at(-1);
   const manifest = loadManifest(join(pluginsDir, last));
   const { sha256 } = await bundlePlugin({ dir: join(pluginsDir, last), outDir: scratchDir('lp-index-') });
-  const listed = document.sites.find((site) => site.ext.config.id === last);
-  assert.equal(listed.api, `https://plugins.example/download/${last}/${last}-${manifest.version}.zip#sha256=${sha256}`);
-  assert.equal(listed.ext.config.contractVersion, manifest.contractVersion);
+  const listed = document.plugins.find((plugin) => plugin.id === last);
+  assert.equal(listed.url, `https://plugins.example/download/${last}/${last}-${manifest.version}.zip#sha256=${sha256}`);
+  assert.equal(listed.contractVersion, manifest.contractVersion);
+  assert.equal(listed.name, manifest.name);
 });
 
 test('--only keeps the index to the ids named, and refuses one with no plugin', async () => {
   const document = await buildIndex({ pluginsDir, baseUrl: 'https://plugins.example/download/', only: ['plex', 'jellyfin'] });
-  assert.deepEqual(document.sites.map((site) => site.ext.config.id), ['jellyfin', 'plex']);
+  assert.deepEqual(document.plugins.map((plugin) => plugin.id), ['jellyfin', 'plex']);
 
   await assert.rejects(
     buildIndex({ pluginsDir, baseUrl: 'https://plugins.example/download/', only: ['jellyfin', 'nope'] }),
@@ -79,7 +84,7 @@ test('building an index writes nothing into a plugin\'s dist/, which is Gradle\'
 
   const document = await buildIndex({ pluginsDir: plugins, baseUrl: 'https://plugins.example/download/' });
 
-  assert.equal(document.sites.length, 1);
+  assert.equal(document.plugins.length, 1);
   assert.equal(existsSync(join(plugins, 'ok', 'dist')), false);
 });
 
@@ -87,116 +92,81 @@ test('the versioned address is the one the publisher uploads to', () => {
   assert.equal(versionedUrl('https://x.test/d//', 'ddys', '1.2.0'), 'https://x.test/d/ddys/ddys-1.2.0.zip');
 });
 
-test('a plugin entry carries its payload in ext.config, described by the plugin type\'s schema', () => {
-  assert.deepEqual(entry().ext, {
-    yontoType: 'plugin',
-    config: { id: 'demo', version: '1.0.0', contractVersion: 21, provides: 'source' },
+test('a plugin entry is the manifest\'s facts and the versioned zip\'s address, described by the index schema', () => {
+  assert.deepEqual(entry(), {
+    id: 'demo', name: 'Demo', version: '1.0.0', contractVersion: 21, provides: 'source',
+    url: `https://plugins.example/demo/demo-1.0.0.zip#sha256=${SHA}`,
   });
-  const missing = indexProblems({ sites: [entry({}, { version: undefined })] });
-  assert.ok(missing.some((p) => p.startsWith('/sites/0/ext/config')), missing.join('\n'));
-  // Fields are added within a name, so an extra one is allowed.
-  assert.deepEqual(indexProblems({ sites: [entry({}, { size: 12345 })] }), []);
+  const missing = indexProblems({ plugins: [entry({ version: undefined })] });
+  assert.ok(missing.some((p) => p.startsWith('/plugins/0')), missing.join('\n'));
+  // Fields are added within the entry, so an extra one is allowed.
+  assert.deepEqual(indexProblems({ plugins: [entry({ size: 12345 })] }), []);
 });
 
 /** So a repo can offer a type's handler without downloading every zip it lists. */
 test('a handler\'s entry carries the types it handles, copied from its manifest, and another\'s carries none', async () => {
   const document = await buildIndex({ pluginsDir, baseUrl: 'https://plugins.example/download/' });
-  for (const site of document.sites) {
-    const manifest = loadManifest(join(pluginsDir, site.ext.config.id));
-    assert.deepEqual(site.ext.config.handles, manifest.handles?.length ? manifest.handles : undefined, manifest.id);
+  for (const plugin of document.plugins) {
+    const manifest = loadManifest(join(pluginsDir, plugin.id));
+    assert.deepEqual(plugin.handles, manifest.handles?.length ? manifest.handles : undefined, manifest.id);
   }
-  assert.ok(document.sites.some((site) => site.ext.config.handles?.length), 'some published plugin is a handler');
-  assert.deepEqual(indexProblems({ sites: [entry({}, { handles: ['Not A Type'] })] }).length > 0, true);
+  assert.ok(document.plugins.some((plugin) => plugin.handles?.length), 'some published plugin is a handler');
+  assert.deepEqual(indexProblems({ plugins: [entry({ handles: ['Not A Type'] })] }).length > 0, true);
 });
 
-test('a plugin entry without a sha256 in its api is refused', () => {
-  const problems = indexProblems({ sites: [entry({ api: 'https://plugins.example/demo/demo-1.0.0.zip' })] });
-  assert.ok(problems.some((p) => p.startsWith('/sites/0/api')), problems.join('\n'));
+// The install checks these by hand against the downloaded manifest; drift would let an index
+// list a plugin the install then refuses.
+test('a plugin entry describes id, version, contractVersion, provides and handles as the manifest does', () => {
+  const plugin = indexSchema.$defs.plugin.properties;
+  const rules = ({ $comment, description, ...rest }) => rest;
+  for (const key of ['id', 'version', 'contractVersion', 'provides']) {
+    assert.deepEqual(rules(plugin[key]), rules(manifestSchema.properties[key]), key);
+  }
+  // The same grammar, reached from each schema's own place under contracts/.
+  const refOf = (schema, property) => new URL(property.items.$ref, schema.$id).href;
+  const { items: _, ...pluginHandles } = rules(plugin.handles);
+  const { items: __, ...manifestHandles } = rules(manifestSchema.properties.handles);
+  assert.deepEqual(pluginHandles, manifestHandles);
+  assert.equal(refOf(indexSchema, plugin.handles), refOf(manifestSchema, manifestSchema.properties.handles));
+});
+
+test('a plugin entry needs its id, name, version, contract, provides and url, and may carry more', () => {
+  const ok = (plugins) => indexProblems({ plugins }).length === 0;
+  assert.equal(ok([entry()]), true);
+  assert.equal(ok([entry({ description: 'x', addedLater: true })]), true);
+  assert.equal(ok([entry({ handles: ['maccms-json', 'io.github.someone.alist'] })]), true);
+  assert.equal(ok([entry({ handles: ['maccms-json', 'maccms-json'] })]), false);
+  for (const key of ['id', 'name', 'version', 'contractVersion', 'provides', 'url']) {
+    assert.equal(ok([entry({ [key]: undefined })]), false, `without ${key}`);
+  }
+  assert.equal(ok([entry({ version: '1.0' })]), false);
+  assert.equal(ok([entry({ provides: 'handler' })]), false);
+  assert.equal(ok([entry({ contractVersion: '21' })]), false);
+});
+
+test('a plugin entry without a sha256 in its url is refused', () => {
+  const problems = indexProblems({ plugins: [entry({ url: 'https://plugins.example/demo/demo-1.0.0.zip' })] });
+  assert.ok(problems.some((p) => p.startsWith('/plugins/0/url')), problems.join('\n'));
+});
+
+test('a document needs a plugins or a sites list, and may carry both', () => {
+  assert.ok(indexProblems({}).some((p) => p.includes('plugins') || p.includes('sites')), 'neither list');
+  assert.deepEqual(indexProblems({ plugins: [entry()] }), []);
+  assert.deepEqual(indexProblems({ sites: [catalog('jellyfin-server')] }), []);
+  assert.deepEqual(indexProblems({ plugins: [entry()], sites: [catalog('jellyfin-server')] }), []);
 });
 
 test('a Yonto entry typed as the string "50" is refused', () => {
-  const problems = indexProblems({ sites: [entry({ type: '50' })] });
+  const problems = indexProblems({ sites: [{ ...catalog('jellyfin-server'), type: '50' }] });
   assert.ok(problems.some((p) => p.startsWith('/sites/0 must NOT be valid')), problems.join('\n'));
 });
 
-/**
- * The documents the third review of #626 probed, each read as the app's reader reads it
- * (`readIndex`, #648): which plugin entries are offered, as `key@version`, and what is skipped.
- */
-const probes = (() => {
-  const plugin = (id, version, overrides = {}) => ({ ...entry({}, { id, version }), key: `yonto:${id}`, ...overrides });
-  const cms = (key, api) => ({ ...(key === undefined ? {} : { key }), name: 'c', type: 1, api });
-  const zip = (id, version) => `https://plugins.example/${id}/${id}-${version}.zip#sha256=${SHA}`;
-  return [
-    ['two plugin entries for one id: the first', { sites: [plugin('demo', '1.0.0'), plugin('demo', '2.0.0')] },
-      ['yonto:demo@1.0.0'], { duplicate: 1 }],
-    ['one id under two keys: both, since only a key makes a duplicate', { sites: [plugin('demo', '1.0.0', { key: 'other' }), plugin('demo', '2.0.0')] },
-      ['other@1.0.0', 'yonto:demo@2.0.0'], {}],
-    ['a stranger keyed yonto:demo first shadows ours', { sites: [cms('yonto:demo', 'https://c.test/api.php/provide/vod'), plugin('demo', '1.0.0')] },
-      [], { duplicate: 1 }],
-    ['keyless entries are keyed by their address', { sites: [cms(undefined, 'https://c.test/a'), cms(undefined, 'https://c.test/a'), plugin('demo', '1.0.0')] },
-      ['yonto:demo@1.0.0'], { duplicate: 1 }],
-    ['an unknown type claims no key, so it shadows nothing', { sites: [{ ...plugin('demo', '1.0.0'), ext: { yontoType: 'future', config: {} } }, plugin('demo', '1.0.0')] },
-      ['yonto:demo@1.0.0'], { unknownType: 1 }],
-    ['a plugin with no http address claims no key', { sites: [plugin('demo', '1.0.0', { api: `ftp://x.test/demo.zip#sha256=${SHA}` }), plugin('demo', '2.0.0')] },
-      ['yonto:demo@2.0.0'], { address: 1 }],
-    ['a numeric key and its string are one key', { sites: [cms(7, 'https://c.test/a'), cms('7', 'https://c.test/b'), plugin('demo', '1.0.0')] },
-      ['yonto:demo@1.0.0'], { duplicate: 1 }],
-    ['a Yonto entry typed "50" claims no key', { sites: [{ ...plugin('demo', '1.0.0'), type: '50' }, plugin('demo', '2.0.0')] },
-      ['yonto:demo@2.0.0'], { type: 1 }],
-    ['a keyless XPTV script is keyed by its ext, not its class name', {
-      sites: [{ name: 'a', type: 3, api: 'csp_X', ext: 'https://s.test/a.js' }, { name: 'b', type: 3, api: 'csp_X', ext: 'https://s.test/b.js' }, plugin('demo', '1.0.0')],
-    }, ['yonto:demo@1.0.0'], {}],
-    ['a 仓 spider claims no key', { spider: 'x.jar', sites: [{ key: 'yonto:demo', name: 's', type: 3, api: 'csp_Demo' }, plugin('demo', '1.0.0')] },
-      ['yonto:demo@1.0.0'], { spider: 1 }],
-    ['a keyless plugin is keyed by its address, so a keyed one for the same id is offered too', {
-      sites: [plugin('demo', '1.0.0', { key: undefined }), plugin('demo', '1.0.0')],
-    }, [`${zip('demo', '1.0.0')}@1.0.0`, 'yonto:demo@1.0.0'], {}],
-    ['a plugin whose ext.config is missing still claims its key', { sites: [{ ...plugin('demo', '1.0.0'), ext: { yontoType: 'plugin' } }, plugin('demo', '2.0.0')] },
-      ['yonto:demo@undefined'], { duplicate: 1 }],
-    ['a key is trimmed', { sites: [cms(' dup ', 'https://c.test/a'), cms('dup', 'https://c.test/b')] },
-      [], { duplicate: 1 }],
-  ];
-})();
-
-for (const [name, document, offered, skipped] of probes) {
-  test(`read as the app reads it: ${name}`, () => {
-    const read = pluginEntries(document);
-    const offeredEntries = read.entries.filter((e) => e.yontoType === 'plugin');
-    assert.deepEqual(offeredEntries.map((e) => `${e.key}@${e.config.version}`), offered);
-    assert.deepEqual(Object.fromEntries(Object.entries(read.skipped).filter(([, count]) => count > 0)), skipped);
-    // Every plugin entry as written is returned, marked offered exactly when the reader offered it.
-    assert.equal(read.plugins.filter((plugin) => plugin.offered).length, offered.length);
-    assert.equal(read.plugins.length, document.sites.filter((site) => site.type === 50 && site.ext?.yontoType === 'plugin').length);
-  });
-}
-
-/** One address, two keys: the shadowed entry is the one passed over, whichever comes first. */
-test('each plugin entry is marked by its own key, not by an address another entry shares', () => {
-  const squatter = { key: 'yonto:demo', name: 'not ours', type: 1, api: 'https://c.test/api.php/provide/vod' };
-  const read = pluginEntries({ sites: [squatter, entry(), entry({ key: 'other' })] });
-
-  assert.deepEqual(read.plugins.map(({ site, offered }) => `${site.key}:${offered}`), ['yonto:demo:false', 'other:true']);
-});
-
-test('a plugin entry keyed for another id is refused', () => {
-  const problems = indexProblems({ sites: [entry({ key: 'yonto:other' })] });
-  assert.ok(problems.some((p) => p.includes('its key is yonto:demo')), problems.join('\n'));
-});
-
-test('a plugin entry missing a field FongMi needs to leave it alone is refused', () => {
-  const site = entry();
-  delete site.searchable;
-  const problems = indexProblems({ sites: [site] });
-  assert.ok(problems.some((p) => p.includes('searchable')), problems.join('\n'));
-});
-
-test('the FongMi fields are required on plugin entries only, so a catalog may be searchable', () => {
+test('a catalog may be searchable, since the FongMi fields that kept a plugin out of a player\'s list are no more', () => {
   assert.deepEqual(indexProblems({ sites: [catalog('maccms-json', { searchable: 1 })] }), []);
 });
 
 test('a type-50 entry without yontoType is refused', () => {
-  const site = entry();
+  const site = catalog('jellyfin-server');
   delete site.ext.yontoType;
   const problems = indexProblems({ sites: [site] });
   assert.ok(problems.some((p) => p.includes('yontoType')), problems.join('\n'));
@@ -211,9 +181,9 @@ test('a yontoType is a type name by the grammar handles uses too, case for case'
   }
 });
 
-test('another yontoType is allowed and not held to the plugin shape', () => {
-  assert.deepEqual(indexProblems({ sites: [catalog('jellyfin-server'), entry()] }), []);
-  assert.equal(pluginEntries({ sites: [catalog('jellyfin-server'), entry()] }).plugins.filter((p) => p.offered).length, 1);
+test('a catalog beside a plugin is a catalog, and the plugin is offered', () => {
+  assert.deepEqual(indexProblems({ plugins: [entry()], sites: [catalog('jellyfin-server')] }), []);
+  assert.equal(pluginEntries({ plugins: [entry()], sites: [catalog('jellyfin-server')] }).plugins.filter((p) => p.offered).length, 1);
 });
 
 test('somebody else\'s entries are read as they are, string types and extra fields included', () => {
@@ -221,7 +191,58 @@ test('somebody else\'s entries are read as they are, string types and extra fiel
     { key: 'suoni', name: '索尼资源', type: '1', api: 'https://suoni.test/api.php/provide/vod/', timeout: 10 },
     { name: '玩偶哥哥', type: 3, api: 'csp_wogg', ext: 'https://plugins.test/js/wogg.js' },
   ];
-  assert.deepEqual(indexProblems({ sites: [...theirs, entry({ timeout: 10 })] }), []);
+  assert.deepEqual(indexProblems({ plugins: [entry({ timeout: 10 })], sites: theirs }), []);
+});
+
+/**
+ * Documents read as the app's reader reads them (`readIndex`, #648): which plugins are offered,
+ * as `id@version`, and what is skipped.
+ */
+const probes = (() => {
+  const plugin = (id, version, overrides = {}) => entry({ id, version, url: `https://plugins.example/${id}/${id}-${version}.zip#sha256=${SHA}`, ...overrides });
+  const cms = (key, api) => ({ ...(key === undefined ? {} : { key }), name: 'c', type: 1, api });
+  return [
+    ['two entries for one id: the first', { plugins: [plugin('demo', '1.0.0'), plugin('demo', '2.0.0')] },
+      ['demo@1.0.0'], { duplicate: 1 }],
+    ['two ids: both', { plugins: [plugin('demo', '1.0.0'), plugin('other', '2.0.0')] },
+      ['demo@1.0.0', 'other@2.0.0'], {}],
+    ['a stranger keyed yonto:demo among the sites shadows nothing, since a plugin has no key', { plugins: [plugin('demo', '1.0.0')], sites: [cms('yonto:demo', 'https://c.test/api.php/provide/vod')] },
+      ['demo@1.0.0'], {}],
+    ['keyless sites are keyed by their address, apart from the plugins', { plugins: [plugin('demo', '1.0.0')], sites: [cms(undefined, 'https://c.test/a'), cms(undefined, 'https://c.test/a')] },
+      ['demo@1.0.0'], { duplicate: 1 }],
+    ['a plugin with no http address is skipped, and claims no id', { plugins: [plugin('demo', '1.0.0', { url: `ftp://x.test/demo.zip#sha256=${SHA}` }), plugin('demo', '2.0.0')] },
+      ['demo@2.0.0'], { plugin: 1 }],
+    ['a plugin with no sha256 is skipped', { plugins: [plugin('demo', '1.0.0', { url: 'https://x.test/demo.zip' })] },
+      [], { plugin: 1 }],
+    ['a plugin whose contract is the string "21" is skipped', { plugins: [plugin('demo', '1.0.0', { contractVersion: '21' })] },
+      [], { plugin: 1 }],
+    ['a plugin whose version is missing is skipped', { plugins: [plugin('demo', '1.0.0', { version: undefined })] },
+      [], { plugin: 1 }],
+    ['a type-50 site claiming to be a plugin is an unknown type, never a plugin', {
+      sites: [{ key: 'yonto:demo', name: 'Demo', type: 50, api: `https://x.test/demo.zip#sha256=${SHA}`, ext: { yontoType: 'plugin', config: { id: 'demo', version: '1.0.0', contractVersion: 21 } } }],
+    }, [], { unknownType: 1 }],
+    ['a 仓 that lists plugins is still a 仓, so its type-3 entry is a spider', { spider: 'x.jar', plugins: [plugin('demo', '1.0.0')], sites: [{ key: 's', name: 's', type: 3, api: 'csp_Demo' }] },
+      ['demo@1.0.0'], { spider: 1 }],
+    ['an id is trimmed, so two spellings are one id', { plugins: [plugin('demo', '1.0.0', { id: ' demo ' }), plugin('demo', '2.0.0')] },
+      ['demo@1.0.0'], { duplicate: 1 }],
+  ];
+})();
+
+for (const [name, document, offered, skipped] of probes) {
+  test(`read as the app reads it: ${name}`, () => {
+    const read = pluginEntries(document);
+    assert.deepEqual(read.plugins.filter((p) => p.offered).map(({ plugin }) => `${plugin.id.trim()}@${plugin.version}`), offered);
+    assert.deepEqual(Object.fromEntries(Object.entries(read.skipped).filter(([, count]) => count > 0)), skipped);
+    // Every plugins entry as written is returned, marked offered exactly when the reader offered it.
+    assert.equal(read.plugins.length, (document.plugins ?? []).length);
+  });
+}
+
+/** One id, two addresses: the entry passed over is the second, whichever address it names. */
+test('each plugins entry is marked by its own id and address', () => {
+  const read = pluginEntries({ plugins: [entry(), entry({ url: `https://plugins.example/demo/demo-1.0.1.zip#sha256=${SHA}` })] });
+
+  assert.deepEqual(read.plugins.map(({ plugin, offered }) => `${plugin.url.includes('1.0.1') ? '1.0.1' : '1.0.0'}:${offered}`), ['1.0.0:true', '1.0.1:false']);
 });
 
 test('a download that does not match the entry\'s sha256 is refused', async () => {
@@ -245,8 +266,8 @@ test('a download whose manifest is not the entry\'s id or version is refused, na
   const problems = await entryProblems(site, async () => bytes);
 
   assert.deepEqual(problems, [
-    'yonto:not-ok: the index says id not-ok, the plugin says ok',
-    `yonto:not-ok: the index says version 9.9.9, the plugin says ${manifest.version}`,
+    'not-ok: the index says id not-ok, the plugin says ok',
+    `not-ok: the index says version 9.9.9, the plugin says ${manifest.version}`,
   ]);
 });
 
@@ -258,7 +279,7 @@ test('an entry for a contract no host runs is refused before anything is fetched
     const problems = await entryProblems(site, async () => assert.fail('fetched an entry no host runs'));
 
     assert.deepEqual(problems, [
-      `yonto:ok: the index says contractVersion ${contractVersion}, and no host runs a plugin outside ${OLDEST}–${LATEST}`,
+      `ok: the index says contractVersion ${contractVersion}, and no host runs a plugin outside ${OLDEST}–${LATEST}`,
     ]);
   }
 });
@@ -332,32 +353,32 @@ test('index --check counts what the app\'s reader skips, says so, and passes the
   await servingOk(async (ok) => {
     const file = join(scratchDir('lp-index-'), 'index.json');
     const theirs = { key: 'dup', name: 'A', type: 1, api: 'https://a.test/' };
-    writeFileSync(file, JSON.stringify({ sites: [theirs, { ...theirs, name: 'B' }, ok('/one.zip'), ok('/two.zip')] }));
+    writeFileSync(file, JSON.stringify({ plugins: [ok('/one.zip'), ok('/two.zip')], sites: [theirs, { ...theirs, name: 'B' }] }));
 
     const result = await cliExit(['index', '--check', file]);
 
     assert.equal(result.code, 0, result.stderr);
-    assert.match(result.stdout, /1 plugin entries, 1 other entries/);
-    assert.match(result.stdout, /skipped as a reader skips them: repeating an earlier entry's key 2/);
-    assert.match(result.stdout, /yonto:ok .*\(not offered: a reader skips it\)/);
+    assert.match(result.stdout, /1 plugin entries, 1 catalog entries/);
+    assert.match(result.stdout, /skipped as a reader skips them: repeating an earlier entry's key or plugin id 2/);
+    assert.match(result.stdout, /ok .*\(not offered: a reader skips it\)/);
   });
 });
 
 /** A check that passes an index nobody can install from proves nothing. */
 test('index --check fails when a plugin entry cannot be fetched, a shadowed one included', async () => {
   const dir = scratchDir('lp-index-');
-  const unreachable = entry({ api: `http://127.0.0.1:9/demo-1.0.0.zip#sha256=${SHA}` });
-  const squatter = { key: 'yonto:demo', name: 'not ours', type: 1, api: 'https://b.test/' };
+  const unreachable = entry({ url: `http://127.0.0.1:9/demo-1.0.0.zip#sha256=${SHA}` });
 
-  writeFileSync(join(dir, 'only.json'), JSON.stringify({ sites: [unreachable] }));
+  writeFileSync(join(dir, 'only.json'), JSON.stringify({ plugins: [unreachable] }));
   const only = await cliExit(['index', '--check', join(dir, 'only.json')]);
   assert.equal(only.code, 1);
   assert.match(only.stderr, /couldn't fetch http:\/\/127\.0\.0\.1:9\/demo-1\.0\.0\.zip/);
 
-  writeFileSync(join(dir, 'shadowed.json'), JSON.stringify({ sites: [squatter, unreachable] }));
+  writeFileSync(join(dir, 'shadowed.json'), JSON.stringify({ plugins: [entry({ url: `http://127.0.0.1:9/demo-0.9.0.zip#sha256=${SHA}` }), unreachable] }));
   const shadowed = await cliExit(['index', '--check', join(dir, 'shadowed.json')]);
   assert.equal(shadowed.code, 1);
-  assert.match(shadowed.stdout, /0 plugin entries, 1 other entries/);
+  assert.match(shadowed.stdout, /1 plugin entries, 0 catalog entries/);
+  assert.match(shadowed.stdout, /not offered: a reader skips it/);
 });
 
 test('index --check fails on a list of repos, and says doctor is what reads one', async () => {
@@ -403,7 +424,7 @@ test('index --expect prints the index when it lists exactly the builds the publi
   const right = await build([uploaded]);
 
   assert.equal(right.code, 0, right.stderr);
-  assert.equal(JSON.parse(right.stdout).sites[0].api, uploaded);
+  assert.equal(JSON.parse(right.stdout).plugins[0].url, uploaded);
 });
 
 test('index --expect fails, printing nothing, when the index leaves out a build this run uploads', async () => {
@@ -433,7 +454,7 @@ test('index --check of a pinned index whose bytes differ fetches nothing it list
   const server = createServer((req, res) => {
     asked.push(req.url);
     if (req.url === '/index.json') {
-      res.end(JSON.stringify({ sites: [pluginEntry(manifest, `http://127.0.0.1:${server.address().port}/ok.zip`, sha256)] }));
+      res.end(JSON.stringify({ plugins: [pluginEntry(manifest, `http://127.0.0.1:${server.address().port}/ok.zip`, sha256)] }));
     } else {
       res.end(bytes);
     }
@@ -480,14 +501,14 @@ test('index --check reports every bad entry, not only the first', async () => {
     const good = pluginEntry(manifest, `${base}/ok.zip`, sha256);
     const wrongSha = pluginEntry({ ...manifest, id: 'second' }, `${base}/second.zip`, SHA);
     const wrongVersion = pluginEntry({ ...manifest, id: 'third', version: '0.0.1' }, `${base}/third.zip`, sha256);
-    writeFileSync(file, JSON.stringify({ sites: [good, wrongSha, wrongVersion] }));
+    writeFileSync(file, JSON.stringify({ plugins: [good, wrongSha, wrongVersion] }));
 
     const result = await cliExit(['index', '--check', file]);
 
     assert.equal(result.code, 1);
-    assert.match(result.stdout, /✓ yonto:ok/);
-    assert.match(result.stderr, /yonto:second: the index says sha256/);
-    assert.match(result.stderr, /yonto:third: the index says version 0\.0\.1/);
+    assert.match(result.stdout, /✓ ok/);
+    assert.match(result.stderr, /second: the index says sha256/);
+    assert.match(result.stderr, /third: the index says version 0\.0\.1/);
   } finally {
     server.close();
   }

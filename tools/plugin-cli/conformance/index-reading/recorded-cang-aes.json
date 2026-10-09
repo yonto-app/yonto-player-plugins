@@ -410,12 +410,14 @@
           }
         }
       ],
+      "plugins": [],
       "skipped": {
         "spider": 41,
         "type": 0,
         "address": 0,
         "duplicate": 1,
-        "unknownType": 0
+        "unknownType": 0,
+        "plugin": 0
       }
     }
   }

@@ -49,7 +49,8 @@ const USAGE = `yonto-plugin <command> [options]
   link [dir]                    sign in to a linkLogin plugin's service with a code, as a
                                 television does: eval "$(yonto-plugin link [dir])"
   doctor <repo-url>             read a 仓, XPTV or Yonto index as a television would: its
-                                dialect, the sources its entries become, what it skips
+                                dialect, the sources its entries become, the plugins it
+                                offers, what it skips
   bundle [dir]                  the publishable .js, plus a zip of it and its sha256
   index <plugins-dir> --base-url <url> [--only <ids>] [--expect <file>]
                                 an index listing every plugin under <plugins-dir> at
@@ -838,7 +839,8 @@ function indexArguments(rest) {
 
 /** `readIndex`'s skip counts, in words. */
 const SKIPPED = {
-  duplicate: "repeating an earlier entry's key",
+  plugin: 'a plugin entry missing what an install needs',
+  duplicate: "repeating an earlier entry's key or plugin id",
   unknownType: 'of a type Yonto doesn\'t know',
   type: 'of a type no reader takes',
   spider: 'a 仓 spider',
@@ -853,7 +855,7 @@ async function index(rest) {
     // address, `<url>#sha256=<hex>`. A mismatch prints nothing to stdout, so nothing is uploaded.
     if (args.expect !== undefined) {
       const expected = readFileSync(args.expect, 'utf8').split('\n').map((line) => line.trim()).filter(Boolean);
-      const listed = built.sites.map((site) => site.api);
+      const listed = built.plugins.map((plugin) => plugin.url);
       const missing = expected.filter((api) => !listed.includes(api));
       const unexpected = listed.filter((api) => !expected.includes(api));
       for (const api of missing) console.error(`✗ the index does not list ${api}, which this run uploads`);
@@ -902,7 +904,7 @@ async function index(rest) {
     return 1;
   }
   const offered = read.plugins.filter((plugin) => plugin.offered).length;
-  console.log(`${problems.length ? '✗' : '✓'} schema            ${offered} plugin entries, ${read.entries.length - offered} other entries`);
+  console.log(`${problems.length ? '✗' : '✓'} schema            ${offered} plugin entries, ${read.entries.length} catalog entries`);
   for (const problem of problems) console.error(`    ${problem}`);
   // Skipped, as the app's reader skips them, rather than failing the document.
   const skipped = Object.entries(read.skipped).filter(([, count]) => count > 0);
@@ -912,11 +914,11 @@ async function index(rest) {
 
   // Every plugin entry, one a reader passes over included: an index is only as good as its worst zip.
   let failed = problems.length > 0;
-  for (const { site, offered: isOffered } of read.plugins) {
-    const found = await entryProblems(site, fetchBounded);
-    const label = String(site.key ?? site.ext?.config?.id ?? '(no key)');
+  for (const { plugin, offered: isOffered } of read.plugins) {
+    const found = await entryProblems(plugin, fetchBounded);
+    const label = String(plugin?.id ?? '(no id)');
     const note = isOffered ? '' : '  (not offered: a reader skips it)';
-    console.log(`${found.length ? '✗' : '✓'} ${label.padEnd(18)}${site.ext?.config?.version ?? ''}${note}`);
+    console.log(`${found.length ? '✗' : '✓'} ${label.padEnd(18)}${plugin?.version ?? ''}${note}`);
     for (const problem of found) console.error(`    ${problem}`);
     failed ||= found.length > 0;
   }

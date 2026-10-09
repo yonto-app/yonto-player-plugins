@@ -14,7 +14,7 @@ const INDEX_TIMEOUT_MS = 30_000;
 export const INDEX_USER_AGENT = 'okhttp/5.5.0';
 
 const DIALECT_NAMES = { [DIALECT.CANG]: '仓', [DIALECT.XPTV]: 'XPTV index', [DIALECT.YONTO]: 'Yonto index' };
-const SKIPPED_NAMES = { spider: 'spider', type: 'unknown type number', address: 'no http(s) address', duplicate: 'duplicate key', unknownType: 'unknown yontoType' };
+const SKIPPED_NAMES = { spider: 'spider', type: 'unknown type number', address: 'no http(s) address', duplicate: 'duplicate key or plugin id', unknownType: 'unknown yontoType', plugin: 'plugin entry missing what an install needs' };
 const LIST_SKIPPED_NAMES = { address: 'no http(s) address', duplicate: 'address named twice' };
 
 /**
@@ -59,9 +59,9 @@ async function fetchIndex(url, timeoutMs, lookup) {
 
 /**
  * What the app would make of the repo at [url]: its dialect, the sources its entries would
- * become, and what it names that can't be one. `ok` is false when nothing could be read, or
- * when nothing in it could be a source, because a repo that adds nothing is the silent empty
- * answer `doctor` exists to catch.
+ * become, the plugins it offers, and what it names that can't be either. `ok` is false when
+ * nothing could be read, or when nothing in it could be a source or a plugin, because a repo
+ * that adds nothing is the silent empty answer `doctor` exists to catch.
  */
 export async function repoReport(url, { timeoutMs = INDEX_TIMEOUT_MS, lookup = systemLookup } = {}) {
   let bytes;
@@ -73,19 +73,23 @@ export async function repoReport(url, { timeoutMs = INDEX_TIMEOUT_MS, lookup = s
   const lines = [`✓ fetch             ${bytes.length} bytes`];
   const read = readIndex(bytes);
   if (read.refused) {
-    lines.push(`✗ read              ${read.refused === REFUSAL.TOO_MANY_ENTRIES ? 'names more entries than a television reads' : 'not an index: no sites, storeHouse or urls list once any disguise is taken off'}`);
+    lines.push(`✗ read              ${read.refused === REFUSAL.TOO_MANY_ENTRIES ? 'names more entries than a television reads' : 'not an index: no plugins, sites, storeHouse or urls list once any disguise is taken off'}`);
     return { ok: false, lines };
   }
   if (read.list) return listReport(read.list, lines);
-  lines.push(`${read.entries.length > 0 ? '✓' : '✗'} read              ${DIALECT_NAMES[read.dialect]}, ${read.named} named, ${read.entries.length} a source can be made of`);
+  const offers = read.entries.length > 0 || read.plugins.length > 0;
+  lines.push(`${offers ? '✓' : '✗'} read              ${DIALECT_NAMES[read.dialect]}, ${read.named} named, ${read.entries.length} a source can be made of, ${read.plugins.length} plugins to install`);
   for (const entry of read.entries) {
     lines.push(`    ${entry.yontoType.padEnd(16)}${entry.name}${entry.key === entry.name ? '' : `  (${entry.key})`}`);
+  }
+  for (const plugin of read.plugins) {
+    lines.push(`    ${'plugin'.padEnd(16)}${plugin.name}  (${plugin.id} ${plugin.version})`);
   }
   const skipped = Object.entries(read.skipped).filter(([, count]) => count > 0);
   if (skipped.length > 0) {
     lines.push(`· skipped           ${skipped.map(([why, count]) => `${count} ${SKIPPED_NAMES[why]}`).join(', ')}`);
   }
-  return { ok: read.entries.length > 0, lines };
+  return { ok: offers, lines };
 }
 
 /**
