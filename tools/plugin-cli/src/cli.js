@@ -51,9 +51,10 @@ const USAGE = `yonto-plugin <command> [options]
   doctor <repo-url>             read a 仓, XPTV or Yonto index as a television would: its
                                 dialect, the sources its entries become, what it skips
   bundle [dir]                  the publishable .js, plus a zip of it and its sha256
-  index <plugins-dir> --base-url <url> [--expect <file>]
+  index <plugins-dir> --base-url <url> [--only <ids>] [--expect <file>]
                                 an index listing every plugin under <plugins-dir> at
-                                <url>/<id>/<id>-<version>.zip, printed as JSON;
+                                <url>/<id>/<id>-<version>.zip, printed as JSON; with --only,
+                                just the comma-separated ids, each of which must be there;
                                 with --expect, refused unless it lists exactly the addresses
                                 (url#sha256=hex, one per line) in <file>
   index --check <file-or-url>   validate an index, then download each plugin it lists and
@@ -809,12 +810,12 @@ async function bundle(dir) {
  * absent would build an index instead of checking one.
  */
 function indexArguments(rest) {
-  const usage = 'index <plugins-dir> --base-url <url> [--expect <file>], or index --check <file-or-url>';
+  const usage = 'index <plugins-dir> --base-url <url> [--only <ids>] [--expect <file>], or index --check <file-or-url>';
   const options = {};
   const positional = [];
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
-    if (arg === '--base-url' || arg === '--check' || arg === '--expect') {
+    if (arg === '--base-url' || arg === '--check' || arg === '--expect' || arg === '--only') {
       if (rest[i + 1] === undefined || rest[i + 1].startsWith('--')) throw new UsageError(`${arg} needs a value: ${usage}`);
       options[arg] = rest[++i];
     } else if (arg.startsWith('--')) {
@@ -830,7 +831,9 @@ function indexArguments(rest) {
     return { check: options['--check'] };
   }
   if (positional.length !== 1 || options['--base-url'] === undefined) throw new UsageError(usage);
-  return { pluginsDir: positional[0], baseUrl: options['--base-url'], expect: options['--expect'] };
+  const only = options['--only']?.split(',').map((id) => id.trim()).filter(Boolean);
+  if (only !== undefined && only.length === 0) throw new UsageError(`--only names no plugin: ${usage}`);
+  return { pluginsDir: positional[0], baseUrl: options['--base-url'], only, expect: options['--expect'] };
 }
 
 /** `readIndex`'s skip counts, in words. */

@@ -19,7 +19,7 @@ node src/cli.js doctor <repo-url>              a 仓, XPTV or Yonto index read a
 node src/cli.js link   <plugin-dir>            sign in to a linkLogin plugin's service with a code:
                                                 eval "$(node src/cli.js link <plugin-dir>)"
 node src/cli.js bundle <plugin-dir>            esbuild -> the publishable .js, a zip of it + sha256
-node src/cli.js index  <plugins-dir> --base-url <url>   an index of the plugins there, as JSON
+node src/cli.js index  <plugins-dir> --base-url <url> [--only <ids>]   an index of the plugins there, or just the ids named, as JSON
 node src/cli.js index  --check <file-or-url>   an index's schema, then each plugin it lists downloaded and held to it
 ```
 
