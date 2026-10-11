@@ -624,12 +624,29 @@ test('a redirect to another host is not followed, and is not an outage to wait o
   assert.match(error.message, /won't connect to/);
 });
 
-test('a 404 is a thing the server does not have', async () => {
-  const { engine } = engineOver({ pages: { detail: json({}, { status: 404 }) } });
+test('a 404 for a title or a search is a thing the server does not have', async () => {
+  for (const [method, args] of [['getMediaDetail', ['42']], ['search', ['画皮']]]) {
+    const { engine } = engineOver({ pages: { detail: json({}, { status: 404 }) } });
 
-  const error = await failure(engine.call('getMediaDetail', ['42']));
+    const error = await failure(engine.call(method, args));
 
-  assert.equal(error?.code, Code.NOT_FOUND);
+    assert.equal(error?.code, Code.NOT_FOUND, method);
+  }
+});
+
+test('a 404 to the classes or a listing is an address with no API, not a title gone (kangzj/yonto#1699)', async () => {
+  const calls = {
+    getCategories: { pages: { list: json({}, { status: 404 }) }, args: [] },
+    getMediaList: { pages: { detail: json({}, { status: 404 }) }, args: ['1', { page: 1, filters: {} }] },
+  };
+  for (const [method, { pages, args }] of Object.entries(calls)) {
+    const { engine } = engineOver({ pages });
+
+    const error = await failure(engine.call(method, args));
+
+    assert.equal(error?.code, Code.UNAVAILABLE, method);
+    assert.equal(error.message, "There's no MacCMS API at this address. Check the API address.", method);
+  }
 });
 
 test('a 403 is a gate rather than an outage, and never a login', async () => {

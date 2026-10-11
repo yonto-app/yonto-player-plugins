@@ -75,7 +75,8 @@ A title is **matched**: `ids=42` answered with anything but vod 42 is `notFound`
 | a redirect chain the host gave up on (`REDIRECT_REFUSED`) | `unavailable`, *redirects lead nowhere* | no: it answered |
 | an address the host will not send (`REQUEST_INVALID`) | `misconfigured`, *The API address can't be used* | no: nothing was sent |
 | a redirect to another host, or a private address nobody typed | `unavailable`, *points at an address Yonto won't connect to* | no |
-| 404 | `notFound` | no |
+| 404 to the classes or a listing | `unavailable`, *no MacCMS API at this address* | no: the address is wrong, not a title gone; not `misconfigured`, which would mark a repo's catalog as a form to fix |
+| 404 to a title (`ids`) or a search | `notFound` | no |
 | 401, 403 | `unavailable`, *refused access* | no |
 | a body neither dialect can read | `unavailable`, *something that can't be read* | no |
 | `{"code":0}` with nothing in it | `unavailable`, *returned nothing this time* | no |

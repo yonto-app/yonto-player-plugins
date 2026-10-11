@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "maccms",
   "name": "MacCMS format",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "contractVersion": 21,
   "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto includes no site.",
   "probeQuery": "画皮",
@@ -122,6 +122,10 @@ const REDIRECTS_REFUSED_MESSAGE = "This source's redirects lead nowhere. Check i
 /** A TVBox/XPTV index pasted where a single MacCMS interface belongs (kangzj/lantern-tv#1075):
  *  the address's own kind, not the form's spelling of it. */
 const INDEX_ADDRESS_MESSAGE = 'This address is a repo of many sites, not a single MacCMS API. Add it under Repos instead.';
+/** A 404 to the classes or a listing: the address is wrong, not a title gone. `unavailable`, not
+ *  `misconfigured`, since a repo's catalog has an address the viewer never typed and must not
+ *  light up as a form to fix. */
+const NO_API_MESSAGE = "There's no MacCMS API at this address. Check the API address.";
 
 function noTracksMessage(title) {
   return `"${title}" has nothing to play.`;
@@ -212,10 +216,12 @@ async function ask(site, params) {
       default: throw error;
     }
   }
-  // A 404 is a title this site does not have and a 401/403 is a gate: the server answered, so
-  // neither is a reason to rest it.
+  // A 404 to the classes or a listing is an address with no API behind it, to anything else a
+  // thing this site does not have, and a 401/403 is a gate: the server answered, so none is a
+  // reason to rest it.
   if (response.status === 404) {
     yonto.log('warn', 'the server answered HTTP 404');
+    if (params.ids === undefined && params.wd === undefined) throw yonto.error.unavailable(NO_API_MESSAGE);
     throw yonto.error.notFound(params.ids ?? params.ac);
   }
   if (response.status === 401 || response.status === 403) {
