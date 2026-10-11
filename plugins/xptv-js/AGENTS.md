@@ -31,7 +31,7 @@ Names that sit among a catalog's own Chinese ones stay Chinese: the 网盘 and �
 | `getCategories` | `getConfig().tabs`, or `getTabs()` when those are empty. A catalog with none says it has only search (*This source has no categories to browse. Use search instead.*), which is `tianyiso.js` working correctly, not broken |
 | `getFilters` | the `filter` on a `getCards` page, since theirs arrive inline with a listing. The page is thrown away |
 | `getMediaList` | `getCards`, with `page` and the chosen `filters` put **into the tab's `ext`**: 45 of their 48 read `ext.page`, and the five that filter read `ext.filters` |
-| `getMediaDetail` | `getTracks`: every episode a `track` option, their groups our 线路, every share a `pan` option on a 网盘 line of its own |
+| `getMediaDetail` | `getTracks`: every episode a `track` option, their groups our 线路, every share a `pan` option on a 网盘 line of its own; the synopsis is the card's `vod_content` where a listing kept one |
 | `getStream` | `getPlayinfo`, asked about the one track that was pressed: `urls[0]` and `headers[0]` |
 | `search` | their `search`, with the query under `text`, page one |
 | `checkHealth` | loads the program as every path does, and says it is usable when that worked (*`checkHealth` loads the program*) |
@@ -105,7 +105,8 @@ Their rule *非法筛选值建议回退到 init* is not taken: our contract alre
 | track token | `{"t":<the track's ext>}` |
 
 - **All three are JSON, with no prefix of this handler's own.**
-- **A media id carries the name and artwork** because their `getTracks` answers no metadata at all, so everything the detail screen draws comes out of the id it was opened with.
+- **A media id carries the name and artwork** because their `getTracks` answers no metadata at all, so the detail screen's title and artwork come out of the id it was opened with.
+  Its synopsis is a card's `vod_content`, which is too long for the id, so it is kept in the store under the id (*The store*) and read back by the detail (kangzj/yonto#1564); 河馬短劇 is the only catalog in `fangkuia/XPTV`'s `all.json` that sends one (2026-10-10), so most titles have none.
 - **The `e` and `t` envelopes tell the shapes apart**, and each reader refuses the others' id as `notFound` rather than asking a stranger's site about it.
   A token is read before the catalog is compiled, so a string that is not one never runs anybody's program.
 - **A media id is budgeted at 1024 characters, and the artwork goes first.** A budget, not a cap: the `ext` is what `getTracks` is asked with, so one over budget on its own goes out with a `warn` rather than the title becoming unopenable. A real one runs about 230.
@@ -120,6 +121,7 @@ Their rule *非法筛选值建议回退到 init* is not taken: our contract alre
 |---|---|---|
 | `catalog:<ext>` | the catalog's source, written only once it has compiled and loaded, so a CDN's error page served with a 200 cannot refuse the catalog for a week | 7 days |
 | `cache:<ext>` | the catalog's `$cache` map, one key for the whole map because the store cannot list keys | 7 days |
+| `synopses:<ext>` | `[media id, vod_content]` pairs for the 200 titles whose text a listing or a search most recently showed new or changed, each held to 2000 characters, written only then: a title shown again unchanged keeps its place rather than costing a write, so a long scroll can age it out until a listing shows it again. A title opened before any listing showed it, from History, has none | 7 days |
 
 `<ext>` is the `ext` config value exactly as it arrives, trimmed.
 `cache:<ext>` holds a catalog's logins too (`leijing.js` keeps its token there).
@@ -238,9 +240,10 @@ The editor keeps an `ext` the viewer did not type byte for byte, and gives a typ
 Their code never reads `status`, so a 5xx page reaches them as a page with nothing on it, and a rejected fetch comes out of their code like their own bug.
 The loader keeps **the latest `$fetch`'s outcome for the call** and, when it was a failure, says *This source's website isn't available right now* where it would otherwise say the program is broken, the title has nothing, the search found nothing, the page is empty, the tabs are empty or there is no stream.
 
-- **`REQUEST_FAILED`, `REDIRECT_REFUSED` or a 5xx, nothing else.** A redirect chain the host refused (too many hops, too long, a `Location` that is no URL) is the site's doing, and the program ran fine. A `TIMEOUT` is the call running out of time and the site may never have been asked (kangzj/yonto#560); `REQUEST_INVALID` is a request their code built wrong, so it keeps the program's sentence; a 4xx is the site answering, and a 404 on a title is a real "not there". `HOST_NOT_ALLOWED` is neither.
+- **`REQUEST_FAILED`, `REDIRECT_REFUSED` or a 5xx, nothing else.** A redirect chain the host refused (too many hops, too long, a `Location` that is no URL) is the site's doing, and the program ran fine. `REQUEST_INVALID` is a request their code built wrong, so it keeps the program's sentence; a 4xx is the site answering, and a 404 on a title is a real "not there". `HOST_NOT_ALLOWED` is neither.
 - **The latest fetch only**, so a fallback to a second mirror that answers 200 with nothing is "nothing found".
-- **Cleared at the start of every call and again right before the entry point**, so the module body's and `getConfig`'s fetches are setup and count only for `getCategories`, whose answer `getConfig` is.
+- **A `TIMEOUT` says what the call's latest other fetch said, setup's included.** The site may never have been asked, and the time ran out waiting on something, usually that fetch: 哔滴影视's `getConfig` asks its dead site for a cookie on every call, Cloudflare's 522 takes the whole 20 seconds, and the listing's own fetch is then refused for time, which said the program won't run until kangzj/yonto#1599. So a 5xx, no answer or a refused redirect before a `TIMEOUT`, in setup or in the entry point, is the site being down, while a `TIMEOUT` after a fetch the site answered, or with no fetch before it in that call, keeps the program's sentence (kangzj/yonto#560). The device does tell a refused start from a request cut off mid-answer, but only in the message, which names the URL; both carry the code `TIMEOUT`, and the CLI never cuts one off, so a cut-off request could count as the site only with a code of its own in the contract.
+- **Cleared at the start of every call and again right before the entry point**, so the module body's and `getConfig`'s fetches are setup and count only for `getCategories`, whose answer `getConfig` is, or for a `TIMEOUT` (above).
 - The fetch that sets it logs why, by code and never by URL: `catalog <className>: a request answered HTTP 520`, `… a request got no answer (REQUEST_FAILED)` or `… a request was redirected in a way the host refused (REDIRECT_REFUSED)`.
 - **It is `unavailable`, not the design's `unreachable`.** `unreachable` rests a catalog's server, and the one server this handler reaches for itself is the one holding the program, which moving says nothing about the catalog's own site (the design's *The new error*). So this handler raises it nowhere.
 - **A `getConfig` that ran while the site failed is not kept**, even when it did not throw, and the next call asks again. A catalog that builds its tabs by scraping a 520 page returns empty tabs, and kept they would say the catalog has only search after the site came back (PR #617's finding 4).
@@ -292,7 +295,7 @@ On 2026-09-22, 42 of the 48 compiled and answered a category list; `hanime.js`, 
 
 ## When something changes
 
-- A catalog refuses with *website isn't available* → its last `$fetch` got no answer, a refused redirect or a 5xx; the log line just before says which.
+- A catalog refuses with *website isn't available* → its last `$fetch` got no answer, a refused redirect or a 5xx, or ran out of time after one that did; the log line just before says which.
 - A catalog refuses with *program won't run* → it threw, or would not compile or load, and its last fetch did not fail that way; the `catalog … answered badly: …` or `… did not compile` line says what.
 - A catalog refuses with *Can't download this source's program* → `ext` answered non-2xx or an empty body, or its download failed at the transport (no answer, a refused redirect, the call's time running out), which `catalog <className>: its program could not be fetched (<CODE>)` says by code and never by address.
 - A catalog refuses with *program is too large to load* → its program is past the host's cap on a body (`RESPONSE_TOO_LARGE`, kangzj/yonto#716), logged the same way; unlike *Can't download* it doesn't say try again, since it will be as large next time.

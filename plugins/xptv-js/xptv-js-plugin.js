@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "xptv-js",
   "name": "XPTV format",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "contractVersion": 21,
   "description": "Reads catalogs written for the XPTV format. Each is a small program, which Yonto fetches from the address you supply and runs in its sandbox; Yonto includes no catalog.",
   "probeQuery": "画皮",
@@ -462,7 +462,7 @@ async function configOf(entry, catalog) {
 }
 
 async function catalogFor(entry) {
-  siteFailedThisCall = false;
+  siteFailedThisCall = siteFailedLatestFetch = false;
   if (compiledCatalog === null) {
     const catalog = await compileCatalog(entry);
     compiledCatalog = { catalog, config: null, failed: null, configured: false };
@@ -522,11 +522,15 @@ async function catalogFetch(entry, url, init) {
     response = await yonto.fetch(url, { ...init, headers: withoutForbiddenHeaders(entry, init.headers) });
   } catch (error) {
     if (!HOST_FAILURE_CODES.has(error?.code)) throw error;
-    siteFailedThisCall = SITE_FAILURES.has(error.code);
-    if (siteFailedThisCall) log('warn', `catalog ${entry.logName}: ${SITE_FAILURES.get(error.code)} (${error.code})`, entry);
+    if (error.code === 'TIMEOUT') {
+      siteFailedThisCall = siteFailedLatestFetch;
+    } else {
+      siteFailedThisCall = siteFailedLatestFetch = SITE_FAILURES.has(error.code);
+      if (siteFailedThisCall) log('warn', `catalog ${entry.logName}: ${SITE_FAILURES.get(error.code)} (${error.code})`, entry);
+    }
     throw Object.assign(new Error(error.code), { code: error.code });
   }
-  siteFailedThisCall = response.status >= 500;
+  siteFailedThisCall = siteFailedLatestFetch = response.status >= 500;
   if (siteFailedThisCall) log('warn', `catalog ${entry.logName}: a request answered HTTP ${response.status}`, entry);
   return fetchAnswer(response);
 }
@@ -534,12 +538,19 @@ async function catalogFetch(entry, url, init) {
 /**
  * Whether the latest `$fetch` of the call now running got no answer, a redirect chain the host
  * refused, or a 5xx (kangzj/lantern-tv#579). Their code never reads `status`, so this is how an
- * empty answer or a throw is told apart from the site being down. `TIMEOUT` is the call running out
- * of time, `REQUEST_INVALID` a request their code built wrong and a 4xx the site answering, so
- * none of those counts. Cleared by [catalogFor] and again by [ask], so setup fetches count only for
- * `getCategories`. A runtime runs one call at a time.
+ * empty answer or a throw is told apart from the site being down. `REQUEST_INVALID` is a request
+ * their code built wrong and a 4xx the site answering, so neither counts. Cleared by [catalogFor]
+ * and again by [ask], so setup fetches count only for `getCategories` and through
+ * [siteFailedLatestFetch]. A runtime runs one call at a time.
  */
 let siteFailedThisCall = false;
+
+/**
+ * The same for the call's latest fetch that was not a `TIMEOUT`, setup's included, since [ask]
+ * leaves it alone. A `TIMEOUT` is the call's time running out, usually waiting on that fetch, so it
+ * says what that fetch said (kangzj/yonto#1599), and with no fetch before it, not the site (#560).
+ */
+let siteFailedLatestFetch = false;
 
 /** The host's codes that mean the site failed, and what the log says of each. */
 const SITE_FAILURES = new Map([
@@ -674,9 +685,66 @@ function summaryOf(entry, card) {
   return summary;
 }
 
+/** Their cards as summaries, and the `vod_content` of each that has one as `[id, text]`. */
 function summaries(entry, list) {
   const cards = Array.isArray(list) ? list : [];
-  return uniqueById(cards.map((card) => summaryOf(entry, card)).filter((summary) => summary !== null));
+  const items = [];
+  const synopses = [];
+  for (const card of cards) {
+    const summary = summaryOf(entry, card);
+    if (summary === null) continue;
+    items.push(summary);
+    const content = str(card?.vod_content);
+    if (content !== '') synopses.push([summary.id, content.slice(0, SYNOPSIS_CHARS)]);
+  }
+  return { items: uniqueById(items), synopses };
+}
+
+// ------------------------------------------------- the description a card has and a title not
+
+// The titles whose synopsis a source keeps, the latest new or changed, and how much of each: 200 of them
+// with their ids stay well inside the one store value they share.
+const SYNOPSES_KEPT = 200;
+const SYNOPSIS_CHARS = 2000;
+
+const WHITESPACE = /\s+/g;
+
+function synopsesKey(entry) {
+  return `synopses:${entry.address}`;
+}
+
+async function keptSynopses(entry) {
+  const stored = await yonto.store.get(synopsesKey(entry));
+  return Array.isArray(stored) ? stored.filter((pair) => Array.isArray(pair) && pair.length === 2) : [];
+}
+
+/**
+ * A card's `vod_content` kept by its media id, since only a card carries one (河馬短劇's) and
+ * their `getTracks` answers no metadata. Written only when a listing showed something new.
+ */
+async function keepSynopses(entry, synopses) {
+  if (synopses.length === 0) return;
+  const kept = new Map(await keptSynopses(entry));
+  let changed = false;
+  for (const [id, text] of synopses) {
+    if (kept.get(id) === text) continue;
+    kept.delete(id);
+    kept.set(id, text);
+    changed = true;
+  }
+  if (!changed) return;
+  const latest = [...kept].slice(-SYNOPSES_KEPT);
+  await keepQuietly(synopsesKey(entry), latest, CATALOG_SOURCE_KEEP_SECONDS, `catalog ${entry.logName}'s synopses`);
+}
+
+/**
+ * A synopsis as text, since a card's `vod_content` may be markup, read the way MacCMS reads
+ * one: `&amp;` unwrapped one level for a site that double-encodes, then parsed.
+ */
+async function synopsisOf(entry, id) {
+  const markup = (await keptSynopses(entry)).find(([kept]) => kept === id)?.[1];
+  if (typeof markup !== 'string' || markup === '') return '';
+  return yonto.html.load(markup.split('&amp;').join('&')).root().text().replace(WHITESPACE, ' ').trim();
 }
 
 // Their name for the unrestricted option, in every plugin of theirs that has one (48 checked, 2026-09-24).
@@ -734,7 +802,8 @@ async function cardsPage(entry, catalog, categoryId, options) {
   const filters = options?.filters ?? {};
   if (Object.keys(filters).length > 0) asked.filters = filters;
   const answer = await ask(entry, catalog, 'getCards', asked);
-  return { cards: summaries(entry, answer?.list), filter: answer?.filter };
+  const { items, synopses } = summaries(entry, answer?.list);
+  return { cards: items, synopses, filter: answer?.filter };
 }
 
 async function pluginCategories(entry) {
@@ -771,8 +840,9 @@ async function pluginFilters(entry, categoryId) {
 
 async function pluginList(entry, categoryId, options) {
   const { catalog } = await catalogFor(entry);
-  const { cards } = await cardsPage(entry, catalog, categoryId, options);
+  const { cards, synopses } = await cardsPage(entry, catalog, categoryId, options);
   await flushCache();
+  await keepSynopses(entry, synopses);
   if (cards.length === 0) {
     // An empty page is an answer (page two of a one-page category), unless the site failed.
     if (siteFailedThisCall) throw siteDown();
@@ -858,6 +928,8 @@ async function pluginDetail(entry, id) {
 
   const detail = { id, title, playbackOptions: options };
   if (poster !== '') detail.posterUrl = poster;
+  const synopsis = await synopsisOf(entry, id);
+  if (synopsis !== '') detail.synopsis = synopsis;
   // A 线路 with more than one episode is a series, and rolling on is series-only.
   const perLine = new Map();
   for (const episode of episodes) perLine.set(episode.line, (perLine.get(episode.line) ?? 0) + 1);
@@ -934,7 +1006,8 @@ async function pluginSearch(entry, query) {
   }
   const answer = await ask(entry, catalog, 'search', { text: query, page: 1 });
   await flushCache();
-  const found = summaries(entry, answer?.list);
+  const { items: found, synopses } = summaries(entry, answer?.list);
+  await keepSynopses(entry, synopses);
   // No results is an answer, unless the site failed while giving it.
   if (found.length === 0 && siteFailedThisCall) throw siteDown();
   return found;

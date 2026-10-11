@@ -39,6 +39,10 @@ Two actions per dialect and the class tree, all against the `api` as given, with
 
 - **The class tree is flat.** `type_pid` 0 marks a parent where the site sends it; where it does not (suoniapi sends 61 classes without it), the seed ids 1–4 are the parents, and a site that renumbered them offers 最新 alone.
   The children are the 分类 filter, never categories: Home asks a shelf per category at once, and 61 at once is a Home that fails.
+- **A parent opens on its first child** (Jasper, 2026-10-10, kangzj/yonto#1571). `t` matches a title's own class only, and most sites file nothing under a parent: measured 2026-10-10 over the type-1 entries of fangkuia/XPTV's `all.json` that answered, every parent with children answered between 0 and 53 titles but two short-drama parents that file their titles under themselves as well as their children (360zy's 爽文短剧, 25429, and bfzyapi's 短剧大全, 12183).
+  So a parent whose children the site names gets a 分类 group with `init` on its first child in the site's order, and its own class as the last option, which is what the group's missing "All" was: the parent's own titles, empty on most sites, never everything under it. `getMediaList` for that parent with no 分类 chosen (Home's shelves, which never ask for filters) asks the same first child, from the class tree the runtime last read (`knownTrees`, module state, so one request after `getCategories`, and one shared `ac=list` for the shelves after a renewal).
+  So every shelf but 最新 needs the tree: where `ac=list` fails, a fresh runtime's shelf fails with it, a class with no children included, which before asked its own `t` and listed. A failed read is not kept, so the next call asks again.
+  A seed-id site says nothing about parentage, so no child is known and its parents still open on themselves, which on such sites (niuniuzy, suoniapi and five more) is empty or nearly; their whole tree is in the filter, with no `init`. 最新 offers every class with no `init`, and a class with no children offers no filter.
 - **A filter wins over the category**, and an empty filter is no choice.
 - **A page** is `Math.trunc` of what was asked, and anything below 1 is page 1.
 - **The XML dialect** is read with `yonto.xml.load` along FongMi's `Result` (`@Root(name = "rss")`) paths: `list > video`, `class > ty`, and a video's own `dl > dd`, each field that video's own child.
@@ -92,7 +96,8 @@ suoniapi's JSON API is one that answers that way, which is why `doctor.json` nam
 
 ## A title
 
-- **Lines** are `vod_play_from` and `vod_play_url` split on `$$$`, episodes on `#`, name and URL on `$`; an episode with no name is numbered.
+- **Lines** are `vod_play_from` and `vod_play_url` split on `$$$`, episodes on `#`, name and URL on `$`; an episode with no name is numbered by its place on the line, counting an entry with no URL but not a dropped repeat (below).
+  An entry whose name and URL both equal one already on the same line is dropped (Jasper, 2026-10-10, kangzj/yonto#1572): 360zy's 全民星攻略2025 lists 32 of its 384 期 twice. Only exact repeats, as the site wrote them once trimmed: one name at two URLs (a 上/下 pair) or two names at one URL are both kept, and so is the same entry on another line. The 360zy recording of that title is in `fixtures/`.
 - **A line of web pages** (a 解析 service's input) is left out while a line of media files exists, and kept when it is all there is.
   `.m3u8` is HLS, anything else is typed `video/mp4`.
 - **A title with no line to play is refused**, naming the title: an empty `playbackOptions` reads as a title with nothing on it, and a MacCMS row with no `vod_play_url` is one the site has not filled in.
@@ -133,3 +138,4 @@ What the two retired index plugins measured against live MacCMS servers, carried
 - A site's listing goes blank → curl `?ac=list` and `?ac=detail&pg=1` (or `videolist`), and look for a new field spelling in `vodFromJson` / `vodFromXml`.
 - A new failure shape → add a row above before changing `ask`.
 - Fixtures are lziapi's, recorded by `doctor --record`; `doctor --replay` is the offline check.
+  Beside them are four of 360zy's, recorded with `run --record` on 2026-10-10 (its class tree, 电影 answering `total: 0`, 动作片 under it, and 全民星攻略2025's detail), which `maccms.test.js` replays for the parent rule and the repeated episodes above.

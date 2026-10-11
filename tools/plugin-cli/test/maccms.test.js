@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { loadManifest } from '../src/manifest.js';
 import { createHost } from '../src/host/index.js';
 import { createEngine } from '../src/engines/quickjs.js';
+import { createReplayTransport } from '../src/transport/replay.js';
 import { Code } from '../src/errors.js';
 import { scratchDir } from '../src/scratch-dir.js';
 
@@ -13,7 +14,8 @@ import { scratchDir } from '../src/scratch-dir.js';
  *
  * Scripted rather than replayed, as `xptv-cms.test.js` is, from which most of these came: what is
  * under test is the reading, and a recording of one live CMS is a recording of one build's habits.
- * `doctor --replay` over `plugins/maccms/fixtures` is the recording.
+ * `doctor --replay` over `plugins/maccms/fixtures` is the recording, and one test below replays
+ * the 360zy fixtures beside it.
  */
 const dir = fileURLToPath(new URL('../../../plugins/maccms/', import.meta.url));
 
@@ -136,14 +138,36 @@ test('a class named twice is one category, because Compose keys the list on the 
   assert.deepEqual(categories.map((category) => category.id), ['latest', '1']);
 });
 
-test('the 分类 filter offers the classes under the one being read', async () => {
-  const { engine } = engineOver({ pages: { list: json({ code: 1, class: CLASSES, list: [] }) } });
+test('a parent opens its 分类 filter on its first child, and offers itself last', async () => {
+  const { engine } = engineOver({ pages: { list: json({ code: 1, class: [...CLASSES, { type_id: 38, type_name: '喜剧片', type_pid: 1 }], list: [] }) } });
 
-  assert.deepEqual(await engine.call('getFilters', ['1']), [
-    { id: 'class', name: '分类', options: [{ id: '36', name: '动作片' }] },
-  ]);
+  // Most sites file nothing under a parent itself (kangzj/yonto#1571), and a group with an
+  // `init` has no "All", so the parent's own listing is an option of its own.
+  assert.deepEqual(await engine.call('getFilters', ['1']), [{
+    id: 'class',
+    name: '分类',
+    init: '36',
+    options: [{ id: '36', name: '动作片' }, { id: '38', name: '喜剧片' }, { id: '1', name: '电影' }],
+  }]);
   // 动作片 has nothing under it, which is a category with no filters rather than an empty group.
   assert.deepEqual(await engine.call('getFilters', ['36']), []);
+});
+
+test('a site that says nothing about parentage opens a seed class on itself, with every class offered', async () => {
+  const flat = [
+    { type_id: 1, type_name: '电影' },
+    { type_id: 36, type_name: '动作片' },
+  ];
+  const { transport, engine } = engineOver({
+    pages: { list: json({ code: 1, class: flat, list: [] }), detail: json({ code: 1, list: [VOD] }) },
+  });
+
+  // Nothing says which class is under which, so no child is a guess worth opening on.
+  assert.deepEqual(await engine.call('getFilters', ['1']), [
+    { id: 'class', name: '分类', options: [{ id: '1', name: '电影' }, { id: '36', name: '动作片' }] },
+  ]);
+  await engine.call('getMediaList', ['1', { page: 1, filters: {} }]);
+  assert.equal(query(transport.calls.at(-1)).t, '1');
 });
 
 test('the latest offers every class in the filter', async () => {
@@ -194,6 +218,96 @@ test('the chosen filter wins over the category, and an empty one is no choice', 
 
   await engine.call('getMediaList', ['1', { page: 1, filters: { class: '' } }]);
   assert.equal(query(transport.calls.at(-1)).t, '1');
+});
+
+test('a parent with no 分类 chosen lists its first child, and a leaf lists itself', async () => {
+  const classes = [...CLASSES, { type_id: 38, type_name: '喜剧片', type_pid: 1 }];
+  const { transport, engine } = engineOver({
+    pages: { list: json({ code: 1, class: classes, list: [] }), detail: json({ code: 1, list: [VOD] }) },
+  });
+
+  // Home's shelf, which never asks for filters: the same class Browse opens the parent on.
+  await engine.call('getMediaList', ['1', { page: 2, filters: {} }]);
+  assert.deepEqual(query(transport.calls.at(-1)), { ac: 'detail', t: '36', pg: '2' });
+
+  await engine.call('getMediaList', ['1', { page: 1, filters: { class: '' } }]);
+  assert.equal(query(transport.calls.at(-1)).t, '36');
+
+  // The parent's own option is the parent's own listing, for a site that files titles there.
+  await engine.call('getMediaList', ['1', { page: 1, filters: { class: '1' } }]);
+  assert.equal(query(transport.calls.at(-1)).t, '1');
+
+  await engine.call('getMediaList', ['37', { page: 1, filters: {} }]);
+  assert.equal(query(transport.calls.at(-1)).t, '37');
+});
+
+test('the class tree is read once a runtime, so a shelf after the categories is one request', async () => {
+  const { transport, engine } = engineOver({
+    pages: { list: json({ code: 1, class: CLASSES, list: [] }), detail: json({ code: 1, list: [VOD] }) },
+  });
+  const fresh = engineOver({
+    pages: { list: json({ code: 1, class: CLASSES, list: [] }), detail: json({ code: 1, list: [VOD] }) },
+  });
+
+  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1, filters: {} }]);
+  await engine.call('getMediaList', ['2', { page: 1, filters: {} }]);
+  // A renewed runtime has forgotten it, and asks for it once before the listing.
+  await fresh.engine.call('getMediaList', ['1', { page: 1, filters: {} }]);
+
+  assert.deepEqual(transport.calls.map((url) => query(url).ac), ['list', 'detail', 'detail']);
+  assert.deepEqual(fresh.transport.calls.map(query), [{ ac: 'list' }, { ac: 'detail', t: '36', pg: '1' }]);
+});
+
+test('shelves asked at once share one read of the tree, and a failed read is asked again', async () => {
+  let failNext = true;
+  const { transport, engine } = engineOver({
+    pages: {
+      list: () => {
+        if (failNext) { failNext = false; return json({}, { status: 503 }); }
+        return json({ code: 1, class: CLASSES, list: [] });
+      },
+      detail: json({ code: 1, list: [VOD] }),
+    },
+  });
+
+  const failed = await failure(engine.call('getMediaList', ['1', { page: 1, filters: {} }]));
+  await Promise.all(['1', '2', '37', 'latest'].map((id) => engine.call('getMediaList', [id, { page: 1, filters: {} }])));
+
+  // The failure is not kept: the next shelves read the tree again, once between them.
+  assert.equal(failed?.code, Code.UNREACHABLE);
+  assert.equal(transport.calls.filter((url) => query(url).ac === 'list').length, 2, JSON.stringify(transport.calls));
+});
+
+test('a recorded site whose 电影 answers empty opens it on 动作片, in Browse and on Home', async () => {
+  // Recorded from 360zy on 2026-10-10 (`run --record`): `t=1` answers `total: 0` while 动作片
+  // under it has 3856 titles, the shape most of the XPTV all.json MacCMS sites have.
+  const recorded = createReplayTransport({ dir: join(dir, 'fixtures') });
+  const asked = [];
+  const transport = { request: (req) => { asked.push(req.url); return recorded.request(req); } };
+  const engineOf = () => createEngine({
+    dir,
+    host: createHost({
+      manifest: loadManifest(dir),
+      config: { api: 'https://360zy.com/api.php/provide/vod', dialect: 'json', searchable: 'true' },
+      transport,
+      storeDir: scratchDir('lp-maccms-'),
+      pluginDir: dir,
+    }),
+  });
+
+  const browse = engineOf();
+  const [group] = await browse.call('getFilters', ['1']);
+  const opened = await browse.call('getMediaList', ['1', { page: 1, filters: { [group.id]: group.init } }]);
+  const own = await browse.call('getMediaList', ['1', { page: 1, filters: { class: '1' } }]);
+  const shelf = await engineOf().call('getMediaList', ['1', { page: 1, filters: {} }]);
+
+  assert.equal(group.options.find((option) => option.id === group.init).name, '动作片');
+  assert.equal(group.options.at(-1).name, '电影');
+  assert.equal(opened.length, 20);
+  assert.deepEqual(own, []);
+  assert.deepEqual(shelf.map((item) => item.id), opened.map((item) => item.id));
+  assert.equal(asked.filter((url) => url.includes('t=1&')).length, 1, JSON.stringify(asked));
 });
 
 test('a page that is not a whole number above zero is the first page', async () => {
@@ -272,6 +386,58 @@ test('a detail is typed by what the site says, and by its lines only where it sa
   assert.equal(await typed({ type_name: '其他', vod_remarks: '更新至1集', vod_play_from: '线路一', vod_play_url: '第1集$https://cms.test/1.m3u8' }), 'SERIES');
   assert.equal(await typed({ type_name: '其他' }), 'SERIES');
   assert.equal(await typed({ type_name: '其他', vod_play_url: '正片$https://cms.test/1.m3u8$$$正片$https://cms.test/x.mp4' }), 'MOVIE');
+});
+
+test('an episode a line lists twice, name and address alike, is one episode', async () => {
+  const twice = {
+    ...VOD,
+    vod_play_from: '线路一$$$线路二',
+    vod_play_url: [
+      // An exact repeat, a nameless one, 上/下 sharing a name at two addresses, and two names
+      // at one address.
+      '第1期$https://cms.test/1.m3u8#第1期$https://cms.test/1.m3u8#https://cms.test/x.m3u8#https://cms.test/x.m3u8'
+        + '#上下$https://cms.test/a.m3u8#上下$https://cms.test/b.m3u8#花絮$https://cms.test/1.m3u8'
+        // A nameless one after the repeats is numbered as if they were never there.
+        + '#https://cms.test/y.m3u8',
+      // The same entry on another line is that line's own.
+      '第1期$https://cms.test/1.m3u8',
+    ].join('$$$'),
+  };
+  const { engine } = engineOver({ pages: { detail: json({ code: 1, list: [twice] }) } });
+
+  const detail = await engine.call('getMediaDetail', ['42']);
+
+  assert.deepEqual(detail.playbackOptions.map((option) => [option.line, option.label, option.stream.url]), [
+    ['线路一', '第1期', 'https://cms.test/1.m3u8'],
+    ['线路一', '2', 'https://cms.test/x.m3u8'],
+    ['线路一', '上下', 'https://cms.test/a.m3u8'],
+    ['线路一', '上下', 'https://cms.test/b.m3u8'],
+    ['线路一', '花絮', 'https://cms.test/1.m3u8'],
+    ['线路一', '6', 'https://cms.test/y.m3u8'],
+    ['线路二', '第1期', 'https://cms.test/1.m3u8'],
+  ]);
+});
+
+test('a recorded title that lists its early episodes twice shows each once', async () => {
+  // Recorded from 360zy on 2026-10-10 (`run --record`): 全民星攻略2025's one line has 384 entries,
+  // 32 of them an exact repeat of another.
+  const recorded = createEngine({
+    dir,
+    host: createHost({
+      manifest: loadManifest(dir),
+      config: { api: 'https://360zy.com/api.php/provide/vod', dialect: 'json', searchable: 'true' },
+      transport: createReplayTransport({ dir: join(dir, 'fixtures') }),
+      storeDir: scratchDir('lp-maccms-'),
+      pluginDir: dir,
+    }),
+  });
+
+  const detail = await recorded.call('getMediaDetail', ['74284']);
+  const labels = detail.playbackOptions.map((option) => option.label);
+
+  assert.equal(detail.playbackOptions.length, 352);
+  assert.equal(new Set(detail.playbackOptions.map((option) => `${option.label} ${option.stream.url}`)).size, 352);
+  assert.deepEqual(labels.slice(0, 2), ['第20250102期', '第20250106期']);
 });
 
 test('a synopsis is text, and a double-encoded entity in it is the character the site meant', async () => {

@@ -149,6 +149,92 @@ test('an id that would run long loses its artwork and never its ext', async () =
   assert.ok(host.logs.some((entry) => entry.message.includes('dropped the artwork')), JSON.stringify(host.logs));
 });
 
+const CARD_WITH_CONTENT = "{ vod_name: '故人辞别金难换', vod_content: '她回来了。', ext: { url: '/p/7' } }";
+const A_TRACK = "return jsonify({ list: [{ title: '正片', tracks: [{ name: '第一集', ext: { url: '/7/1' } }] }] })";
+
+test("a card's vod_content is the synopsis of the title it opens, in a runtime that did not list it", async () => {
+  // 河馬短劇 (`kuaikaw.js`) sends its description only on a card; their getTracks carries none.
+  const source = catalogSource({ cards: `return jsonify({ list: [${CARD_WITH_CONTENT}] })`, tracks: A_TRACK });
+  const storeDir = scratchDir('lp-xptv-js-synopsis-');
+  const { engine } = engineOver(source, { storeDir });
+  const [item] = await engine.call('getMediaList', [await categoryId(engine), { page: 1 }]);
+
+  const detail = await engineOver(source, { storeDir }).engine.call('getMediaDetail', [item.id]);
+
+  assert.equal(detail.synopsis, '她回来了。');
+  assert.deepEqual(validateResult('getMediaDetail', detail).errors, []);
+});
+
+test("a search result's vod_content is the synopsis too", async () => {
+  const { engine } = engineOver(catalogSource({ search: `return jsonify({ list: [${CARD_WITH_CONTENT}] })`, tracks: A_TRACK }));
+  const [item] = await engine.call('search', ['故人']);
+
+  const detail = await engine.call('getMediaDetail', [item.id]);
+
+  assert.equal(detail.synopsis, '她回来了。');
+});
+
+test('a vod_content written as markup is read as its text', async () => {
+  const card = "{ vod_name: '故人', vod_content: '<p>她回来了&amp;nbsp;</p>\\n<p>他  不知道</p>', ext: { url: '/p/7' } }";
+  const { engine } = engineOver(catalogSource({ cards: `return jsonify({ list: [${card}] })`, tracks: A_TRACK }));
+  const [item] = await engine.call('getMediaList', [await categoryId(engine), { page: 1 }]);
+
+  const detail = await engine.call('getMediaDetail', [item.id]);
+
+  assert.equal(detail.synopsis, '她回来了 他 不知道');
+});
+
+test('a title no listing has shown opens without a synopsis, as one from a card without vod_content does', async () => {
+  const { engine } = engineOver(catalogSource({ cards: `return jsonify({ list: [${CARD}] })`, tracks: A_TRACK }));
+  const [item] = await engine.call('getMediaList', [await categoryId(engine), { page: 1 }]);
+  const unlisted = '{"e":{"url":"/p/8"},"n":"没见过","p":""}';
+
+  assert.equal((await engine.call('getMediaDetail', [item.id])).synopsis, undefined);
+  assert.equal((await engine.call('getMediaDetail', [unlisted])).synopsis, undefined);
+});
+
+test('a page shown again writes no synopsis, and a catalog with none never writes one', async () => {
+  const storeDir = scratchDir('lp-xptv-js-synopsis-writes-');
+  const written = () => JSON.parse(readFileSync(join(storeDir, 'store.json'), 'utf8'))[`synopses:${EXT}`];
+  let clock = 1_000_000;
+  const now = () => clock;
+  const listing = catalogSource({ cards: `return jsonify({ list: [${CARD_WITH_CONTENT}, ${CARD}] })`, tracks: A_TRACK });
+  const { engine } = engineOver(listing, { storeDir, now });
+  const category = await categoryId(engine);
+  await engine.call('getMediaList', [category, { page: 1 }]);
+  const first = written();
+
+  clock += 60_000;
+  await engine.call('getMediaList', [category, { page: 1 }]);
+
+  // A rewrite would have moved the expiry with the clock.
+  assert.deepEqual(written(), first);
+  assert.equal(first.value.length, 1);
+
+  const bare = scratchDir('lp-xptv-js-synopsis-none-');
+  const plain = engineOver(catalogSource({ cards: `return jsonify({ list: [${CARD}] })` }), { storeDir: bare });
+  await plain.engine.call('getMediaList', [await categoryId(plain.engine), { page: 1 }]);
+  assert.equal(JSON.parse(readFileSync(join(bare, 'store.json'), 'utf8'))[`synopses:${EXT}`], undefined);
+});
+
+test('a synopsis is kept to 2000 characters, which is what holds 200 of them inside one store value', async () => {
+  const card = "{ vod_name: '长', vod_content: 'a'.repeat(2001), ext: { url: '/p/7' } }";
+  const { engine } = engineOver(catalogSource({ cards: `return jsonify({ list: [${card}] })`, tracks: A_TRACK }));
+  const [item] = await engine.call('getMediaList', [await categoryId(engine), { page: 1 }]);
+
+  assert.equal((await engine.call('getMediaDetail', [item.id])).synopsis, 'a'.repeat(2000));
+});
+
+test('the synopses kept are the latest 200 new titles, so scrolling a catalog never outgrows its store', async () => {
+  const cards = "return jsonify({ list: Array.from({ length: 201 }, (_, i) => ({ vod_name: 'T' + i, vod_content: 'about ' + i, ext: { url: '/p/' + i } })) })";
+  const { engine } = engineOver(catalogSource({ cards, tracks: A_TRACK }));
+  const items = await engine.call('getMediaList', [await categoryId(engine), { page: 1 }]);
+
+  assert.equal((await engine.call('getMediaDetail', [items[0].id])).synopsis, undefined);
+  assert.equal((await engine.call('getMediaDetail', [items[1].id])).synopsis, 'about 1');
+  assert.equal((await engine.call('getMediaDetail', [items[200].id])).synopsis, 'about 200');
+});
+
 test('page two is their ext.page, and a chosen filter is their ext.filters', async () => {
   const { host, engine } = engineOver(catalogSource());
   const id = await categoryId(engine);
@@ -1002,6 +1088,94 @@ test('a call that ran out of time is not the site being down (kangzj/lantern-tv#
 
   assert.equal(error.message, '"庆余年" has nothing to play.');
   assert.ok(!host.requests.some((request) => request.url.endsWith('/second')));
+});
+
+test('a site that answered 5xx is still down when the retry after it ran out of time (kangzj/yonto#1599)', async () => {
+  // 哔滴影视's shape: Cloudflare's 522 arrives after most of the call's budget, and the
+  // catalog's next fetch is refused for time before the site is asked again.
+  const clock = { value: 1_700_000_000_000 };
+  const site = (req) => {
+    if (req.url.endsWith('/first')) {
+      clock.value += 20_001;
+      return { status: 522, headers: {}, bodyBase64: b64('<html><body>522: Connection timed out</body></html>') };
+    }
+    return EMPTY_PAGE();
+  };
+  const { engine, host } = engineOver(catalogSource({
+    cards: `await $fetch.get('https://s.test/first')
+  const { data } = await $fetch.get('https://s.test/second')
+  return jsonify({ list: [] })`,
+  }), { site, now: () => clock.value });
+  const id = await categoryId(engine);
+
+  const error = await refusal(engine, 'getMediaList', [id, { page: 1 }]);
+
+  assert.equal(error.code, Code.UNAVAILABLE);
+  assert.equal(error.message, SITE_DOWN);
+  assert.ok(!host.requests.some((request) => request.url.endsWith('/second')));
+});
+
+/**
+ * A listing asked of a fresh runtime, so getConfig's fetch runs in the same call and [setup]
+ * answers it after the whole budget; the listing's one fetch is then refused for time.
+ */
+async function listingAfterSlowSetup(setup) {
+  const clock = { value: 1_700_000_000_000 };
+  const site = (req) => {
+    if (!req.url.endsWith('/setup')) return EMPTY_PAGE();
+    clock.value += 20_001;
+    return setup();
+  };
+  const cards = `const { data } = await $fetch.get('https://s.test/page')
+  return jsonify({ list: [] })`;
+  const id = await categoryId(engineOver(catalogSource({ cards })).engine);
+  const withSetup = catalogSource({ cards })
+    .replace('async function getConfig() {', "async function getConfig() {\n  await $fetch.get('https://s.test/setup')");
+  const { engine, transport } = engineOver(withSetup, { site, now: () => clock.value });
+
+  const error = await refusal(engine, 'getMediaList', [id, { page: 1 }]);
+
+  assert.ok(transport.calls.some((url) => url.endsWith('/setup')));
+  assert.ok(!transport.calls.some((url) => url.endsWith('/page')));
+  return error;
+}
+
+test("a listing refused for time after the setup's 5xx says the site is down (kangzj/yonto#1599)", async () => {
+  // 哔滴影视's getConfig asks the site for a cookie on every call while the site is down, so its
+  // 522 is what spends the budget.
+  assert.equal((await listingAfterSlowSetup(CLOUDFLARE_520)).message, SITE_DOWN);
+});
+
+test('a listing refused for time after a setup that got no answer says the site is down', async () => {
+  assert.equal((await listingAfterSlowSetup(REFUSED)).message, SITE_DOWN);
+});
+
+test("a listing refused for time after a setup the site answered keeps the program's sentence", async () => {
+  assert.equal((await listingAfterSlowSetup(EMPTY_PAGE)).message, "This source's program won't run. It may be out of date.");
+});
+
+test("a site that failed in an earlier call is not what the next call's timeout says", async () => {
+  // The clock jumps right after the second call reads its start, so that call's one fetch is
+  // refused for time before anything in it reaches the site.
+  const clock = { value: 1_700_000_000_000, jumpAfterNextRead: false };
+  const now = () => {
+    const value = clock.value;
+    if (clock.jumpAfterNextRead) Object.assign(clock, { value: value + 20_001, jumpAfterNextRead: false });
+    return value;
+  };
+  const cards = `const { data } = await $fetch.get('https://s.test/page')
+  if (!data) throw new Error('nothing')
+  return jsonify({ list: [] })`;
+  const { engine, transport } = engineOver(catalogSource({ cards }), { site: CLOUDFLARE_520, now });
+  const id = await categoryId(engine);
+  assert.equal((await refusal(engine, 'getMediaList', [id, { page: 1 }])).message, SITE_DOWN);
+  const asked = transport.calls.length;
+
+  clock.jumpAfterNextRead = true;
+  const error = await refusal(engine, 'getMediaList', [id, { page: 1 }]);
+
+  assert.equal(transport.calls.length, asked);
+  assert.equal(error.message, "This source's program won't run. It may be out of date.");
 });
 
 test('a request the host refused is not the site being down', async () => {

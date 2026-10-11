@@ -6,7 +6,7 @@ A source is a black box to the app: it depends on the `ContentSourceAdapter` int
 the domain models in `content/`, never on a particular provider.
 These files are where that boundary is written down, and they are the only place it
 is written down once for the app, the plugins and the CLI at the same time.
-All but `licence-token-v1.json` are also published, with the CLI, in yonto-app/yonto-player-plugins.
+All but `licence-token-v1.json` and `setup-v1.json` are also published, with the CLI, in yonto-app/yonto-player-plugins.
 
 | File | What it defines | Who reads it |
 | --- | --- | --- |
@@ -20,6 +20,7 @@ All but `licence-token-v1.json` are also published, with the CLI, in yonto-app/y
 | `yonto-types/` | The registry of Yonto's own catalog types, one JSON Schema per name: the config a handler receives for an index entry of that type, each property marked with the `configSchema` field type (`x-yonto-field`) a handler declares it as. A bare name is Yonto's and has a file here; anybody else's is reverse-DNS and has none. Fields are only added within a name. A plugin is not a type: an index lists its plugins under `plugins` | `tools/plugin-cli` (`lint` holds a manifest's `handles` to it, via `src/yonto-types.js`), `YontoTypes` held to it by `ContractYontoTypesRecordTest` |
 | `yonto-type-name.schema.json` | The one grammar for a type name: a short id, or reverse-DNS in two or more lowercase RFC 1123 labels. `$ref`'d by the manifest's `handles` and the index's `ext.yontoType`, so the two cannot disagree | `tools/plugin-cli` (via `src/manifest.js`), held to `conformance/yonto-type-names.json` |
 | `licence-token-v1.json` | The licence token's test vectors, copied as they are from kangzj/licensing's `tests/vectors/token-v1.json`: its public key, the install id and each case's token and verdict | `LicenceTokensTest` (in `LicenceTokenVectors.kt`, a copy `LicenceTokenVectorsCopyTest` holds to this file) |
+| `setup-v1.json` | *Set up from your phone*'s test vectors, copied as they are from kangzj/licensing's `tests/vectors/setup-v1.json`: a secret and what it derives (both keys, the token and its hash, the code, the fragment), a form and a reply with their IVs, associated data and envelopes, and envelopes that must not open | `SetupVectorsTest` and `SetupEnvelopeVectorsTest` (in `SetupVectors.kt`, a copy `SetupVectorsCopyTest` holds to this file) |
 | `index.schema.json` | Where plugins and catalogs are listed: `plugins`, Yonto's own list of plugins to install (id, name, version, contract, `provides`, the manifest's `handles`, and the versioned zip's `url` with its sha256), and `sites`, the 仓/XPTV list of catalogs, where Yonto's own are `type` 50 entries with `ext.yontoType` saying which catalog type (a name by `yonto-type-name.schema.json`) and `ext.config` its payload, held to that type's schema in `yonto-types/` (`docs/design/2026-09-23-the-app-reads-every-index.md`). A plugin is never a `sites` entry (Jasper, 2026-10-09) | `tools/plugin-cli` (`index`, via `src/index-document.js`, reading through `src/index-reader.js`), `IndexReader.kt` by hand |
 
 ## What `contract-versions.json` does and does not carry

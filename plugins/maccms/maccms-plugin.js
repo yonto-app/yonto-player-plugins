@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "maccms",
   "name": "MacCMS format",
-  "version": "1.0.10",
+  "version": "1.0.12",
   "contractVersion": 21,
   "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto includes no site.",
   "probeQuery": "画皮",
@@ -447,15 +447,27 @@ function playLines(from, urls) {
 }
 
 // `name$url#name$url`; a site may leave the name out, in which case the episode's position
-// stands in for it.
+// stands in for it. An entry whose name and URL both repeat one already on the line is the site
+// listing it twice (kangzj/yonto#1572); the same name at another URL is another episode.
 function episodes(line) {
+  // A dropped repeat is not a hole in the line, so the positions after it close up; an entry
+  // with no URL still is one, and keeps its number.
+  const seen = new Set();
+  let repeats = 0;
   return line
     .split(EPISODE_SEPARATOR)
     .map((entry, index) => {
       const at = entry.indexOf(EPISODE_NAME_SEPARATOR);
       const name = (at < 0 ? '' : entry.slice(0, at)).trim();
       const url = (at < 0 ? entry : entry.slice(at + 1)).trim();
-      return url === '' ? null : { name: name || String(index + 1), url };
+      if (url === '') return null;
+      const key = JSON.stringify([name, url]);
+      if (seen.has(key)) {
+        repeats += 1;
+        return null;
+      }
+      seen.add(key);
+      return { name: name || String(index + 1 - repeats), url };
     })
     .filter((episode) => episode !== null);
 }
@@ -491,18 +503,70 @@ function plainText(markup) {
  * full.
  */
 function topClasses(classes) {
-  if (classes.some((entry) => entry.parentId !== undefined)) {
+  if (saysParentage(classes)) {
     return classes.filter((entry) => entry.parentId === TOP_CLASS_PID);
   }
   return classes.filter((entry) => SEED_TOP_CLASS_IDS.indexOf(entry.id) !== -1);
 }
 
-/** What the 分类 filter offers inside a category: that class's children where the site says
- *  which are which, and the whole tree where it does not — so every class stays reachable
- *  either way. 最新 belongs to no class, so it offers all of them. */
-function classesUnder(classes, classId) {
-  if (isLatest(classId) || !classes.some((entry) => entry.parentId !== undefined)) return classes;
+function saysParentage(classes) {
+  return classes.some((entry) => entry.parentId !== undefined);
+}
+
+/** A class's children, where the site says which are which; none where it does not. */
+function childrenOf(classes, classId) {
+  if (!saysParentage(classes)) return [];
   return classes.filter((entry) => entry.parentId === classId);
+}
+
+/**
+ * The 分类 group inside a category; no options for a class with nothing under it.
+ *
+ * A parent with children opens on its first child: MacCMS's `t` matches a title's own class, and
+ * most sites file nothing under a parent itself (kangzj/yonto#1571). The parent stays an option,
+ * last, because the group has no "All" once it has an `init`, and some sites do file titles
+ * there. 最新, and a site that says nothing about parentage, offer the whole tree with no `init`.
+ */
+function classFilter(classes, classId) {
+  const children = childrenOf(classes, classId);
+  if (children.length > 0) {
+    return {
+      init: children[0].id,
+      options: uniqueById([...children, ...classes.filter((entry) => entry.id === classId)]),
+    };
+  }
+  return { options: isLatest(classId) || !saysParentage(classes) ? uniqueById(classes) : [] };
+}
+
+/**
+ * The class tree as this runtime last read it, so a listing of a parent asked with no 分类
+ * chosen (Home's shelves) costs one request rather than two. Module state is a cache: it is
+ * empty again whenever the runtime is renewed, and then the tree is asked for once.
+ */
+const knownTrees = new Map();
+
+function treeKey(site) {
+  return `${site.dialect} ${site.api}`;
+}
+
+// The read itself is kept, not its answer, so Home's shelves asked at once share one `ac=list`.
+function readClassTree(site) {
+  const key = treeKey(site);
+  const read = ask(site, { ac: CLASSES_ACTION }).then((page) => page.classes);
+  knownTrees.set(key, read);
+  read.catch(() => { if (knownTrees.get(key) === read) knownTrees.delete(key); });
+  return read;
+}
+
+function classTree(site) {
+  return knownTrees.get(treeKey(site)) ?? readClassTree(site);
+}
+
+/** The class a category lists with no 分类 chosen: a parent's first child, as [classFilter] opens
+ *  it in Browse, so Home's shelf for it shows what Browse does. */
+async function openingClass(site, categoryId) {
+  if (isLatest(categoryId)) return categoryId;
+  return childrenOf(await classTree(site), categoryId)[0]?.id ?? categoryId;
 }
 
 /** What the site's words say a title is, or undefined where they say neither. */
@@ -568,10 +632,10 @@ function uniqueById(items) {
 export default {
   /** The site's own top-level classes, under its latest. */
   async getCategories() {
-    const page = await ask(server(), { ac: CLASSES_ACTION });
+    const classes = await readClassTree(server());
     return uniqueById([
       { id: LATEST_CATEGORY_ID, name: LATEST_CATEGORY_NAME },
-      ...topClasses(page.classes).map((klass) => ({ id: klass.id, name: klass.name })),
+      ...topClasses(classes).map((klass) => ({ id: klass.id, name: klass.name })),
     ]);
   },
 
@@ -580,10 +644,11 @@ export default {
    * answers `[]`, which is what a category with no filters looks like.
    */
   async getFilters(categoryId) {
-    const page = await ask(server(), { ac: CLASSES_ACTION });
-    const options = uniqueById(classesUnder(page.classes, str(categoryId))
-      .map((klass) => ({ id: klass.id, name: klass.name })));
-    return options.length === 0 ? [] : [{ id: CLASS_FILTER, name: CLASS_FILTER_NAME, options }];
+    const group = classFilter(await readClassTree(server()), str(categoryId));
+    if (group.options.length === 0) return [];
+    const options = group.options.map((klass) => ({ id: klass.id, name: klass.name }));
+    const init = group.init === undefined ? {} : { init: group.init };
+    return [{ id: CLASS_FILTER, name: CLASS_FILTER_NAME, ...init, options }];
   },
 
   /** One page of a class, or of the site's latest when the category is its 最新. */
@@ -591,7 +656,7 @@ export default {
     const site = server();
     // The filter wins over the category: both name a class, and the one the viewer chose in
     // front of them is the later answer. An empty filter is no choice at all.
-    const chosen = str(options?.filters?.[CLASS_FILTER]) || str(categoryId);
+    const chosen = str(options?.filters?.[CLASS_FILTER]) || await openingClass(site, str(categoryId));
     const page = Math.trunc(options?.page ?? 1);
     const answer = await ask(site, {
       ac: TITLES_ACTION[site.dialect],
