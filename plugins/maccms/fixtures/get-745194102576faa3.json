@@ -1,0 +1,22 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://360zy.com/api.php/provide/vod?ac=detail&t=1&pg=1",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "connection": "keep-alive",
+      "content-encoding": "gzip",
+      "content-type": "text/html;charset=utf-8",
+      "date": "Sat, 10 Oct 2026 08:07:29 GMT",
+      "server": "nginx",
+      "strict-transport-security": "max-age=31536000",
+      "transfer-encoding": "chunked",
+      "vary": "Accept-Encoding"
+    },
+    "bodyBase64": "eyJjb2RlIjoxLCJtc2ciOiLmlbDmja7liJfooagiLCJwYWdlIjoiMSIsInBhZ2Vjb3VudCI6MCwibGltaXQiOiIyMCIsInRvdGFsIjowLCJsaXN0IjpbXX0=",
+    "setCookie": []
+  }
+}
