@@ -1,9 +1,9 @@
-# Yonto plugins
+# Yonto Player plugins
 
-[Yonto](https://yonto.app) is a video app for Android TV and for phones and tablets.
+[Yonto Player](https://player.yonto.app) is a video app for Android TV and for phones and tablets.
 It does not know any site or server itself: everything it plays comes through a source plugin, one JavaScript file that lists categories and titles, describes a title and searches.
 
-This repository is the open part of Yonto, under the MIT licence:
+This repository is the open part of Yonto Player, under the MIT licence:
 
 | Path | What it is |
 | --- | --- |
@@ -13,7 +13,7 @@ This repository is the open part of Yonto, under the MIT licence:
 
 The app itself is not here, and stays closed.
 
-The developer guide is at [yonto.app/docs/developers](https://yonto.app/docs/developers/): a tutorial, the plugin reference, testing and publishing.
+The developer guide is at [player.yonto.app/docs/developers](https://player.yonto.app/docs/developers/): a tutorial, the plugin reference, testing and publishing.
 
 ## Quick start
 
@@ -63,7 +63,7 @@ npm test --prefix tools/plugin-cli
 
 Yonto's own plugins are published as releases of this repository, one release per plugin.
 `https://github.com/yonto-app/yonto-player-plugins/releases/download/<id>/<id>.zip` always serves the current build, and `<id>-<version>.zip` beside it never changes, with a `.sha256` next to each.
-In Yonto, choose **Settings**, **Plugins**, **Install from URL** and paste the address; the app shows what the plugin may reach before anything runs.
+In Yonto Player, choose **Settings**, **Plugins**, **Install from URL** and paste the address; the app shows what the plugin may reach before anything runs.
 The `index` release holds `index.json`, a repo listing every plugin, which **Settings**, **Repos** takes.
 
 ## Reading this repository

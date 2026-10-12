@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://yonto.app/plugin-contract/yonto-types/xptv-js.schema.json",
+  "$id": "https://player.yonto.app/plugin-contract/yonto-types/xptv-js.schema.json",
   "title": "xptv-js",
   "description": "One XPTV catalog: a JavaScript program at `ext`, which the handler fetches and runs.",
   "type": "object",

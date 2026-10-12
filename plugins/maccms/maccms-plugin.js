@@ -3,9 +3,9 @@
   "kind": "content-source",
   "id": "maccms",
   "name": "MacCMS format",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "contractVersion": 21,
-  "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto includes no site.",
+  "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto Player includes no site.",
   "probeQuery": "画皮",
   "provides": "source-type",
   "allowedHosts": [],
@@ -111,7 +111,7 @@ const NO_SEARCH_MESSAGE = "This source doesn't have search. Try another source."
  * [SERVER_DOWN_MESSAGE]'s, since waiting will not change either. Of #572's 120 MacCMS addresses,
  * one server had moved to another host and six were parked or hijacked (`plugins/maccms/AGENTS.md`).
  */
-const SERVER_OFF_LIMITS_MESSAGE = "This source points at an address Yonto won't connect to. Check its API address.";
+const SERVER_OFF_LIMITS_MESSAGE = "This source points at an address Yonto Player won't connect to. Check its API address.";
 const MISCONFIGURED_MESSAGE = 'The API address must start with http:// or https://.';
 /** The host would not send what the `api` makes (`REQUEST_INVALID`): with only a query added to
  *  it, that is the address itself, so it is the form's to fix. */

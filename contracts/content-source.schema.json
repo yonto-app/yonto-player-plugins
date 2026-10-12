@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://yonto.app/plugin-contract/content-source.schema.json",
+  "$id": "https://player.yonto.app/plugin-contract/content-source.schema.json",
   "title": "Yonto content source contract v1",
   "$defs": {
     "category": {
