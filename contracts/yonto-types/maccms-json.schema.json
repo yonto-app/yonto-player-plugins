@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://yonto.app/plugin-contract/yonto-types/maccms-json.schema.json",
+  "$id": "https://player.yonto.app/plugin-contract/yonto-types/maccms-json.schema.json",
   "title": "maccms-json",
   "description": "One MacCMS server, read over the JSON dialect of its api.php/provide/vod API.",
   "type": "object",

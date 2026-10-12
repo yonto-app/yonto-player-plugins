@@ -105,7 +105,7 @@ one, because to a host it is a field from a later contract (kangzj/yonto#336). S
 field goes into the schema before any plugin can declare it, and never into a host as a
 reason to refuse.
 
-The `$id` of each schema is a `https://yonto.app/plugin-contract/` URL.
+The `$id` of each schema is a `https://player.yonto.app/plugin-contract/` URL.
 That is an identifier, not an address — nothing fetches it, and it does not track where the
 file sits in this repo.
 

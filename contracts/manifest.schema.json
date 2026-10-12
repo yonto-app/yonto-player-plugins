@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://yonto.app/plugin-contract/manifest.schema.json",
+  "$id": "https://player.yonto.app/plugin-contract/manifest.schema.json",
   "title": "Yonto plugin manifest",
   "type": "object",
   "required": ["kind", "id", "name", "version", "contractVersion", "allowedHosts", "provides"],

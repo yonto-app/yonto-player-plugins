@@ -37,7 +37,7 @@ test('every type is a 2020-12 schema titled by its file name, open to fields add
     ajv.compile(schema);
     assert.equal(schema.$schema, 'https://json-schema.org/draft/2020-12/schema', name);
     assert.equal(schema.title, name);
-    assert.equal(schema.$id, `https://yonto.app/plugin-contract/yonto-types/${name}.schema.json`);
+    assert.equal(schema.$id, `https://player.yonto.app/plugin-contract/yonto-types/${name}.schema.json`);
     assert.equal(schema.additionalProperties, true, name);
   }
 });

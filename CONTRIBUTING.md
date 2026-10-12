@@ -2,7 +2,7 @@
 
 ## Where a change lands
 
-This repository is exported, one way, from the private repository the Yonto apps are built in.
+This repository is exported, one way, from the private repository the Yonto Player apps are built in.
 That one is the source of truth: each export replaces everything here, so a commit made only here is gone at the next one.
 
 Issues are welcome here.

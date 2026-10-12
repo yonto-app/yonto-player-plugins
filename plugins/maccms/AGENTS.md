@@ -13,7 +13,7 @@ Both were retired on 2026-09-24 without ever being publicly released (kangzj/yon
 Its `api`'s host and nothing else.
 The address is a `url` field, so the host widens the allowlist to exactly that host and checks every redirect hop against it; there is no `hostsFromConfig`.
 A redirect off the host is refused by the host (`HOST_NOT_ALLOWED`), and this says so in its own sentence rather than as an outage, because waiting will not change it.
-The floor raises the same code, which today only a redirect hop can meet, since the `api` itself is typed; from phase 6 a repo can name a private `api` the viewer did not type, so the sentence (*points at an address Yonto won't connect to*) is worded to be true of both.
+The floor raises the same code, which today only a redirect hop can meet, since the `api` itself is typed; from phase 6 a repo can name a private `api` the viewer did not type, so the sentence (*points at an address Yonto Player won't connect to*) is worded to be true of both.
 
 **Measured 2026-09-23** against the 120 distinct `…/provide/vod` addresses in the eight plain 仓s of #572's survey that answered, each asked `ac=list`, following up to five redirects:
 
@@ -74,7 +74,7 @@ A title is **matched**: `ids=42` answered with anything but vod 42 is `notFound`
 | `TIMEOUT` | rethrown | no: it says nothing about the server |
 | a redirect chain the host gave up on (`REDIRECT_REFUSED`) | `unavailable`, *redirects lead nowhere* | no: it answered |
 | an address the host will not send (`REQUEST_INVALID`) | `misconfigured`, *The API address can't be used* | no: nothing was sent |
-| a redirect to another host, or a private address nobody typed | `unavailable`, *points at an address Yonto won't connect to* | no |
+| a redirect to another host, or a private address nobody typed | `unavailable`, *points at an address Yonto Player won't connect to* | no |
 | 404 to the classes or a listing | `unavailable`, *no MacCMS API at this address* | no: the address is wrong, not a title gone; not `misconfigured`, which would mark a repo's catalog as a form to fix |
 | 404 to a title (`ids`) or a search | `notFound` | no |
 | 401, 403 | `unavailable`, *refused access* | no |

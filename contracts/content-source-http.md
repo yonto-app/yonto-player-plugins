@@ -449,7 +449,7 @@ An older app does not know `UNREACHABLE` either, and would report it as
 that raises it must declare `contractVersion` 16; `lint` works that out from
 the call, or from `'UNREACHABLE'` written anywhere in its code other than as a
 value it only compares against (`===`, `!==` or a `case`), and an older app
-refuses the plugin with *Needs a newer Yonto*.
+refuses the plugin with *Needs a newer Yonto Player*.
 
 A plugin that scrapes a site over `yonto.fetch` sits in the same place a
 native adapter does relative to that site's own HTTP responses, so it maps
