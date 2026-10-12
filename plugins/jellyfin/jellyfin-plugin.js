@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "jellyfin",
   "name": "Jellyfin",
-  "version": "1.6.7",
+  "version": "1.6.8",
   "contractVersion": 21,
   "description": "A Jellyfin media server, reached with an ordinary login or with a server-generated API key.",
   "probeQuery": "bubble",
@@ -174,10 +174,10 @@ let loggingIn = null;
  * How this plugin identifies itself when logging in.
  *
  * Jellyfin records these against the session it hands back, and a viewer sees them in
- * Dashboard > Devices — so they say Yonto rather than something anonymous, and the device
+ * Dashboard > Devices — so they say Yonto Player rather than something anonymous, and the device
  * id is stable so logging in again replaces that session instead of adding another.
  */
-const CLIENT = 'Yonto';
+const CLIENT = 'Yonto Player';
 const DEVICE = 'Android TV';
 const CLIENT_VERSION = '1.0';
 

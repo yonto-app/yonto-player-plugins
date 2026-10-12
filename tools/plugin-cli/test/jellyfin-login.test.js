@@ -71,7 +71,7 @@ test('a username and password are exchanged for a token, and the token is what c
   const [login, views] = transport.calls;
   // The login itself carries no token — there is none yet — and says who is asking, which is
   // what a viewer sees in Dashboard > Devices.
-  assert.match(login.headers.Authorization, /^MediaBrowser Client="Yonto", Device=".+", DeviceId=".+", Version=".+"$/);
+  assert.match(login.headers.Authorization, /^MediaBrowser Client="Yonto Player", Device=".+", DeviceId=".+", Version=".+"$/);
   assert.equal(JSON.parse(login.body).Username, 'demo');
   assert.equal(JSON.parse(login.body).Pw, 'hunter2');
   // And the call that follows carries the won token, in the one header a 12.x server reads.

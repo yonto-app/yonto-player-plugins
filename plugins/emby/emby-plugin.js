@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "emby",
   "name": "Emby",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "contractVersion": 21,
   "description": "An Emby media server, reached with an ordinary login or with a server-generated API key. Not affiliated with Emby.",
   "probeQuery": "pattern",
@@ -84,7 +84,7 @@ const KEY_REFUSED_MESSAGE = 'Check the API key and user ID by editing the source
 const LOGIN_REFUSED_MESSAGE = 'Check the username and password by editing the source in Settings.';
 const ACCOUNT_REFUSED_MESSAGE = "Check this account's permissions on the server.";
 
-const CLIENT = 'Yonto';
+const CLIENT = 'Yonto Player';
 const DEVICE = 'Android TV';
 const CLIENT_VERSION = '1.0';
 
