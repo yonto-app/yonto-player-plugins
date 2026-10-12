@@ -14,7 +14,7 @@ const CREDENTIAL = /^[\x21-\x7e]{8,4096}$/;
 const SECOND_MS = 1000;
 
 /** What the host calls itself to a service, in `{product}`. */
-export const PRODUCT = 'Yonto';
+export const PRODUCT = 'Yonto Player';
 
 export const LINK_RULES = Object.freeze({
   minExpiresInMs: 10 * SECOND_MS,

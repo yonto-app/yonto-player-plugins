@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "contractVersion": 21,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
@@ -44,7 +44,7 @@ const LIBRARY_TYPES = [MOVIE, SHOW];
 const POSTER_SIZE = { width: 480, height: 720 };
 const BACKDROP_SIZE = { width: 1920, height: 1080 };
 
-const PRODUCT = 'Yonto';
+const PRODUCT = 'Yonto Player';
 
 // A shared server's media id is `<server id>|<ratingKey>` and the typed server's the bare
 // ratingKey, so History finds a title on its own server whichever library is picked.

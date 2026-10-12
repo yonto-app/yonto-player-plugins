@@ -157,7 +157,7 @@ test('a username and password are exchanged for a token that later calls carry',
   const [login, views] = transport.calls;
   assert.equal(login.url, `${SERVER}/emby/Users/AuthenticateByName`);
   assert.equal(login.headers['X-Emby-Authorization'],
-    `Emby Client="Yonto", Device="Android TV", DeviceId="lantern-${yonto.installId()}", Version="1.0"`);
+    `Emby Client="Yonto Player", Device="Android TV", DeviceId="lantern-${yonto.installId()}", Version="1.0"`);
   assert.deepEqual(JSON.parse(login.body), { Username: 'demo', Pw: 'hunter2' });
   assert.equal(views.headers['X-Emby-Token'], TOKEN);
   assert.equal(views.url, `${SERVER}/emby/Users/${USER}/Views`);
