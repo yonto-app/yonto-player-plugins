@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "contractVersion": 21,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
@@ -381,6 +381,20 @@ function yearOf(item) {
   return item.year === null || item.year === undefined ? undefined : String(item.year);
 }
 
+// Plex lists a title's database ids as `Guid` entries like `tmdb://603`. A listing and a search leave them out
+// unless asked; a detail already has them.
+const WITH_GUIDS = { includeGuids: '1' };
+const DATABASE_GUID = /^(tmdb|imdb|tvdb):\/\/(.+)$/;
+
+function idsOf(item) {
+  const ids = {};
+  for (const guid of list(item, 'Guid')) {
+    const match = DATABASE_GUID.exec(guid.id || '');
+    if (match) ids[match[1]] = match[2];
+  }
+  return Object.keys(ids).length === 0 ? undefined : ids;
+}
+
 function toSummary(target, item) {
   return {
     id: `${target.prefix}${item.ratingKey}`,
@@ -390,6 +404,7 @@ function toSummary(target, item) {
     backdropUrl: imageUrl(target, item.art, BACKDROP_SIZE),
     year: yearOf(item),
     rating: item.contentRating || undefined,
+    ids: idsOf(item),
   };
 }
 
@@ -476,6 +491,7 @@ export default {
     const { page = 1 } = options || {};
     const target = await pickedTarget();
     const container = await get(target, `/library/sections/${encodeURIComponent(categoryId)}/all`, categoryId, {
+      ...WITH_GUIDS,
       'X-Plex-Container-Start': String(Math.max(page - 1, 0) * PAGE_SIZE),
       'X-Plex-Container-Size': String(PAGE_SIZE),
     });
@@ -505,7 +521,7 @@ export default {
 
   async search(query) {
     const target = await pickedTarget();
-    const hubs = list(await get(target, '/hubs/search', 'search', { query, limit: String(SEARCH_LIMIT) }), 'Hub');
+    const hubs = list(await get(target, '/hubs/search', 'search', { ...WITH_GUIDS, query, limit: String(SEARCH_LIMIT) }), 'Hub');
     return hubs
       .filter((hub) => LIBRARY_TYPES.indexOf(hub.type) !== -1)
       .flatMap((hub) => list(hub, 'Metadata'))

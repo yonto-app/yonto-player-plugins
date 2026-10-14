@@ -69,6 +69,23 @@ test('a movie is a summary with its artwork resized by the server', async () => 
   assert.match(bunny.backdropUrl, /url=%2Flibrary%2Fmetadata%2F1%2Fart%2F\d+&width=1920&height=1080/);
 });
 
+test('a title carries the database ids Plex lists as guids, and a listing and a search ask for them', async () => {
+  const { engine, requests } = replayed();
+  const bunny = { imdb: 'tt1254207', tmdb: '10378', tvdb: '12352' };
+
+  const items = await engine.call('getMediaList', ['1', { page: 1 }]);
+  assert.ok(requests.at(-1).url.includes('includeGuids=1'), requests.at(-1).url);
+  assert.deepEqual(items.find((item) => item.id === MOVIE_ID).ids, bunny);
+
+  const found = await engine.call('search', ['bunny']);
+  assert.ok(requests.at(-1).url.includes('includeGuids=1'), requests.at(-1).url);
+  assert.deepEqual(found.find((item) => item.id === MOVIE_ID).ids, bunny);
+
+  // As recorded: a detail lists them without being asked, and a show the server never matched has none.
+  assert.deepEqual((await engine.call('getMediaDetail', [MOVIE_ID])).ids, bunny);
+  assert.equal((await engine.call('getMediaDetail', [SHOW_ID])).ids, undefined);
+});
+
 test('a show lists as a series', async () => {
   const items = await replayed().engine.call('getMediaList', ['2', { page: 1 }]);
 

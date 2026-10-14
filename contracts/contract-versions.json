@@ -26,6 +26,7 @@
     "yonto.session.linked": 18,
     "yonto.session.servers": 18,
     "yonto.session.refused": 18,
-    "yonto.jsEncrypt": 20
+    "yonto.jsEncrypt": 20,
+    "getMediaDetail.stream.live": 22
   }
 }

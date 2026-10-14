@@ -85,9 +85,14 @@ export const MANIFEST_FACTS = {
  * `getFilters.init` is a filter group naming the option it is already on (contract 13). An
  * older app ignores it and shows "All" over a listing that is not, which is today's
  * behaviour rather than a new failure.
+ *
+ * `stream.live` (contract 22) is on a stream, which both `getMediaDetail` and `getStream` answer
+ * with, so it is keyed by `getMediaDetail`, the one every plugin exports. An older app drops it
+ * and plays the stream as a title with a length, which is what it always did.
  */
 export const RESULT_FIELDS = {
   FILTER_INIT: 'getFilters.init',
+  STREAM_LIVE: 'getMediaDetail.stream.live',
 };
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });

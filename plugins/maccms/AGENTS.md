@@ -107,6 +107,7 @@ suoniapi's JSON API is one that answers that way, which is why `doctor.json` nam
   A detail is typed by the same words (kangzj/yonto#1207): a 动作片 with two versions on one line is still a film.
   Only where the words say neither is a detail with a line of more than one episode a series.
 - **Rating**: 豆瓣's score, then the site's, whichever is strictly between 0 and 10: "0.0" is no score and "10.0" is no real one.
+- **ids**: `vod_douban_id` is the title's `douban`, and `0` or empty is none (MacCMS fills an unmatched title with `0`). The XML dialect carries no such field.
 
 ## Recommendations
 

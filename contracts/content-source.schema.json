@@ -33,6 +33,16 @@
         }
       }
     },
+    "ids": {
+      "$comment": "The title's identity in the public databases, so two sources listing the same work can be told apart from two works that share a name. A TMDB id is only unique within a type, so read it with `type`. Every key is optional and a source gives only what it has; a host drops a value that does not match its pattern, and a key it does not know. Nothing reads it to merge titles yet (docs/design/2026-10-13-one-library-across-sources.md).",
+      "type": "object",
+      "properties": {
+        "tmdb": { "type": "string", "pattern": "^[0-9]{1,12}$" },
+        "imdb": { "type": "string", "pattern": "^tt[0-9]{7,10}$" },
+        "tvdb": { "type": "string", "pattern": "^[0-9]{1,12}$" },
+        "douban": { "type": "string", "pattern": "^[0-9]{1,12}$" }
+      }
+    },
     "summary": {
       "type": "object",
       "required": ["id", "title"],
@@ -43,7 +53,8 @@
         "posterUrl": { "type": "string" },
         "backdropUrl": { "type": "string" },
         "year": { "type": "string" },
-        "rating": { "type": "string" }
+        "rating": { "type": "string" },
+        "ids": { "$ref": "#/$defs/ids" }
       }
     },
     "mediaListResult": {
@@ -65,7 +76,8 @@
       "properties": {
         "url": { "type": "string", "minLength": 1 },
         "mimeType": { "type": "string" },
-        "headers": { "$ref": "#/$defs/headers" }
+        "headers": { "$ref": "#/$defs/headers" },
+        "live": { "type": "boolean", "$comment": "A stream with no end: a television channel. A host never saves a place in one, offers no timeline, and starts it again if it ends or drops. Absent means false, which is what a stream always was." }
       }
     },
     "headers": {
@@ -108,6 +120,7 @@
         "backdropUrl": { "type": "string" },
         "year": { "type": "string" },
         "rating": { "type": "string" },
+        "ids": { "$ref": "#/$defs/ids" },
         "genres": { "type": "array", "items": { "type": "string" } },
         "synopsis": { "type": "string" },
         "playbackOptions": { "type": "array", "items": { "$ref": "#/$defs/playbackOption" } }

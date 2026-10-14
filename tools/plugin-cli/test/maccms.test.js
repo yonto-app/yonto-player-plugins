@@ -38,6 +38,7 @@ const VOD = {
   vod_pic: 'https://cms.test/pic/42.jpg',
   vod_year: '2008',
   vod_douban_score: '7.2',
+  vod_douban_id: '1307394',
   vod_class: '动作,奇幻',
   vod_remarks: 'HD',
   vod_content: '<p>一个&amp;nbsp;故事</p>',
@@ -194,7 +195,18 @@ test('a listing asks for the class and the page, and its cards carry the site\'s
     posterUrl: 'https://cms.test/pic/42.jpg',
     year: '2008',
     rating: '7.2',
+    ids: { douban: '1307394' },
   }]);
+});
+
+test('a title MacCMS never matched to Douban carries no id', async () => {
+  const { engine } = engineOver({
+    pages: { detail: json({ code: 1, list: [{ ...VOD, vod_douban_id: 0 }, { ...VOD, vod_id: 43, vod_douban_id: '' }] }) },
+  });
+
+  const items = await engine.call('getMediaList', ['36', { page: 1, filters: {} }]);
+
+  assert.deepEqual(items.map((item) => item.ids), [undefined, undefined]);
 });
 
 test('the latest asks with no class at all', async () => {

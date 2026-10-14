@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "maccms",
   "name": "MacCMS format",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "contractVersion": 21,
   "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto Player includes no site.",
   "probeQuery": "画皮",
@@ -368,6 +368,7 @@ function vodFromJson(vod) {
     poster: str(vod?.vod_pic),
     year: str(vod?.vod_year),
     rating: ratingOf(str(vod?.vod_douban_score), str(vod?.vod_score)),
+    doubanId: str(vod?.vod_douban_id),
     genres: str(vod?.vod_class).split(GENRE_SEPARATOR).map((genre) => genre.trim()).filter(Boolean),
     content: str(vod?.vod_content) || str(vod?.vod_blurb),
     remarks: str(vod?.vod_remarks),
@@ -407,6 +408,7 @@ function vodFromXml($, video) {
     poster: text('pic'),
     year: text('year'),
     rating: undefined,
+    doubanId: '',
     genres: [],
     content: text('des'),
     remarks: text('note'),
@@ -621,6 +623,8 @@ function summaryOf(vod) {
   if (vod.poster !== '') summary.posterUrl = vod.poster;
   if (vod.year !== '') summary.year = vod.year;
   if (vod.rating !== undefined) summary.rating = vod.rating;
+  // MacCMS fills an unmatched title with 0.
+  if (vod.doubanId !== '' && vod.doubanId !== '0') summary.ids = { douban: vod.doubanId };
   return summary;
 }
 

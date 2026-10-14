@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "http://localhost:18400/hubs/search?query=blender&limit=50",
+    "url": "http://localhost:18400/hubs/search?includeGuids=1&query=blender&limit=50",
     "body": null
   },
   "response": {

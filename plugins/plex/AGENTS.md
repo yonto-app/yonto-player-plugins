@@ -83,6 +83,10 @@ An unclaimed server answers every request whatever token it carries, so a refuse
 `fixtures/linked/resources.json` is **NOT A RECORDING**: the account's server list written by hand from Plex's documentation, since there is no account to record one (two shared servers, one owned, a player; documentation addresses, made-up tokens).
 `test/plex.test.js` and `JsPlexPluginAdapterTest` answer the host's discovery with it and serve each shared server the recordings above under its own address.
 
+A title's `ids` come from its `Guid` entries (`tmdb://10378`, `imdb://tt…`, `tvdb://…`).
+A detail lists them without being asked, as recorded, but a listing and a search leave them out unless asked with `includeGuids=1`, so those two send it.
+The listing and search were recorded before that, so their fixtures were re-keyed to the `includeGuids` request and `Big Buck Bunny` was given its own `Guid`s by hand, copied from its recorded detail; a re-recording replaces both.
+
 To record again, run a server the same way and add the libraries through the API:
 
 ```sh

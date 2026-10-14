@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "emby",
   "name": "Emby",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "contractVersion": 21,
   "description": "An Emby media server, reached with an ordinary login or with a server-generated API key. Not affiliated with Emby.",
   "probeQuery": "pattern",
@@ -60,9 +60,9 @@ const TYPE_OPTIONS = [
 ];
 
 // A listing leaves these out unless they are named, CommunityRating included (unlike Jellyfin).
-const LIST_ITEM_FIELDS = 'ProductionYear,OfficialRating';
+const LIST_ITEM_FIELDS = 'ProductionYear,OfficialRating,ProviderIds';
 const RANKED_ITEM_FIELDS = `${LIST_ITEM_FIELDS},CommunityRating`;
-const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear,OfficialRating';
+const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear,OfficialRating,ProviderIds';
 
 const POSTER_MAX_WIDTH = 480;
 const BACKDROP_MAX_WIDTH = 1920;
@@ -314,6 +314,16 @@ function yearOf(item) {
   return year === null || year === undefined ? undefined : String(year);
 }
 
+// A title the server never matched has none, and the server only knows these three.
+function idsOf(item) {
+  const given = item.ProviderIds || {};
+  const ids = {};
+  if (given.Tmdb) ids.tmdb = String(given.Tmdb);
+  if (given.Imdb) ids.imdb = String(given.Imdb);
+  if (given.Tvdb) ids.tvdb = String(given.Tvdb);
+  return Object.keys(ids).length === 0 ? undefined : ids;
+}
+
 function toSummary(item) {
   return {
     id: item.Id,
@@ -323,6 +333,7 @@ function toSummary(item) {
     backdropUrl: backdropUrl(item),
     year: yearOf(item),
     rating: item.OfficialRating ?? undefined,
+    ids: idsOf(item),
   };
 }
 

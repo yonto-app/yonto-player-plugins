@@ -113,6 +113,7 @@ Full detail for one title, including how to play it.
   "backdropUrl": "https://.../backdrop.jpg",
   "year": "2008",
   "rating": "PG",
+  "ids": { "tmdb": "10378", "imdb": "tt1254207" },
   "genres": ["Animation", "Comedy"],
   "synopsis": "A giant rabbit deals with three bullying rodents.",
   "playbackOptions": [
@@ -132,7 +133,7 @@ An option carries **exactly one of `stream`, `pan` or `track`**, and the field
 is what says who turns it into something playable:
 
 ```jsonc
-{ "label": "第12集", "stream": { "url": "https://…", "mimeType": "…", "headers": {} } }
+{ "label": "第12集", "stream": { "url": "https://…", "mimeType": "…", "headers": {}, "live": false } }
 { "label": "合集",   "pan":    { "share": "https://pan.quark.cn/s/…", "password": "1234" } }
 { "label": "第12集", "track":  "<opaque, this source's own>" }
 ```
@@ -218,11 +219,17 @@ Used inline in the media-list and search responses:
   "posterUrl": "https://.../poster.jpg",
   "backdropUrl": "https://.../backdrop.jpg",
   "year": "2008",
-  "rating": "PG"
+  "rating": "PG",
+  "ids": { "tmdb": "10378", "imdb": "tt1254207" }
 }
 ```
 
 All fields except `id`, `title` are optional.
+
+`ids` is the title's identity in the public databases: `tmdb`, `imdb`, `tvdb` and `douban`, each optional, so two sources listing the same work can be told apart from two works that share a name.
+Give only the ones you know; a TMDB id is unique only within a `type`, so it is read with the title's `type`.
+`tmdb`, `tvdb` and `douban` are digits, and `imdb` is `tt` and digits; the app drops a value of any other shape, and a key it does not know.
+The app does not yet use them to match titles across sources.
 
 ### Text the app shows
 
@@ -2165,7 +2172,18 @@ as `lantern`, the host's old name, which it kept as a deprecated alias.
 earlier version may call `lantern` and would die at its first call, so every host refuses a
 manifest declaring less than 21 (`oldest` in `contract-versions.json`) rather than run it, and
 every plugin declares 21. The versions above say when each piece of surface arrived; a plugin
-declares one of them again only once something arrives after 21.
+declares one of them again only once it needs something that arrived after 21 (version 22's `live`
+is a result field a plugin may send without declaring it).
+
+**Version 22** added `live` on a stream: a stream with no end, a television channel.
+A host never saves a place in one or marks it finished, draws no timeline or speed, and starts it
+again if it ends or drops, where a stream without the key is a title with a length, as it always
+was. The host also treats a stream whose player reports no duration as live, so a plugin sets the
+key for what a player cannot tell: a looped channel that is a short file ending every minute.
+It is a result field, keyed `getMediaDetail.stream.live` because both `getMediaDetail` and
+`getStream` answer with a stream; nothing in a plugin's source says it answers with one, so `lint`
+accepts a declaration of exactly 22 from any plugin and requires none.
+An older app drops the key and plays the stream as it did, so a plugin that wants to run there too declares 21 and sets the key anyway; declaring 22 says the plugin needs it, and an app older than 22 refuses a manifest above its own version.
 
 **Without a version of its own**: `yonto.fetch` hands over at most 16 MB of a body,
 refusing more as `RESPONSE_TOO_LARGE`, and `bodyBase64` is asked of the host when first read
