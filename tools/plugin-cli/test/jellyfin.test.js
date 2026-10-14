@@ -54,14 +54,24 @@ test('filters offer type statically, and the genres and years the library actual
   assert.deepEqual(filters[2].options.map((o) => o.id), ['2014', '2010', '2008']);
 });
 
-test('a listing asks for ProductionYear alone, never the fields a summary cannot carry', async () => {
+test('a listing asks for the year and the ids alone, never the fields a summary cannot carry', async () => {
   const { engine: e, requests } = engine();
   await e.call('getMediaList', ['lib-movies', { page: 1, filters: {} }]);
 
   const { url } = requests[0];
-  assert.ok(url.includes('Fields=ProductionYear'));
+  assert.ok(url.includes('Fields=ProductionYear%2CProviderIds'));
   assert.ok(!url.includes('Overview'));
   assert.ok(!url.includes('Genres'));
+});
+
+test('a title carries the database ids the server knows it by', async () => {
+  const items = await engine().engine.call('getMediaList', ['lib-movies', { page: 1, filters: {} }]);
+
+  assert.deepEqual(items.find((item) => item.id === MOVIE_ID).ids, { tmdb: '9003', imdb: 'tt9000003' });
+  assert.equal(items.find((item) => item.type === 'SERIES').ids, undefined);
+
+  const detail = await engine().engine.call('getMediaDetail', [MOVIE_ID]);
+  assert.deepEqual(detail.ids, { tmdb: '9003', imdb: 'tt9000003' });
 });
 
 test('images are asked for at the size they will be drawn at, not the size they are stored at', async () => {

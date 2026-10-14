@@ -56,6 +56,8 @@ const MOVIE = {
   Genres: ['TV Movie', 'Drama'],
   CommunityRating: 5.7,
   ProductionYear: 1976,
+  // Hand-added: the live server's library had no matches, so its ProviderIds came back empty.
+  ProviderIds: { Tmdb: '9003', Imdb: 'tt9000003' },
   IsFolder: false,
   ImageTags: { Primary: 'a131fdbdca9ddadcda7d3c86756c6b67' },
   BackdropImageTags: ['408be2dfc34f1ce61108cf049a5aa82e'],
@@ -150,7 +152,7 @@ const server = {
 async function main() {
   const manifest = loadManifest(dir);
   const storeDir = mkdtempSync(join(tmpdir(), 'yonto-jellyfin-fixtures-'));
-  const { yonto } = createHost({
+  const host = createHost({
     pluginDir: dir,
     // No allowlist editing: the manifest's serverUrl is a `url` field, so the configured
     // host is contributed by the same rule both hosts apply.
@@ -159,7 +161,7 @@ async function main() {
     transport: createRecordTransport({ inner: server, dir: join(dir, 'fixtures') }),
     storeDir,
   });
-  const engine = createEngine({ dir, yonto });
+  const engine = createEngine({ dir, host });
 
   // Every call `doctor` makes, in its order.
   await engine.call('getCategories', []);

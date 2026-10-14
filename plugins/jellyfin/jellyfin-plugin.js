@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "jellyfin",
   "name": "Jellyfin",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "contractVersion": 21,
   "description": "A Jellyfin media server, reached with an ordinary login or with a server-generated API key.",
   "probeQuery": "bubble",
@@ -85,8 +85,8 @@ const TYPE_OPTIONS = [
 // asking for them would pull data across the network for up to PAGE_SIZE items per shelf
 // (Overview especially, often a full paragraph) only to drop it. Only the detail call, one
 // item at a time, needs the full set.
-const LIST_ITEM_FIELDS = 'ProductionYear';
-const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear';
+const LIST_ITEM_FIELDS = 'ProductionYear,ProviderIds';
+const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear,ProviderIds';
 
 // Jellyfin serves the original artwork unless asked to resize, and a library's posters are
 // commonly 1000x1500+ JPEGs — a shelf scroll was pulling megabytes per row only for the
@@ -478,6 +478,16 @@ function yearOf(item) {
   return year === null || year === undefined ? undefined : String(year);
 }
 
+// A title the server never matched has none, and the server only knows these three.
+function idsOf(item) {
+  const given = item.ProviderIds || {};
+  const ids = {};
+  if (given.Tmdb) ids.tmdb = String(given.Tmdb);
+  if (given.Imdb) ids.imdb = String(given.Imdb);
+  if (given.Tvdb) ids.tvdb = String(given.Tvdb);
+  return Object.keys(ids).length === 0 ? undefined : ids;
+}
+
 function toSummary(item) {
   return {
     id: item.Id,
@@ -487,6 +497,7 @@ function toSummary(item) {
     backdropUrl: backdropUrl(item),
     year: yearOf(item),
     rating: item.OfficialRating ?? undefined,
+    ids: idsOf(item),
   };
 }
 

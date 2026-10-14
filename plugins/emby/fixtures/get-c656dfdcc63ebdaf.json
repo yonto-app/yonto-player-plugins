@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items?ParentId=3&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2COfficialRating&SortBy=SortName&SortOrder=Ascending&StartIndex=500&Limit=500",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items?ParentId=5&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2COfficialRating%2CProviderIds&SortBy=SortName&SortOrder=Ascending&StartIndex=0&Limit=500",
     "body": null
   },
   "response": {
@@ -11,16 +11,16 @@
       "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
       "access-control-allow-origin": "*",
       "access-control-allow-private-network": "true",
-      "content-length": "33",
+      "content-length": "443",
       "content-type": "application/json; charset=utf-8",
       "cross-origin-resource-policy": "cross-origin",
-      "date": "Wed, 23 Sep 2026 19:37:08 GMT",
+      "date": "Wed, 23 Sep 2026 19:37:09 GMT",
       "expires": "-1",
       "private-network-access-id": "8d581b68dbcb42eaaffbca6937440bac",
       "private-network-access-name": "170e069d5d91",
       "server": "UPnP/1.0 DLNADOC/1.50"
     },
-    "bodyBase64": "eyJJdGVtcyI6W10sIlRvdGFsUmVjb3JkQ291bnQiOjB9",
+    "bodyBase64": "eyJJdGVtcyI6W3siTmFtZSI6IlBpb25lZXIgQ2xpcHMiLCJTZXJ2ZXJJZCI6IjhkNTgxYjY4ZGJjYjQyZWFhZmZiY2E2OTM3NDQwYmFjIiwiSWQiOiIxMSIsIlByb2R1Y3Rpb25ZZWFyIjoyMDEwLCJJc0ZvbGRlciI6dHJ1ZSwiVHlwZSI6IlNlcmllcyIsIlVzZXJEYXRhIjp7IlVucGxheWVkSXRlbUNvdW50IjoyLCJQbGF5YmFja1Bvc2l0aW9uVGlja3MiOjAsIlBsYXlDb3VudCI6MCwiSXNGYXZvcml0ZSI6ZmFsc2UsIlBsYXllZCI6ZmFsc2V9LCJBaXJEYXlzIjpbXSwiSW1hZ2VUYWdzIjp7IlByaW1hcnkiOiI1YjA0YjAwZTBhZDU0ZWE1ZmRiZmQ2NTE1OWI5N2EzNl82MzkyNTc4ODc3MDcwMDg5MDEifSwiQmFja2Ryb3BJbWFnZVRhZ3MiOlsiMmQwMTM3MzM2MzU5NzY5OWY5ZjM5Nzk2ZGUzZjQyMzRfNjM5MjU3ODg3NzA3MTU1NTQwIl19XSwiVG90YWxSZWNvcmRDb3VudCI6MX0=",
     "setCookie": []
   }
 }

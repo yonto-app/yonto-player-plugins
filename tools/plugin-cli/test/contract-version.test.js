@@ -552,3 +552,14 @@ test('a plugin that may answer with a result field is justified in declaring its
   assert.equal(withFilters.required, 1, 'may is not must: an older app still runs it');
   assert.deepEqual(without.mayAnswerWith, []);
 });
+
+// `live` is on a stream, which getMediaDetail answers with, so any plugin that exports it (all of
+// them) may declare 22 without being required to: an older app plays the stream as it did.
+test('a plugin exporting getMediaDetail may answer with a live stream, and is not required to', async () => {
+  const surface = await contractVersionOf({
+    'demo-plugin.js': 'export default { async getMediaDetail() { return {}; } };',
+  });
+
+  assert.deepEqual(surface.mayAnswerWith, [{ name: RESULT_FIELDS.STREAM_LIVE, version: 22 }]);
+  assert.equal(surface.required, 1);
+});

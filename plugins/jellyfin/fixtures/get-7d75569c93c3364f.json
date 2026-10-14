@@ -9,7 +9,7 @@
     "headers": {
       "content-type": "application/json"
     },
-    "setCookie": [],
-    "bodyBase64": "eyJHZW5yZXMiOlsiRHJhbWEiLCJBY3Rpb24iXSwiVGFncyI6W10sIk9mZmljaWFsUmF0aW5ncyI6WyJQRy0xMyJdLCJZZWFycyI6WzIwMDgsMjAxNCwyMDEwXX0="
+    "bodyBase64": "eyJHZW5yZXMiOlsiRHJhbWEiLCJBY3Rpb24iXSwiVGFncyI6W10sIk9mZmljaWFsUmF0aW5ncyI6WyJQRy0xMyJdLCJZZWFycyI6WzIwMDgsMjAxNCwyMDEwXX0=",
+    "setCookie": []
   }
 }

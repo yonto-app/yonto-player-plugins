@@ -95,6 +95,7 @@ The Kotlin interface's default probes `getCategories()`, which is exactly what a
 
 Built from the payloads `JsJellyfinPluginAdapterTest` already asserts against, which were themselves taken from a live 12.x server.
 They are not recorded from a server in this repository, because there is none.
+`ProviderIds` (the title's `ids`: `Tmdb`, `Imdb`, `Tvdb`, asked for in `Fields` on a listing and a detail) is hand-added to the movie in the generator's payloads, with invented ids (TMDB 9003, IMDb tt9000003).
 
 Regenerate them with `node tools/plugin-cli/scripts/write-jellyfin-fixtures.js` after changing a URL this plugin builds — fixture identity is `sha256(url + "\n" + body)`, so a changed query parameter orphans its fixture and the replay transport will report a miss rather than silently serving the old one.
 

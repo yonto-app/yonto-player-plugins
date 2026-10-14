@@ -49,7 +49,7 @@ test('a listing names the fields a summary reads, and no more', async () => {
   const listed = await engine.call('getMediaList', [MOVIES, { page: 1, filters: {} }]);
 
   const { url } = requests[0];
-  assert.ok(url.includes('Fields=ProductionYear%2COfficialRating'), url);
+  assert.ok(url.includes('Fields=ProductionYear%2COfficialRating%2CProviderIds'), url);
   assert.ok(!url.includes('Overview') && !url.includes('Genres'), url);
   // Emby leaves both out of a listing unless asked.
   const pattern = listed.find((item) => item.title === 'Test Pattern');
@@ -57,11 +57,24 @@ test('a listing names the fields a summary reads, and no more', async () => {
   assert.equal(pattern.rating, 'PG');
 });
 
+test('a title the server matched carries its database ids, and one it did not carries none', async () => {
+  const { engine } = replayed();
+  const listed = await engine.call('getMediaList', [MOVIES, { page: 1, filters: {} }]);
+
+  assert.deepEqual(listed.find((item) => item.title === 'Test Pattern').ids, { tmdb: '9001', imdb: 'tt9000001' });
+
+  const shows = await engine.call('getMediaList', [SHOWS, { page: 1, filters: {} }]);
+  assert.equal(shows.find((item) => item.title === 'Pioneer Clips').ids, undefined);
+
+  const detail = await engine.call('getMediaDetail', ['9']);
+  assert.deepEqual(detail.ids, { tmdb: '9002', imdb: 'tt9000002' });
+});
+
 test('recommendations ask for the rating they rank by, and drop the unrated', async () => {
   const { engine, requests } = replayed();
   const picks = await engine.call('getRecommendations', []);
 
-  assert.ok(requests[0].url.includes('Fields=ProductionYear%2COfficialRating%2CCommunityRating'), requests[0].url);
+  assert.ok(requests[0].url.includes('Fields=ProductionYear%2COfficialRating%2CProviderIds%2CCommunityRating'), requests[0].url);
   assert.deepEqual(picks.map((p) => p.title), ['Pioneer Clips', 'Test Pattern']);
 });
 

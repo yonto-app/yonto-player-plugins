@@ -78,6 +78,13 @@ test('getStream answers a stream, and one without a url is malformed rather than
   assert.equal(validateResult('getStream', { url: '' }).valid, false);
 });
 
+// A stream with no end says so: contract 22. Absent means a title with a length, as it always was.
+test('a stream may say it is live, and only with a boolean', () => {
+  assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8', live: true }).valid, true);
+  assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8' }).valid, true);
+  assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8', live: 'yes' }).valid, false);
+});
+
 // A name that is not a token, or a value OkHttp would refuse, never reaches a player or an
 // image loader. The shape is `$defs/headers`, shared by a stream and getImageHeaders.
 test('a header name is a token and its value is printable ASCII, for streams and artwork alike', () => {

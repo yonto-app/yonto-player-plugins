@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "http://localhost:18400/library/sections/1/all?X-Plex-Container-Start=60&X-Plex-Container-Size=60",
+    "url": "http://localhost:18400/library/sections/1/all?includeGuids=1&X-Plex-Container-Start=60&X-Plex-Container-Size=60",
     "body": null
   },
   "response": {
