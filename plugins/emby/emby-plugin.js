@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "emby",
   "name": "Emby",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "contractVersion": 21,
   "description": "An Emby media server, reached with an ordinary login or with a server-generated API key. Not affiliated with Emby.",
   "probeQuery": "pattern",
@@ -101,6 +101,65 @@ function server() {
   return (yonto.config.serverUrl || '').replace(/\/+$/, '').replace(/\/emby$/i, '');
 }
 
+// Emby's own port, tried when a typed address names none; jellyfin-plugin.js has the why.
+const DEFAULT_PORT = '8096';
+const ADDRESS_KEY = 'address';
+
+/** `{ typed, base }`: the saved address and where that server actually answered. */
+let reached = null;
+let finding = null;
+
+/** The same address on Emby's own port, or null when it has a port or `https://`. */
+function withDefaultPort(typed) {
+  const parts = /^http:\/\/([^/?#]+)(.*)$/i.exec(typed);
+  if (!parts || /:\d*$/.test(parts[1])) return null;
+  return `http://${parts[1]}:${DEFAULT_PORT}${parts[2]}`;
+}
+
+function base() {
+  return reached && reached.typed === server() ? reached.base : server();
+}
+
+async function reach() {
+  const typed = server();
+  const fallback = withDefaultPort(typed);
+  if (!fallback || (reached && reached.typed === typed)) return;
+  if (!finding) finding = find(typed, fallback).finally(() => { finding = null; });
+  await finding;
+}
+
+async function find(typed, fallback) {
+  const stored = await yonto.store.get(ADDRESS_KEY);
+  if (stored && stored.typed === typed) {
+    reached = stored;
+    return;
+  }
+  // Both at once, so a host that drops packets costs one connect timeout, not two.
+  const [onTyped, onFallback] = await Promise.allSettled([answersAsEmby(typed), answersAsEmby(fallback)]);
+  for (const [candidate, probe] of [[typed, onTyped], [fallback, onFallback]]) {
+    if (probe.status === 'fulfilled' && probe.value) {
+      reached = { typed, base: candidate };
+      await yonto.store.set(ADDRESS_KEY, reached);
+      return;
+    }
+  }
+  yonto.log('warn', 'neither the address as typed nor its default port answered as an Emby');
+  // The typed address's own failure, not a third request: a host that drops packets would run the call out of time.
+  if (onTyped.status === 'rejected') throw onTyped.reason;
+}
+
+/** `/System/Info/Public` needs no sign-in, and only a media server answers it with its id. */
+async function answersAsEmby(candidate) {
+  const response = await send(`${candidate}/emby/System/Info/Public`, { headers: { Accept: 'application/json' } });
+  if (response.status < 200 || response.status >= 300) return false;
+  try {
+    const info = JSON.parse(response.body);
+    return typeof info?.Id === 'string' && info.Id !== '';
+  } catch {
+    return false;
+  }
+}
+
 function apiKey() {
   return yonto.config.apiKey || '';
 }
@@ -176,6 +235,7 @@ async function attemptLogIn() {
     throw yonto.error.unauthenticated(LOGIN_REFUSED_MESSAGE);
   }
 
+  await reach();
   const response = await send(url(['Users', 'AuthenticateByName'], {}), {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...clientHeader() },
@@ -219,23 +279,31 @@ function url(segments, params) {
     .filter((key) => params[key] !== undefined)
     .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&');
-  return `${server()}/emby/${path}${query ? `?${query}` : ''}`;
+  return `${base()}/emby/${path}${query ? `?${query}` : ''}`;
 }
 
-/** `yonto.fetch`, with a server that gave no answer said as `unreachable`. */
+/** `yonto.fetch`, with a server that gave no answer said as `unreachable`, and the address it
+ *  found forgotten so the next call looks again. */
 async function send(address, init) {
   try {
     return await yonto.fetch(address, init);
   } catch (error) {
     // The code, never the message, which can name the URL.
     yonto.log('warn', `the request failed: ${error?.code ?? 'no code'}`);
-    if (error?.code === 'REQUEST_FAILED') throw yonto.error.unreachable(SERVER_SILENT_MESSAGE);
+    if (error?.code === 'REQUEST_FAILED') {
+      if (reached) {
+        reached = null;
+        await yonto.store.remove(ADDRESS_KEY);
+      }
+      throw yonto.error.unreachable(SERVER_SILENT_MESSAGE);
+    }
     throw error;
   }
 }
 
 async function get(segments, what, params, retried) {
   const me = await session();
+  await reach();
   const response = await send(url(resolve(segments, me), resolve(params || {}, me)), {
     headers: { Accept: 'application/json', ...authHeaders(me.token) },
   });
