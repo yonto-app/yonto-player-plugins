@@ -72,7 +72,7 @@ It is exported from the app's private repository, so some of what you read point
 
 - `kangzj/yonto#123` is an issue in that repository, and a path under `app/`, `core/` or `docs/` is a file in it.
 - Lantern is Yonto Player's earlier name, and `kangzj/lantern-tv#123` an issue from before the repository was renamed to `kangzj/yonto`.
-- Two plugins are not here, nor among the releases: `ddys` and `iyingshi` read particular websites rather than a format anybody can run.
+- `ddys` and `iyingshi`, which some tests and notes here still name, are older plugins of the private repository. They are not published, and Yonto Player does not ship them.
 - `plugins/xptv-js` has no fixtures here. Its recordings embed XPTV catalogs, programs from a repository that carries no licence, so they cannot be published under this one. The suite's recorded indexes (`conformance/index-reading/recorded-*.json`) are kept: they are lists of names and addresses, not anybody's code.
 
 ## Licence
