@@ -64,6 +64,19 @@ A Jellyfin has no home address — unlike ddys, which has a real default site *a
 What makes it reachable is the rule both hosts already apply: `PluginManifest.hostsWith` (and `hostsWith` in the CLI) widen a profile's allowlist to the host of every `url` field the viewer filled in, and to nothing else.
 So a `serverUrl` that stopped being `url`-typed would leave every Jellyfin profile unable to reach its own server, and `BundledPluginsTest` asserts against exactly that.
 
+## An address with no port
+
+A bare `192.168.1.20` is saved as `http://192.168.1.20` (`SourceUrl.normalize`), which is port 80, where a Jellyfin seldom is, and the viewer was told to check their network (kangzj/yonto#1871).
+So an `http://` address with no port is tried as typed and on Jellyfin's own port, 8096, path kept, the way the server's own apps do: both are asked `GET /System/Info/Public` (no sign-in needed) at once, and the first in that order to answer with a JSON object carrying a string `Id` is used, so a router's page or another service on port 80 is passed over.
+That is `reach()`, awaited before the login and before every `get()`; `url()` builds on `base()`, so images and streams carry the address that answered.
+The answer is kept in `yonto.store` under `address` with the address typed beside it, so later calls and runtimes do not look again, and a `REQUEST_FAILED` forgets it so the next call does (`send()`).
+When neither answers, the call fails with the typed address's own failure, the network message, and asks nothing more: a host that drops packets takes a connect timeout (15 s on the TV) per request against a 20 s call budget, so asking one after another, or asking the typed address again, ended the call as a timeout instead.
+When the typed address answered with something else and 8096 did not answer, the call goes on to the typed address and fails as it always did, with *not the media server*.
+An address with a port, or with `https://`, is the viewer's choice and is never tried elsewhere; an `https://` one is never tried over plain http.
+The host's allowlist and the private-address floor read the host alone, so the other port needs nothing from them.
+The session and the refused-credential fingerprint stay tied to the address as typed.
+Emby does the same, and `tools/plugin-cli/test/default-port.test.js` holds both.
+
 ## Endpoints
 
 | Method | Jellyfin call |

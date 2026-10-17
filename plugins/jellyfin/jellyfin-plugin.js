@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "jellyfin",
   "name": "Jellyfin",
-  "version": "1.6.9",
+  "version": "1.6.10",
   "contractVersion": 21,
   "description": "A Jellyfin media server, reached with an ordinary login or with a server-generated API key.",
   "probeQuery": "bubble",
@@ -127,8 +127,90 @@ const KEY_REFUSED_MESSAGE = 'Check the API key and user ID by editing the source
 const LOGIN_REFUSED_MESSAGE = 'Check the username and password by editing the source in Settings.';
 const ACCOUNT_REFUSED_MESSAGE = "Check this account's permissions on the server.";
 
+/** The address as the viewer saved it, which is what a session and a refusal are tied to. */
 function server() {
   return (yonto.config.serverUrl || '').replace(/\/+$/, '');
+}
+
+/** Jellyfin's own port, which its official apps try when an address names none. */
+const DEFAULT_PORT = '8096';
+/** The address that answered as a Jellyfin, so it is looked for once per address typed. */
+const ADDRESS_KEY = 'address';
+
+/** `{ typed, base }`: the saved address and where that server actually answered. */
+let reached = null;
+let finding = null;
+
+/**
+ * The same address on Jellyfin's own port, or null when it was typed in full.
+ *
+ * A bare `192.168.1.20` is saved as `http://192.168.1.20`, which is port 80, where a Jellyfin
+ * seldom is (kangzj/yonto#1871). An address with a port or with `https://` is the viewer's own
+ * choice, and an `https://` one is never tried over plain http.
+ */
+function withDefaultPort(typed) {
+  const parts = /^http:\/\/([^/?#]+)(.*)$/i.exec(typed);
+  if (!parts || /:\d*$/.test(parts[1])) return null;
+  return `http://${parts[1]}:${DEFAULT_PORT}${parts[2]}`;
+}
+
+/** Where requests go: the typed address, or its default port once only that answered. */
+function base() {
+  return reached && reached.typed === server() ? reached.base : server();
+}
+
+/** Settles `base()` for an address typed without a port, the typed one tried first. */
+async function reach() {
+  const typed = server();
+  const fallback = withDefaultPort(typed);
+  if (!fallback || (reached && reached.typed === typed)) return;
+  if (!finding) finding = find(typed, fallback).finally(() => { finding = null; });
+  await finding;
+}
+
+async function find(typed, fallback) {
+  const stored = await yonto.store.get(ADDRESS_KEY);
+  if (stored && stored.typed === typed) {
+    reached = stored;
+    return;
+  }
+  // Both at once, so a host that drops packets costs one connect timeout, not two.
+  const [onTyped, onFallback] = await Promise.allSettled([answersAsJellyfin(typed), answersAsJellyfin(fallback)]);
+  for (const [candidate, probe] of [[typed, onTyped], [fallback, onFallback]]) {
+    if (probe.status === 'fulfilled' && probe.value) {
+      reached = { typed, base: candidate };
+      await yonto.store.set(ADDRESS_KEY, reached);
+      return;
+    }
+  }
+  yonto.log('warn', 'neither the address as typed nor its default port answered as a Jellyfin');
+  // The typed address's own failure, not a third request: a host that drops packets would run the call out of time.
+  if (onTyped.status === 'rejected') throw onTyped.reason;
+}
+
+/** `/System/Info/Public` needs no sign-in, and only a Jellyfin answers it with its server id. */
+async function answersAsJellyfin(candidate) {
+  const response = await send(`${candidate}/System/Info/Public`, { headers: { Accept: 'application/json' } });
+  if (response.status < 200 || response.status >= 300) return false;
+  try {
+    const info = JSON.parse(response.body);
+    return typeof info?.Id === 'string' && info.Id !== '';
+  } catch {
+    return false;
+  }
+}
+
+/** `yonto.fetch`, forgetting the address it found when that stops answering, so the next call looks again. */
+async function send(address, init) {
+  try {
+    return await yonto.fetch(address, init);
+  } catch (error) {
+    if (error?.code === 'REQUEST_FAILED' && reached) {
+      reached = null;
+      await yonto.store.remove(ADDRESS_KEY);
+    }
+    throw error;
+  }
 }
 
 function apiKey() {
@@ -308,7 +390,8 @@ async function attemptLogIn() {
     throw yonto.error.unauthenticated(LOGIN_REFUSED_MESSAGE);
   }
 
-  const response = await yonto.fetch(url(['Users', 'AuthenticateByName'], {}), {
+  await reach();
+  const response = await send(url(['Users', 'AuthenticateByName'], {}), {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...(await clientHeader()) },
     body: JSON.stringify({ Username: username(), Pw: yonto.config.password || '' }),
@@ -365,7 +448,7 @@ function url(segments, params) {
     .filter((key) => params[key] !== undefined)
     .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
     .join('&');
-  return `${server()}/${path}${query ? `?${query}` : ''}`;
+  return `${base()}/${path}${query ? `?${query}` : ''}`;
 }
 
 /**
@@ -382,7 +465,8 @@ function url(segments, params) {
  */
 async function get(segments, what, params, retried) {
   const me = await session();
-  const response = await yonto.fetch(url(resolve(segments, me), resolve(params || {}, me)), {
+  await reach();
+  const response = await send(url(resolve(segments, me), resolve(params || {}, me)), {
     headers: { Accept: 'application/json', ...authHeaders(me.token) },
   });
   if (response.status === 401 || response.status === 403) {

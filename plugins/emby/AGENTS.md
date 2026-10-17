@@ -15,7 +15,7 @@ Hence *Not affiliated with Emby* in the manifest's description.
 - `tools/plugin-cli/test/emby.test.js` — the fixtures replayed, plus a scripted server for the sign-in.
 - `core/src/androidHostTest/kotlin/.../content/plugin/JsEmbyPluginAdapterTest.kt` — what the app makes of the answers.
 
-Not bundled in the APK: it installs from a URL, or from the yonto-app/yonto-player-plugins repo index.
+Bundled in every build (`BUNDLED_PLUGIN_IDS`), and published to the yonto-app/yonto-player-plugins repo index too.
 
 ## What a real server confirmed
 
@@ -62,6 +62,7 @@ A server that gives no answer is `unreachable` (contract 16); every status is an
 - Direct play only: no `PlaybackInfo` negotiation and no transcode. A file the box cannot decode fails in the player.
 - Playback progress stays in the app. Reporting it to the server needs a contract method Jellyfin and Plex want too.
 - No Emby Connect sign-in: its service is not in the server's spec, and it would hand back addresses nobody typed.
+- An `http://` address with no port is tried as typed and then on 8096, Emby's default HTTP port as it is Jellyfin's, by `GET /emby/System/Info/Public`, which answers without a sign-in (the tutorial servers' `servers.sh` waits on it, unsigned); `plugins/jellyfin/AGENTS.md`'s *An address with no port* is the design, and this plugin repeats it (kangzj/yonto#1871).
 
 ## Fixtures
 
