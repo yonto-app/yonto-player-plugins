@@ -3,12 +3,14 @@
   "kind": "content-source",
   "id": "emby",
   "name": "Emby",
-  "version": "1.0.8",
-  "contractVersion": 21,
+  "version": "1.6.0",
+  "contractVersion": 23,
   "description": "An Emby media server, reached with an ordinary login or with a server-generated API key. Not affiliated with Emby.",
   "probeQuery": "pattern",
   "provides": "source-type",
   "allowedHosts": [],
+  "playbackTokens": true,
+  "deviceProfile": true,
   "configSchema": [
     {
       "id": "serverUrl",
@@ -46,6 +48,8 @@
 // Home only ever asks for page 1, so this caps what a shelf can show (see jellyfin's AGENTS.md).
 const PAGE_SIZE = 500;
 const RECOMMENDATION_COUNT = 10;
+const CONTINUE_WATCHING_COUNT = 30;
+const TICKS_PER_SECOND = 10000000;
 
 const LIBRARY_COLLECTION_TYPES = ['movies', 'tvshows'];
 const ALL_ITEM_TYPES = 'Movie,Series';
@@ -62,7 +66,11 @@ const TYPE_OPTIONS = [
 // A listing leaves these out unless they are named, CommunityRating included (unlike Jellyfin).
 const LIST_ITEM_FIELDS = 'ProductionYear,OfficialRating,ProviderIds';
 const RANKED_ITEM_FIELDS = `${LIST_ITEM_FIELDS},CommunityRating`;
-const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear,OfficialRating,ProviderIds';
+const DETAIL_ITEM_FIELDS = 'Genres,Overview,ProductionYear,OfficialRating,ProviderIds,MediaSources,Chapters';
+// The media source carries the subtitle files and the id their address needs.
+const STREAM_FIELDS = 'MediaSources,Chapters';
+// An episode's size, which a listing gives cheaply; its range is only in its own media source.
+const EPISODE_FIELDS = 'Width,Height';
 
 const POSTER_MAX_WIDTH = 480;
 const BACKDROP_MAX_WIDTH = 1920;
@@ -70,10 +78,20 @@ const IMAGE_QUALITY = 90;
 
 // A hint for a progressive stream, not a claim about the container: the player sniffs the bytes.
 const MIME_MP4 = 'video/mp4';
+const MIME_HLS = 'application/x-mpegURL';
+
+// jellyfin-plugin.js has the why of these; Emby converts SAMI to SubRip too (checked on 4.9.3).
+const MAX_SUBTITLES = 32;
+const MAX_SEGMENTS = 32;
+const SUBTITLE_FORMATS = { subrip: 'srt', srt: 'srt', ass: 'ass', ssa: 'ssa', webvtt: 'vtt', vtt: 'vtt' };
+const CONVERTED_FORMAT = 'srt';
+const SUBTITLE_TYPES = { srt: 'application/x-subrip', ass: 'text/x-ssa', ssa: 'text/x-ssa', vtt: 'text/vtt' };
+const UNDETERMINED_LANGUAGE = 'und';
 
 const SERVER_ERROR_MESSAGE = 'The server answered with an error.';
 const SERVER_SILENT_MESSAGE = 'The server did not answer.';
 const SERVER_UNREADABLE_MESSAGE = 'The server answered with a page that is not the media server: check the server URL.';
+const UNKNOWN_EVENT_MESSAGE = 'The playback report names an event this source does not send.';
 const SIGN_IN_FAILED_MESSAGE = 'Signing in failed: the server answered with an error.';
 const NO_TOKEN_MESSAGE = 'Signing in failed: the server accepted the sign-in but sent back no session.';
 const NO_CREDENTIALS_MESSAGE =
@@ -301,17 +319,23 @@ async function send(address, init) {
   }
 }
 
-async function get(segments, what, params, retried) {
+async function request(method, segments, what, params, body, retried) {
   const me = await session();
   await reach();
   const response = await send(url(resolve(segments, me), resolve(params || {}, me)), {
-    headers: { Accept: 'application/json', ...authHeaders(me.token) },
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...authHeaders(me.token),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (response.status === 401 || response.status === 403) {
     // A login's token can be revoked, so the first refusal renews it once; a second is the account.
     if (!apiKey() && !retried) {
       await forgetSession(me.token);
-      return get(segments, what, params, true);
+      return request(method, segments, what, params, body, true);
     }
     yonto.log('warn', `${what} got HTTP ${response.status}`);
     throw yonto.error.unauthenticated(apiKey() ? KEY_REFUSED_MESSAGE : ACCOUNT_REFUSED_MESSAGE);
@@ -321,7 +345,11 @@ async function get(segments, what, params, retried) {
     yonto.log('warn', `${what} got HTTP ${response.status}`);
     throw yonto.error.unavailable(SERVER_ERROR_MESSAGE);
   }
-  return parsed(response, what);
+  return response;
+}
+
+async function get(segments, what, params) {
+  return parsed(await request('GET', segments, what, params), what);
 }
 
 /** A 2xx that is not a JSON object is something in front of the server, like a proxy's login page. */
@@ -392,6 +420,21 @@ function idsOf(item) {
   return Object.keys(ids).length === 0 ? undefined : ids;
 }
 
+// The server's place for this viewer, asked for with `EnableUserData=true`. A title it sends
+// no `UserData` for says nothing here either, and a zero position is not sent: it is what an
+// unwatched or finished title holds.
+function playStateOf(item) {
+  const data = item.UserData;
+  if (data === null || typeof data !== 'object') return {};
+  const state = {};
+  if (typeof data.Played === 'boolean') state.played = data.Played;
+  if (typeof data.PlaybackPositionTicks === 'number' && data.PlaybackPositionTicks > 0) {
+    state.position = data.PlaybackPositionTicks / TICKS_PER_SECOND;
+  }
+  if (typeof data.LastPlayedDate === 'string' && data.LastPlayedDate) state.playedAt = data.LastPlayedDate;
+  return state;
+}
+
 function toSummary(item) {
   return {
     id: item.Id,
@@ -402,29 +445,286 @@ function toSummary(item) {
     year: yearOf(item),
     rating: item.OfficialRating ?? undefined,
     ids: idsOf(item),
+    ...playStateOf(item),
   };
+}
+
+function defaultSource(item) {
+  return (Array.isArray(item.MediaSources) ? item.MediaSources : [])[0];
+}
+
+// The subtitle files beside the default source's video, the one the stream plays. Their
+// address names that source's own id, which on Emby is not the item id. An embedded track is in
+// the stream already, unless the server converts it, whose HLS carries none, so then the server
+// extracts it as a file too.
+function subtitlesOf(item, embeddedToo = false) {
+  const source = defaultSource(item);
+  if (!source || typeof source.Id !== 'string' || !source.Id) return [];
+  return (Array.isArray(source.MediaStreams) ? source.MediaStreams : [])
+    .filter((stream) => stream && stream.Type === 'Subtitle' && (embeddedToo || stream.IsExternal === true)
+      && stream.IsTextSubtitleStream === true && Number.isInteger(stream.Index))
+    .slice(0, MAX_SUBTITLES)
+    .map((stream) => {
+      const format = SUBTITLE_FORMATS[String(stream.Codec).toLowerCase()] || CONVERTED_FORMAT;
+      const language = stream.Language && stream.Language !== UNDETERMINED_LANGUAGE ? stream.Language : undefined;
+      return {
+        url: url(['Videos', item.Id, source.Id, 'Subtitles', String(stream.Index), `Stream.${format}`], {}),
+        label: stream.Title || stream.DisplayLanguage || language || stream.DisplayTitle || 'Subtitles',
+        language,
+        mimeType: SUBTITLE_TYPES[format],
+        forced: stream.IsForced === true,
+        default: stream.IsDefault === true,
+      };
+    });
+}
+
+// Emby keeps its intro and credits marks as chapters whose `MarkerType` says so, in ticks: an intro is
+// an `IntroStart` and the next `IntroEnd`, and credits are a `CreditsStart` that runs to the end.
+function segmentsOf(item) {
+  const marks = (Array.isArray(item.Chapters) ? item.Chapters : [])
+    .filter((chapter) => chapter && chapter.StartPositionTicks >= 0
+      && ['IntroStart', 'IntroEnd', 'CreditsStart'].includes(chapter.MarkerType))
+    .sort((a, b) => a.StartPositionTicks - b.StartPositionTicks);
+  const segments = marks.filter((mark) => mark.MarkerType === 'CreditsStart')
+    .map((mark) => ({ type: 'credits', start: mark.StartPositionTicks / TICKS_PER_SECOND }));
+  // An IntroStart counts only when the very next intro mark is its IntroEnd.
+  const intro = marks.filter((mark) => mark.MarkerType !== 'CreditsStart');
+  intro.forEach((mark, index) => {
+    const end = intro[index + 1];
+    if (mark.MarkerType === 'IntroStart' && end && end.MarkerType === 'IntroEnd' && end.StartPositionTicks > mark.StartPositionTicks) {
+      segments.push({ type: 'intro', start: mark.StartPositionTicks / TICKS_PER_SECOND, end: end.StartPositionTicks / TICKS_PER_SECOND });
+    }
+  });
+  return segments.sort((a, b) => a.start - b.start).slice(0, MAX_SEGMENTS);
 }
 
 // No MediaSourceId: Emby's is not the item id (it answers 400 to that), and without one it
 // serves the item's default source.
-function streamOf(itemId, token) {
-  return {
-    url: url(['Videos', itemId, 'stream'], { Static: 'true' }),
+function streamOf(item, token) {
+  const stream = {
+    url: url(['Videos', item.Id, 'stream'], { Static: 'true' }),
     mimeType: MIME_MP4,
     headers: authHeaders(token),
   };
+  const subtitles = subtitlesOf(item);
+  if (subtitles.length > 0) stream.subtitles = subtitles;
+  const segments = segmentsOf(item);
+  if (segments.length > 0) stream.segments = segments;
+  return stream;
 }
 
-function episodeOptions(episodes, token) {
+// What the device plays, in the names an Emby DeviceProfile uses. Emby compares a video's range by
+// its `VideoRange` alone (4.10 ignores the extended types as conditions), and Dolby Vision is one
+// name whatever its profile, so the profiles whose base layer the screen shows are let in per item.
+const CONTAINER_NAMES = { mp4: 'mp4,m4v,mov', mkv: 'mkv', webm: 'webm', ts: 'ts,mpegts,m2ts' };
+const AUDIO_NAMES = { dts: 'dts,dca' };
+const SDR_RANGE = 'SDR';
+const HDR_RANGES = {
+  hdr10: ['HDR 10', 'HDR 10+'],
+  hdr10plus: ['HDR 10+'],
+  hlg: ['HLG'],
+  dolbyVision: ['DolbyVision'],
+};
+const DOLBY_VISION_RANGE = 'DolbyVision';
+const DOLBY_VISION_BASE_LAYERS = {
+  DoviProfile02: 'sdr', DoviProfile22: 'sdr', DoviProfile42: 'sdr', DoviProfile82: 'sdr', DoviProfile92: 'sdr',
+  DoviProfile61: 'hdr10', DoviProfile76: 'hdr10', DoviProfile81: 'hdr10',
+  DoviProfile84: 'hlg',
+};
+const TRANSCODE_AUDIO = ['aac', 'ac3', 'eac3'];
+const SUBTITLE_PROFILE_FORMATS = ['srt', 'subrip', 'ass', 'ssa', 'vtt'];
+// No limit a home network would meet, so a file is never converted for its size alone.
+const MAX_STREAMING_BITRATE = 200000000;
+
+function listOf(value) {
+  return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
+}
+
+function videoStreamOf(item) {
+  const source = defaultSource(item);
+  return (source && Array.isArray(source.MediaStreams) ? source.MediaStreams : [])
+    .find((stream) => stream && stream.Type === 'Video');
+}
+
+// The ranges this item may play as stored on this screen.
+function rangesFor(device, item) {
+  const shown = listOf(device.hdr);
+  const ranges = [SDR_RANGE, ...shown.flatMap((format) => HDR_RANGES[format] || [])];
+  const layer = DOLBY_VISION_BASE_LAYERS[(videoStreamOf(item) || {}).ExtendedVideoSubType];
+  if (layer === 'sdr' || shown.includes(layer)) ranges.push(DOLBY_VISION_RANGE);
+  return [...new Set(ranges)];
+}
+
+// The device as Emby's own clients describe it. A video beyond a decoder's size or bit depth fails
+// its codec profile, so the server converts it to H.264. The range is a condition only on a server
+// that tone-maps, which takes Emby Premiere: without it a conversion is no truer to the colours
+// than the file, so a range alone is not worth converting for.
+function deviceProfileOf(device, item, toneMaps) {
+  const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && typeof v.codec === 'string');
+  const audio = listOf(device.audio);
+  const containers = listOf(device.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  const ranges = rangesFor(device, item);
+  const transcodeAudio = TRANSCODE_AUDIO.filter((codec) => audio.includes(codec));
+  const channels = Number.isInteger(device.maxAudioChannels) && device.maxAudioChannels > 0 ? device.maxAudioChannels : 2;
+  // HEVC the device plays is copied rather than encoded again, in fMP4, the one HLS container
+  // AVPlayer takes it in.
+  const copiesHevc = video.some((v) => v.codec === 'hevc');
+  return {
+    Name: CLIENT,
+    MaxStreamingBitrate: MAX_STREAMING_BITRATE,
+    DirectPlayProfiles: [{
+      Type: 'Video',
+      Container: containers.join(','),
+      VideoCodec: video.map((v) => v.codec).join(','),
+      AudioCodec: audio.map((codec) => AUDIO_NAMES[codec] || codec).join(','),
+    }],
+    TranscodingProfiles: [{
+      Type: 'Video',
+      Container: copiesHevc ? 'mp4' : 'ts',
+      Protocol: 'hls',
+      Context: 'Streaming',
+      VideoCodec: copiesHevc ? 'h264,hevc' : 'h264',
+      AudioCodec: (transcodeAudio.length > 0 ? transcodeAudio : ['aac']).join(','),
+      MaxAudioChannels: String(channels),
+      MinSegments: 1,
+      BreakOnNonKeyFrames: true,
+    }],
+    CodecProfiles: video.map((v) => ({
+      Type: 'Video',
+      Codec: v.codec,
+      Conditions: [
+        { Condition: 'LessThanEqual', Property: 'Width', Value: String(v.maxWidth), IsRequired: false },
+        { Condition: 'LessThanEqual', Property: 'Height', Value: String(v.maxHeight), IsRequired: false },
+        { Condition: 'LessThanEqual', Property: 'VideoBitDepth', Value: String(v.maxBitDepth), IsRequired: false },
+        ...(toneMaps ? [{ Condition: 'EqualsAny', Property: 'VideoRange', Value: ranges.join('|'), IsRequired: false }] : []),
+      ],
+    })),
+    SubtitleProfiles: SUBTITLE_PROFILE_FORMATS.flatMap((format) => [
+      { Format: format, Method: 'Embed' },
+      { Format: format, Method: 'External' },
+    ]),
+  };
+}
+
+// A viewer may read whether the server has Premiere, though not whether its tone mapping is on.
+// Not through `request`: a refusal here says nothing about the login, which must not be renewed for it.
+async function hasPremiere() {
+  try {
+    const me = await session();
+    const response = await send(url(['Registrations', 'premiere'], {}), {
+      headers: { Accept: 'application/json', ...authHeaders(me.token) },
+    });
+    return response.status >= 200 && response.status < 300 && JSON.parse(response.body).IsRegistered === true;
+  } catch {
+    return false;
+  }
+}
+
+// The credential rides in a header on every hop, so a key the server writes into the address is
+// taken out rather than left in logs and caches.
+function withoutKey(path) {
+  const [route, query = ''] = path.split('?');
+  const kept = query.split('&').filter((pair) => pair && !/^(api_key|ApiKey)=/i.test(pair));
+  return kept.length > 0 ? `${route}?${kept.join('&')}` : route;
+}
+
+// What the server decided for this device: the file as stored where it plays, or the server's own
+// HLS conversion. Anything the decision cannot answer plays the file as stored, as it always did.
+async function decidedStream(item, device) {
+  let source;
+  let playSession;
+  try {
+    const profile = deviceProfileOf(device, item, await hasPremiere());
+    const info = parsed(await request('POST', ['Items', item.Id, 'PlaybackInfo'], 'playback info', { UserId: ME }, {
+      DeviceProfile: profile,
+      MaxStreamingBitrate: MAX_STREAMING_BITRATE,
+      EnableDirectPlay: true,
+      EnableDirectStream: true,
+      EnableTranscoding: true,
+      AllowVideoStreamCopy: true,
+      AllowAudioStreamCopy: true,
+      SubtitleStreamIndex: -1,
+      AutoOpenLiveStream: true,
+    }), 'playback info');
+    source = (Array.isArray(info.MediaSources) ? info.MediaSources : [])[0];
+    playSession = info.PlaySessionId;
+  } catch (error) {
+    yonto.log('warn', `playback info failed, playing the file as stored: ${error && error.message}`);
+  }
+  const token = (await session()).token;
+  if (!source || source.SupportsDirectPlay || typeof source.TranscodingUrl !== 'string') {
+    const stream = streamOf(item, token);
+    return source ? { ...stream, session: sessionOf(playSession, source.Id, 'DirectPlay') } : stream;
+  }
+  // Under `/emby` like every other call, which a reverse proxy may be the only path it forwards.
+  const stream = {
+    url: `${base()}/emby${withoutKey(source.TranscodingUrl)}`,
+    mimeType: MIME_HLS,
+    headers: authHeaders(token),
+    session: sessionOf(playSession, source.Id, 'Transcode'),
+  };
+  const subtitles = subtitlesOf(item, true);
+  if (subtitles.length > 0) stream.subtitles = subtitles;
+  const segments = segmentsOf(item);
+  if (segments.length > 0) stream.segments = segments;
+  return stream;
+}
+
+// Handed back on every report about this play, so the server keeps its own session and the stop
+// ends its conversion.
+function sessionOf(playSessionId, mediaSourceId, playMethod) {
+  return JSON.stringify({ playSessionId, mediaSourceId, playMethod });
+}
+
+function playSessionOf(session) {
+  try {
+    const decoded = JSON.parse(session);
+    return decoded && typeof decoded === 'object' ? decoded : {};
+  } catch {
+    return {};
+  }
+}
+
+// An episode is a `track` that `getStream` redeems with its own media source, as Jellyfin's is.
+function episodeOptions(episodes) {
   return episodes.map((episode) => {
     const season = episode.ParentIndexNumber ?? 1;
     const number = episode.IndexNumber ?? 0;
     return {
       label: `S${season}E${String(number).padStart(2, '0')} · ${episode.Name}`,
-      stream: streamOf(episode.Id, token),
+      id: episode.Id,
+      track: episode.Id,
       season,
+      ...episodeNumberOf(episode),
+      ...playStateOf(episode),
+      ...videoOf(episode),
     };
   });
+}
+
+// Only the server's own numbers, never the label's defaults: the host asks a skip-times
+// database by them, and a guessed season would ask about another episode.
+function episodeNumberOf(episode) {
+  return Number.isInteger(episode.ParentIndexNumber) && Number.isInteger(episode.IndexNumber)
+    ? { episode: episode.IndexNumber }
+    : {};
+}
+
+// Emby's `VideoRange` names, as `HDR_RANGES` above sends them to its decision.
+const RANGE_OF = { SDR: 'sdr', 'HDR 10': 'hdr10', 'HDR 10+': 'hdr10plus', HLG: 'hlg', DolbyVision: 'dolbyVision' };
+
+// What the copy is: a film's default source says its size and range, an episode's listing its size alone.
+function videoOf(item) {
+  const stream = videoStreamOf(item) || {};
+  const width = positive(stream.Width ?? item.Width);
+  const height = positive(stream.Height ?? item.Height);
+  const range = RANGE_OF[stream.VideoRange];
+  const video = { ...(width ? { width } : {}), ...(height ? { height } : {}), ...(range ? { range } : {}) };
+  return Object.keys(video).length > 0 ? { video } : {};
+}
+
+function positive(value) {
+  return Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 async function episodesOf(seriesId) {
@@ -432,6 +732,8 @@ async function episodesOf(seriesId) {
     ParentId: seriesId,
     IncludeItemTypes: 'Episode',
     Recursive: 'true',
+    Fields: EPISODE_FIELDS,
+    EnableUserData: 'true',
     SortBy: 'ParentIndexNumber,IndexNumber',
     SortOrder: 'Ascending',
   }));
@@ -448,6 +750,25 @@ function toDetail(item, playbackOptions) {
 
 function names(payload) {
   return items(payload).map((item) => item.Name).filter((name) => typeof name === 'string' && name);
+}
+
+const PLAYING_PATHS = {
+  start: ['Sessions', 'Playing'],
+  progress: ['Sessions', 'Playing', 'Progress'],
+  stop: ['Sessions', 'Playing', 'Stopped'],
+};
+
+// An episode on its own has no title worth a card, so it stands for its series, resuming at it.
+function episodeResume(episode) {
+  return {
+    id: episode.SeriesId,
+    title: episode.SeriesName,
+    type: 'SERIES',
+    posterUrl: imageUrl(episode.SeriesId, episode.SeriesPrimaryImageTag, 'Primary', POSTER_MAX_WIDTH),
+    backdropUrl: backdropUrl(episode),
+    optionId: episode.Id,
+    ...playStateOf(episode),
+  };
 }
 
 export default {
@@ -490,6 +811,7 @@ export default {
       Recursive: 'true',
       IncludeItemTypes: filters[TYPE_FILTER] || ALL_ITEM_TYPES,
       Fields: LIST_ITEM_FIELDS,
+      EnableUserData: 'true',
       SortBy: 'SortName',
       SortOrder: 'Ascending',
       StartIndex: String(Math.max(page - 1, 0) * PAGE_SIZE),
@@ -499,16 +821,70 @@ export default {
     })).map(toSummary);
   },
 
-  // The stream carries the token the last call was answered with, which a renewal may have changed.
   async getMediaDetail(mediaId) {
     const item = await get(['Users', ME, 'Items', mediaId], mediaId, {
       Fields: DETAIL_ITEM_FIELDS,
+      EnableUserData: 'true',
     });
     if (item.Type !== SERIES_TYPE) {
-      return toDetail(item, [{ label: 'Play', stream: streamOf(item.Id, (await session()).token) }]);
+      // A track like an episode's, redeemed on Play: what the server decides to send is for one
+      // play on one device, and this answer is cached and kept.
+      return toDetail(item, [{ label: 'Play', id: item.Id, track: item.Id, ...videoOf(item) }]);
     }
-    const episodes = await episodesOf(item.Id);
-    return toDetail(item, episodeOptions(episodes, (await session()).token));
+    return toDetail(item, episodeOptions(await episodesOf(item.Id)));
+  },
+
+  // A `track` is its item id. The stream carries the token this call was answered with. With what
+  // the device plays, the server decides; without it (a download, an older app) the file is sent
+  // as stored.
+  async getStream(track, asked) {
+    const item = await get(['Users', ME, 'Items', track], track, { Fields: STREAM_FIELDS });
+    const device = asked && asked.device;
+    return device && typeof device === 'object' ? decidedStream(item, device) : streamOf(item, (await session()).token);
+  },
+
+  // A report without a `PlaySessionId` is a 400 on Emby ("Parameter 'key'"), and one for a play it
+  // never saw start is dropped. The server's own play session, media source and method come back
+  // in `session` where it decided the stream, and the stop that carries them ends its conversion;
+  // otherwise all three carry an id derived from the item and kept nowhere, and no
+  // `MediaSourceId`, since the item id is not one (see `streamOf`).
+  // `finished` is ignored: the server decides "played" from the position on stop.
+  async reportPlayback({ mediaId, optionId, event, paused, position, session }) {
+    const itemId = optionId || mediaId;
+    const path = PLAYING_PATHS[event];
+    if (!path) throw yonto.error.unavailable(UNKNOWN_EVENT_MESSAGE);
+    const decided = playSessionOf(session);
+    await request('POST', path, 'playback report', {}, {
+      ItemId: itemId,
+      ...(decided.mediaSourceId ? { MediaSourceId: decided.mediaSourceId } : {}),
+      PlaySessionId: decided.playSessionId || `${deviceId()}-${itemId}`,
+      PositionTicks: Math.round(position * TICKS_PER_SECOND),
+      IsPaused: paused === true,
+      PlayMethod: decided.playMethod || 'DirectPlay',
+      CanSeek: true,
+    });
+  },
+
+  async setPlayed({ mediaId, optionId, played }) {
+    await request(played ? 'POST' : 'DELETE', ['Users', ME, 'PlayedItems', optionId || mediaId], 'played mark');
+  },
+
+  // What the server would resume: an episode is its series with `optionId` naming the episode.
+  // Emby's list also holds titles it has nothing to resume (a position of 0, or one already
+  // played), so only an unfinished place is kept. Its listings carry no `LastPlayedDate`, so
+  // an item here has no `playedAt`; the server's order is the recency order.
+  async getContinueWatching() {
+    const resumable = items(await get(['Users', ME, 'Items', 'Resume'], 'continue watching', {
+      Limit: String(CONTINUE_WATCHING_COUNT),
+      MediaTypes: 'Video',
+      EnableUserData: 'true',
+    })).filter((item) => {
+      const { played, position } = playStateOf(item);
+      return played !== true && position > 0;
+    });
+    return {
+      items: resumable.map((item) => (item.Type === 'Episode' ? episodeResume(item) : toSummary(item))),
+    };
   },
 
   async search(query) {
@@ -517,6 +893,7 @@ export default {
       Recursive: 'true',
       IncludeItemTypes: ALL_ITEM_TYPES,
       Fields: LIST_ITEM_FIELDS,
+      EnableUserData: 'true',
       Limit: String(PAGE_SIZE),
     })).map(toSummary);
   },
@@ -527,6 +904,7 @@ export default {
       Recursive: 'true',
       IncludeItemTypes: ALL_ITEM_TYPES,
       Fields: RANKED_ITEM_FIELDS,
+      EnableUserData: 'true',
       SortBy: 'CommunityRating',
       SortOrder: 'Descending',
       Limit: String(RECOMMENDATION_COUNT),

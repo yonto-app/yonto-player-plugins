@@ -137,6 +137,15 @@ test('a step failing with a typed not-found reports that code, not METHOD_THREW'
   assert.equal(report.ok, false);
 });
 
+test('a search refused for having none passes: it is the source, not a failure', async () => {
+  const engine = fakeEngine({ ...healthy, search: () => { throw new PluginError(Code.NO_SEARCH, ''); } });
+  const report = await runDoctor({ engine, requests: [], query: '庆余年' });
+  const step = report.steps.find((s) => s.method === 'search');
+  assert.equal(step.ok, true);
+  assert.equal(step.message, 'the source has no search');
+  assert.equal(report.ok, true);
+});
+
 test('a step whose input never arrived is skipped, not blamed', async () => {
   const engine = fakeEngine({ ...healthy, getMediaList: () => [] });
   const report = await runDoctor({ engine, requests: [], query: '庆余年' });
@@ -392,6 +401,93 @@ test('asks a source which libraries it has without telling it which one to read'
 
   assert.deepEqual(seen.getSubSources, []);
   assert.match(report.steps.find((s) => s.method === 'getSubSources').message, /1 library, reading 索尼资源/);
+});
+
+// The two writers change the viewer's watched marks on a server they use, and a run has no real
+// playback to report, so `doctor` must never call them, however the plugin is written.
+test('never calls the writers, and asks for the continue-watching list', async () => {
+  const seen = [];
+  const engine = fakeEngine({
+    ...healthy,
+    reportPlayback: () => { seen.push('reportPlayback'); },
+    setPlayed: () => { seen.push('setPlayed'); },
+    getContinueWatching: () => { seen.push('getContinueWatching'); return { items: [{ id: '13141', title: '庆余年' }] }; },
+  });
+
+  const report = await runDoctor({ engine, requests: [], query: '庆余年' });
+
+  assert.deepEqual(seen, ['getContinueWatching']);
+  assert.equal(report.ok, true);
+  assert.match(report.steps.find((s) => s.method === 'getContinueWatching').message, /^1 item$/);
+  for (const method of ['reportPlayback', 'setPlayed']) {
+    const step = report.steps.find((s) => s.method === method);
+    assert.equal(step.skipped, true);
+    assert.equal(step.ok, true);
+    assert.match(step.message, /not called/);
+  }
+});
+
+// Contract 23's fields are optional on what a detail answers, and a malformed subtitle is a plugin
+// bug `doctor` names rather than a stream that plays without it.
+test('a detail carrying play state, option ids and subtitles passes, and a malformed subtitle fails', async () => {
+  const detail = (subtitles) => ({
+    id: '13141', title: '庆余年', played: false, position: 30, playedAt: '2026-10-18T09:30:00Z',
+    playbackOptions: [{ label: 'S01E01', id: 'ep-1', played: true,
+      stream: { url: 'https://h.tv/1.m3u8', subtitles } }],
+  });
+  const run = (subtitles) => runDoctor({
+    engine: fakeEngine({ ...healthy, getMediaDetail: () => detail(subtitles) }), requests: [], query: '庆余年',
+  });
+
+  const good = await run([{ url: 'https://h.tv/1.en.srt', label: 'English', language: 'en', default: true }]);
+  const bad = await run([{ url: 'https://h.tv/1.en.srt' }]);
+
+  assert.equal(good.ok, true);
+  const step = bad.steps.find((s) => s.method === 'getMediaDetail');
+  assert.equal(step.ok, false);
+  assert.equal(step.code, Code.RESULT_INVALID);
+  assert.match(step.message, /label/);
+});
+
+test('warns of a subtitle on a host the app would drop', async () => {
+  const subtitles = [
+    { url: 'https://h.tv/1.en.srt', label: 'English' },
+    { url: 'https://elsewhere.tv/1.fr.srt', label: 'French' },
+    { url: 'https://subs.cdn.tv/1.de.srt', label: 'German' },
+  ];
+  const engine = fakeEngine({
+    ...healthy,
+    getMediaDetail: () => ({ id: '13141', title: '庆余年',
+      playbackOptions: [{ label: 'S01E01', stream: { url: 'https://h.tv/1.m3u8', subtitles } }] }),
+  });
+
+  const report = await runDoctor({ engine, requests: [], query: '庆余年', allowedHosts: ['subs.cdn.tv'] });
+  const step = report.steps.find((s) => s.method === 'getMediaDetail');
+
+  assert.equal(step.ok, true);
+  assert.deepEqual(step.warnings, ["1 subtitle is on a host that is neither its stream's nor in allowedHosts — the app drops it"]);
+});
+
+test('says what a television changes in a subtitle label', async () => {
+  const engine = fakeEngine({
+    ...healthy,
+    getMediaDetail: () => ({ id: '13141', title: '庆余年', playbackOptions: [{ label: 'S01E01',
+      stream: { url: 'https://h.tv/1.m3u8', subtitles: [{ url: 'https://h.tv/1.srt', label: 'English\tSDH' }] } }] }),
+  });
+
+  const report = await runDoctor({ engine, requests: [], query: '庆余年' });
+
+  assert.deepEqual(report.steps.find((s) => s.method === 'getMediaDetail').warnings,
+    ['subtitle.label carries a line break or tab in 1 of 1, which a television shows as a space']);
+});
+
+test('says what a television changes in a continue-watching title', async () => {
+  const engine = fakeEngine({ ...healthy, getContinueWatching: () => ({ items: [{ id: '1', title: 'A\tB' }] }) });
+
+  const report = await runDoctor({ engine, requests: [], query: '庆余年' });
+
+  assert.deepEqual(report.steps.find((s) => s.method === 'getContinueWatching').warnings,
+    ['summary.title carries a line break or tab in 1 of 1, which a television shows as a space']);
 });
 
 // A source that is one library exports neither half, which is every plugin but one.

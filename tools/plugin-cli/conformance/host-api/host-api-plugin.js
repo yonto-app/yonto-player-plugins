@@ -197,6 +197,7 @@ export default {
       { id: 'errorMisconfigured', name: describeError(yonto.error.misconfigured('the user id is blank')) },
       { id: 'errorUnreachable', name: describeError(yonto.error.unreachable('the site did not answer')) },
       { id: 'errorChallenged', name: describeError(yonto.error.challenged('https://site.test/list')) },
+      { id: 'errorNoSearch', name: describeError(yonto.error.noSearch()) },
     ];
   },
 

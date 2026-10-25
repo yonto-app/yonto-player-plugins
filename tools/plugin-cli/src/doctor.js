@@ -2,6 +2,7 @@ import { DISPLAY_TEXT, removes, spaces } from './display-text.js';
 import { Code, PluginError } from './errors.js';
 import { METHODS, OPTIONAL_METHODS as OPTIONAL, validateResult, isEmptyResult, itemsOf, cursorOf } from './contract.js';
 import { partialShown } from './partial.js';
+import { subtitlesKept } from './subtitles.js';
 
 /** The label of the step that asks for a list's second page. */
 export const NEXT_PAGE_STEP = 'getMediaList (next page)';
@@ -60,7 +61,7 @@ export const NOT_LOGGED_IN = 'not logged in: run `yonto-plugin link`';
  */
 export async function runDoctor({
   engine, requests, logs = [], takePartial = () => null, query = 'a', category = null, sources = {},
-  pagination = 'page', loggedOut = false,
+  pagination = 'page', loggedOut = false, allowedHosts = [],
 }) {
   // Before the battery, and outside it: reading the clock is a static fact about the source
   // that needs no engine, and a plugin whose module will not even evaluate is exactly the
@@ -132,6 +133,7 @@ export async function runDoctor({
     // The token this source itself issued, never one composed here: it is opaque, and a
     // host that made one up would be asking a question no source can answer.
     getStream: () => [trackToken],
+    getContinueWatching: () => [],
   };
   const needs = {
     getFilters: () => categoryId,
@@ -167,6 +169,9 @@ export async function runDoctor({
   // which prints `not exported (optional)` and passes. A step with nothing to do has not
   // failed.
   const notApplicableWithout = new Set(['getStream']);
+  // Never called, whatever the plugin exports: a run has no real playback to report, and
+  // either would change the viewer's watched marks on a server they use.
+  const neverCalled = new Set(['reportPlayback', 'setPlayed']);
 
   for (const method of METHODS) {
     const before = requests.length;
@@ -186,6 +191,11 @@ export async function runDoctor({
         ms: 0, requests: 0 });
       continue;
     }
+    if (neverCalled.has(method)) {
+      record({ method, ok: true, skipped: true, code: null,
+        message: 'not called — it writes to the viewer\'s real server', ms: 0, requests: 0 });
+      continue;
+    }
     if (needs[method] && !needs[method]()) {
       record({ method, ok: notApplicableWithout.has(method) || needsLogin, skipped: true, code: null,
         message: needsLogin ? `skipped — ${NOT_LOGGED_IN}` : `skipped — no ${wanted[method]} came out of the previous step`,
@@ -198,6 +208,11 @@ export async function runDoctor({
       result = await engine.call(method, argsFor[method]());
     } catch (error) {
       const failure = asFailure(error);
+      if (method === 'search' && failure.code === Code.NO_SEARCH) {
+        record({ method, ok: true, skipped: false, answered: true, code: Code.NO_SEARCH, message: 'the source has no search',
+          ms: Date.now() - started, requests: requests.length - before });
+        continue;
+      }
       record({ method, ok: false, skipped: false, code: failure.code, message: failure.message,
         signIn: failure.signIn, detail: failure.detail, ms: Date.now() - started, requests: requests.length - before });
       continue;
@@ -235,7 +250,7 @@ export async function runDoctor({
     // plugin saying it cannot be used, and the step fails on its word.
     const ok = !(method === 'checkHealth' && result.usable === false);
     record({ method, ok, skipped: false, answered: true, code: null, message: describe(method, result),
-      ms: Date.now() - started, requests: requests.length - before, warnings: warningsFor(method, result),
+      ms: Date.now() - started, requests: requests.length - before, warnings: [...warningsFor(method, result), ...droppedSubtitles(method, result, allowedHosts)],
       notes: notesFor(method, result) });
 
     if (method === 'getMediaList') {
@@ -421,7 +436,12 @@ function shapesOf(method, result) {
     case 'getRecommendations':
       return itemsOf(result).map((summary) => ['summary', summary]);
     case 'getMediaDetail':
-      return [['detail', result], ...(result.playbackOptions ?? []).map((option) => ['playbackOption', option])];
+      return [['detail', result], ...(result.playbackOptions ?? []).flatMap((option) => [['playbackOption', option],
+        ...(option.stream?.subtitles ?? []).map((subtitle) => ['subtitle', subtitle])])];
+    case 'getStream':
+      return (result.subtitles ?? []).map((subtitle) => ['subtitle', subtitle]);
+    case 'getContinueWatching':
+      return (result.items ?? []).map((summary) => ['summary', summary]);
     case 'getSubSources':
       return (result.items ?? []).map((subSource) => ['subSource', subSource]);
     case 'checkHealth':
@@ -498,6 +518,17 @@ function warningsFor(method, result) {
   ];
 }
 
+// Subtitles the app will drop for their host (`subtitlesKept`): they would not appear in the picker.
+function droppedSubtitles(method, result, allowedHosts) {
+  const streams = method === 'getMediaDetail' ? (result.playbackOptions ?? []).flatMap((option) => option.stream ?? [])
+    : method === 'getStream' ? [result] : [];
+  const dropped = streams.reduce(
+    (count, stream) => count + (stream.subtitles ?? []).length - subtitlesKept(stream, allowedHosts).length, 0);
+  return dropped === 0 ? [] : [
+    `${dropped} subtitle${dropped === 1 ? ' is' : 's are'} on a host that is neither its stream's nor in allowedHosts — the app drops ${dropped === 1 ? 'it' : 'them'}`,
+  ];
+}
+
 /** The first `track` a detail offered, which is what `getStream` is asked about. */
 function trackOf(detail) {
   const option = (detail?.playbackOptions ?? []).find((each) => typeof each?.track === 'string' && each.track !== '');
@@ -511,6 +542,10 @@ function describe(method, result) {
     const down = items.filter((item) => item.available === false).length;
     return `${items.length} ${items.length === 1 ? 'library' : 'libraries'}` +
       `${down === 0 ? '' : ` (${down} unavailable)`}, reading ${active ? active.name : 'none'}`;
+  }
+  if (method === 'getContinueWatching') {
+    const count = result?.items?.length ?? 0;
+    return `${count} item${count === 1 ? '' : 's'}`;
   }
   if (method === 'getMediaList') {
     const items = itemsOf(result);

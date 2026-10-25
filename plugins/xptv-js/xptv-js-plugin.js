@@ -3,8 +3,8 @@
   "kind": "content-source",
   "id": "xptv-js",
   "name": "XPTV format",
-  "version": "0.3.6",
-  "contractVersion": 21,
+  "version": "0.4.0",
+  "contractVersion": 28,
   "description": "Reads catalogs written for the XPTV format. Each is a small program, which Yonto Player fetches from the address you supply and runs in its sandbox; Yonto Player includes no catalog.",
   "probeQuery": "画皮",
   "provides": "source-type",
@@ -193,7 +193,6 @@ const CATALOG_TOO_LARGE_MESSAGE = "This source's program is too large to load.";
 const CATALOG_BROKEN_MESSAGE = "This source's program won't run. It may be out of date.";
 const SITE_DOWN_MESSAGE = "This source's website isn't available right now. Try again later.";
 const NO_CATEGORIES_MESSAGE = 'This source has no categories to browse. Use search instead.';
-const NO_SEARCH_MESSAGE = "This source doesn't have search. Try another source.";
 const NO_STREAM_MESSAGE = 'This source gave no address to play.';
 // A title for an id whose name is missing, which only an id this plugin did not write can be.
 const UNTITLED = '未命名';
@@ -1002,7 +1001,7 @@ async function pluginStream(entry, token) {
 async function pluginSearch(entry, query) {
   const { catalog } = await catalogFor(entry);
   if (typeof catalog.search !== 'function') {
-    throw yonto.error.unavailable(NO_SEARCH_MESSAGE);
+    throw yonto.error.noSearch();
   }
   const answer = await ask(entry, catalog, 'search', { text: query, page: 1 });
   await flushCache();

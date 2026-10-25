@@ -46,6 +46,26 @@ export const CONFIG = (() => {
 export const MOVIE_ID = 'edb39341c5039551a5157e51fe4a3364';
 export const SERIES_ID = 's1';
 
+// A subtitle stream as Jellyfin 12.2 lists one (fields this plugin does not read left out).
+function subtitle(Index, Codec, Language, LocalizedLanguage, flags = {}) {
+  return {
+    Codec, Language, LocalizedLanguage, DisplayTitle: `${LocalizedLanguage} - ${Codec.toUpperCase()} - External`,
+    IsDefault: false, IsForced: false, IsHearingImpaired: false, Type: 'Subtitle', Index,
+    IsExternal: true, IsTextSubtitleStream: true, SupportsExternalStream: true, ...flags,
+  };
+}
+
+// The film's: two text files beside it (one SAMI, which the server converts), a picture
+// format and a track inside the video, so a fixture holds each case the plugin decides.
+const MOVIE_STREAMS = [
+  subtitle(0, 'subrip', 'eng', 'English', { IsDefault: true }),
+  subtitle(1, 'sami', 'kor', 'Korean'),
+  subtitle(2, 'PGSSUB', 'fre', 'French', { IsTextSubtitleStream: false, SupportsExternalStream: false }),
+  { ...subtitle(3, 'mov_text', 'ger', 'German'), IsExternal: false, DisplayTitle: 'German - MOV_TEXT' },
+  // A 2.39:1 4K Dolby Vision copy with an HDR10 layer, so its size reads by width and its range as Dolby Vision.
+  { Codec: 'hevc', Type: 'Video', Index: 4, IsExternal: false, IsTextSubtitleStream: false, Width: 3840, Height: 1606, VideoRangeType: 'DOVIWithHDR10' },
+];
+
 const MOVIE = {
   Id: MOVIE_ID,
   Name: 'The Boy in the Plastic Bubble',
@@ -61,7 +81,7 @@ const MOVIE = {
   IsFolder: false,
   ImageTags: { Primary: 'a131fdbdca9ddadcda7d3c86756c6b67' },
   BackdropImageTags: ['408be2dfc34f1ce61108cf049a5aa82e'],
-  UserData: { PlayCount: 12, Played: true },
+  UserData: { PlayCount: 12, Played: true, LastPlayedDate: '2026-10-01T20:30:00.0000000Z' },
 };
 
 const SERIES = {
@@ -79,12 +99,14 @@ const SERIES = {
 // parent-backdrop fallback worth having a fixture for.
 const EPISODES = [
   {
-    Id: 'ep1', Name: 'Earthfall', Type: 'Episode', IndexNumber: 1, ParentIndexNumber: 1,
+    Id: 'ep1', Name: 'Earthfall', Type: 'Episode', IndexNumber: 1, ParentIndexNumber: 1, Width: 1920, Height: 1080,
+    // Half way in, the way a server reports a stop: ticks are 100 ns, 750 s here.
+    UserData: { PlaybackPositionTicks: 7500000000, PlayCount: 1, Played: false, LastPlayedDate: '2026-10-17T21:05:09.1234567Z' },
     SeriesId: SERIES_ID, SeriesName: 'Pioneer One',
     ParentBackdropItemId: SERIES_ID, ParentBackdropImageTags: ['pioneerBackdropTag'],
   },
   {
-    Id: 'ep2', Name: 'Caches', Type: 'Episode', IndexNumber: 2, ParentIndexNumber: 1,
+    Id: 'ep2', Name: 'Caches', Type: 'Episode', IndexNumber: 2, ParentIndexNumber: 1, Width: 3840, Height: 2160,
     SeriesId: SERIES_ID, SeriesName: 'Pioneer One',
     ParentBackdropItemId: SERIES_ID, ParentBackdropImageTags: ['pioneerBackdropTag'],
   },
@@ -122,12 +144,84 @@ const RECOMMENDED = {
   StartIndex: 0,
 };
 
-const DETAILS = { [MOVIE_ID]: MOVIE, [SERIES_ID]: SERIES };
+// What the server would resume: the half-watched episode, which stands for its series.
+const RESUME = {
+  Items: [{ ...EPISODES[0], SeriesPrimaryImageTag: 'pioneerPrimaryTag' }],
+  TotalRecordCount: 1,
+  StartIndex: 0,
+};
+
+// Only an item's own answer carries its streams: the film's detail, and an episode's when it is played.
+const DETAILS = {
+  [MOVIE_ID]: { ...MOVIE, MediaStreams: MOVIE_STREAMS },
+  [SERIES_ID]: SERIES,
+  ep1: { ...EPISODES[0], MediaStreams: [subtitle(0, 'ass', 'chi', 'Chinese', { IsForced: true })] },
+  ep2: { ...EPISODES[1], MediaStreams: [] },
+  ep3: { ...EPISODES[1], Id: 'ep3', MediaStreams: [] },
+};
+
+// Media Segments (10.10): ticks of 100 ns. The second episode's answer is a 404, which is what a
+// server before 10.10 says for every item.
+const TICKS = 10000000;
+const SEGMENTS = {
+  [MOVIE_ID]: [
+    { Id: 'sg1', ItemId: MOVIE_ID, Type: 'Intro', StartTicks: 5 * TICKS, EndTicks: 20 * TICKS },
+    { Id: 'sg2', ItemId: MOVIE_ID, Type: 'Outro', StartTicks: 580 * TICKS, EndTicks: 596 * TICKS },
+    { Id: 'sg3', ItemId: MOVIE_ID, Type: 'Unknown', StartTicks: 30 * TICKS, EndTicks: 40 * TICKS },
+  ],
+  // A recap, an intro that ends where it starts (dropped), and an outro with no end (kept, to the end).
+  ep1: [
+    { Id: 'sg4', ItemId: 'ep1', Type: 'Recap', StartTicks: 0, EndTicks: 12.5 * TICKS },
+    { Id: 'sg5', ItemId: 'ep1', Type: 'Intro', StartTicks: 15 * TICKS, EndTicks: 15 * TICKS },
+    { Id: 'sg6', ItemId: 'ep1', Type: 'Outro', StartTicks: 500 * TICKS },
+  ],
+  // More than the contract's 32.
+  ep3: Array.from({ length: 40 }, (_, i) => ({ Id: `sc${i}`, ItemId: 'ep3', Type: 'Commercial', StartTicks: i * TICKS, EndTicks: (i + 0.5) * TICKS })),
+};
+
+// What a television on a 1080p SDR screen plays: the device the PlaybackInfo fixtures were
+// recorded for, which the tests hand getStream as it is.
+export const DEVICE = {
+  video: [
+    { codec: 'h264', maxWidth: 1920, maxHeight: 1080, maxBitDepth: 8 },
+    { codec: 'hevc', maxWidth: 1920, maxHeight: 1080, maxBitDepth: 8 },
+  ],
+  audio: ['aac', 'mp3', 'ac3', 'eac3', 'dts'],
+  maxAudioChannels: 8,
+  containers: ['mp4', 'mkv', 'webm', 'ts', 'hls'],
+  hdr: [],
+  subtitles: ['srt', 'vtt', 'ass'],
+};
+
+// The server's decisions: the film is converted, with the key the server writes into its
+// address (the plugin takes it out); the first episode plays as stored; the second episode's
+// answer is a 500, which plays the file as stored too.
+export const PLAY_SESSION = 'play-session-1';
+const PLAYBACK_INFO = {
+  [MOVIE_ID]: {
+    PlaySessionId: PLAY_SESSION,
+    MediaSources: [{
+      Id: MOVIE_ID,
+      SupportsDirectPlay: false,
+      SupportsDirectStream: false,
+      SupportsTranscoding: true,
+      TranscodingUrl: `/videos/${MOVIE_ID}/master.m3u8?DeviceId=d&MediaSourceId=${MOVIE_ID}&VideoCodec=h264&ApiKey=server-written-key&PlaySessionId=${PLAY_SESSION}&TranscodeReasons=VideoRangeTypeNotSupported`,
+    }],
+  },
+  ep1: { PlaySessionId: 'play-session-2', MediaSources: [{ Id: 'ep1', SupportsDirectPlay: true, SupportsTranscoding: true }] },
+};
 
 /** Answers the way a server would, picked by what the request is asking for. */
 function bodyFor(url) {
   const { pathname, searchParams } = new URL(url);
+  if (pathname.endsWith('/PlaybackInfo')) return PLAYBACK_INFO[pathname.split('/')[2]] ?? {};
+  if (pathname.startsWith('/Sessions/Playing')) return {};
+  if (pathname.includes('/MediaSegments/')) {
+    const items = SEGMENTS[pathname.split('/MediaSegments/')[1]] ?? [];
+    return { Items: items, TotalRecordCount: items.length, StartIndex: 0 };
+  }
   if (pathname.endsWith('/Views')) return VIEWS;
+  if (pathname.endsWith('/Items/Resume')) return RESUME;
   if (pathname.endsWith('/Items/Filters')) return FILTERS;
   if (searchParams.get('IncludeItemTypes') === 'Episode') return { Items: EPISODES, TotalRecordCount: 2, StartIndex: 0 };
   if (searchParams.has('searchTerm')) return SEARCH;
@@ -141,7 +235,7 @@ function bodyFor(url) {
 const server = {
   async request({ url }) {
     return {
-      status: 200,
+      status: url.endsWith('/MediaSegments/ep2') ? 404 : url.includes('/Items/ep2/PlaybackInfo') ? 500 : 200,
       headers: { 'content-type': 'application/json' },
       setCookie: [],
       bodyBase64: Buffer.from(JSON.stringify(bodyFor(url))).toString('base64'),
@@ -170,10 +264,20 @@ async function main() {
   await engine.call('getMediaDetail', [MOVIE_ID]);
   await engine.call('search', [manifest.probeQuery]);
   await engine.call('getRecommendations', []);
+  await engine.call('getContinueWatching', []);
   // Neither is on doctor's path: it stops at the first item of the first category, so it
   // never reaches an episode list or a second library.
   await engine.call('getMediaDetail', [SERIES_ID]);
   await engine.call('getMediaList', ['lib-shows', { page: 1, filters: {} }]);
+  await engine.call('getStream', ['ep1']);
+  await engine.call('getStream', ['ep2']);
+  await engine.call('getStream', ['ep3']);
+  await engine.call('getStream', [MOVIE_ID]);
+  await engine.call('getStream', [MOVIE_ID, { device: DEVICE }]);
+  await engine.call('getStream', ['ep1', { device: DEVICE }]);
+  await engine.call('getStream', ['ep2', { device: DEVICE }]);
+  const transcoded = await engine.call('getStream', [MOVIE_ID, { device: DEVICE }]);
+  await engine.call('reportPlayback', [{ mediaId: MOVIE_ID, event: 'stop', paused: true, position: 30, session: transcoded.session }]);
 
   rmSync(storeDir, { recursive: true, force: true });
   console.log(`wrote fixtures to ${join(dir, 'fixtures')}`);

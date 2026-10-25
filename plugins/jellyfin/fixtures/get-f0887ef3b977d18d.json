@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/ep2?Fields=MediaStreams",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJZCI6ImVwMiIsIk5hbWUiOiJDYWNoZXMiLCJUeXBlIjoiRXBpc29kZSIsIkluZGV4TnVtYmVyIjoyLCJQYXJlbnRJbmRleE51bWJlciI6MSwiV2lkdGgiOjM4NDAsIkhlaWdodCI6MjE2MCwiU2VyaWVzSWQiOiJzMSIsIlNlcmllc05hbWUiOiJQaW9uZWVyIE9uZSIsIlBhcmVudEJhY2tkcm9wSXRlbUlkIjoiczEiLCJQYXJlbnRCYWNrZHJvcEltYWdlVGFncyI6WyJwaW9uZWVyQmFja2Ryb3BUYWciXSwiTWVkaWFTdHJlYW1zIjpbXX0=",
+    "setCookie": []
+  }
+}

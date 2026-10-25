@@ -51,6 +51,11 @@
       "description": "Whether this source may answer a playback option that is not a URL yet — a `pan` share for the host to open, or a `track` for its own getStream to redeem.",
       "type": "boolean"
     },
+    "deviceProfile": {
+      "$comment": "Absent is false, and every other plugin is called exactly as before, so no plugin learns the device's decoders without asking. Not a version gate: a host too old for it drops the key and calls getStream with the token alone, which such a plugin answers with the file as stored, the way it answers a download. Needs playbackTokens and a getStream export, which lint checks. See contracts/content-source-http.md's \"What the device plays\".",
+      "description": "Whether getStream is handed what the device plays when the host is about to play the stream, so a media server can convert what the device can't.",
+      "type": "boolean"
+    },
     "catalogsAreRemote": {
       "$comment": "Absent is false, and false is the rule every source written before this one kept: getSubSources answers from what the source already knows. A host meeting this on a manifest it is too old to understand drops it and asks the way it always did, which is the behaviour that was there before rather than a new failure. See contracts/content-source-http.md's \"A source whose catalog list is itself remote\".",
       "description": "Whether this source's library list lives somewhere it has to go and read — an XPTV or TVBox index at a URL. Such a source may fetch inside getSubSources, and the host owes it a visible wait over an empty picker in exchange.",

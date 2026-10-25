@@ -62,6 +62,7 @@
   "errorMisconfigured": "MISCONFIGURED: the user id is blank",
   "errorUnreachable": "UNREACHABLE: the site did not answer",
   "errorChallenged": "CHALLENGED: https://site.test/list",
+  "errorNoSearch": "NO_SEARCH: ",
   "errorDuckTyped": "NOT_FOUND: hand-built, not yonto.error.notFound()",
   "html": "3|0:a1,1:a2,2:a3|One & Only/Two/Three|/one|热|not a card",
   "htmlPseudos": "a1|a3|a2|a2",

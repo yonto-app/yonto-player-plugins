@@ -193,6 +193,7 @@ export function createHost({
       misconfigured: (reason) => Object.assign(new Error(reason), { code: Code.MISCONFIGURED }),
       unreachable: (reason) => Object.assign(new Error(reason), { code: Code.UNREACHABLE }),
       challenged: (url) => Object.assign(new Error(String(url ?? '')), { code: Code.CHALLENGED }),
+      noSearch: () => Object.assign(new Error(''), { code: Code.NO_SEARCH }),
     },
   };
   // Only for a plugin whose linkLogin a host runs: `yonto.session` is nobody else's.

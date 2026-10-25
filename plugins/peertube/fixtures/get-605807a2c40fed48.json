@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://peertube.example.com/api/v1/video-channels?start=0&count=100&sort=name",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "Retry-After",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 18 Oct 2026 08:37:52 GMT",
+      "keep-alive": "timeout=5",
+      "tk": "N",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-powered-by": "PeerTube",
+      "x-ratelimit-limit": "50",
+      "x-ratelimit-remaining": "41",
+      "x-ratelimit-reset": "1792312678",
+      "x-request-id": "d15i57bVStm7QQuwLHPXXY"
+    },
+    "bodyBase64": "eyJ0b3RhbCI6MiwiZGF0YSI6W3sidXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS92aWRlby1jaGFubmVscy9nYXJkZW5fZGlhcmllcyIsIm5hbWUiOiJnYXJkZW5fZGlhcmllcyIsImhvc3QiOiJwZWVydHViZS5leGFtcGxlLmNvbSIsImF2YXRhcnMiOltdLCJpZCI6MiwiaG9zdFJlZHVuZGFuY3lBbGxvd2VkIjpmYWxzZSwiZm9sbG93aW5nQ291bnQiOjAsImZvbGxvd2Vyc0NvdW50IjowLCJjcmVhdGVkQXQiOiIyMDI2LTEwLTE4VDA4OjMyOjU0LjkyNVoiLCJiYW5uZXJzIjpbXSwiZGlzcGxheU5hbWUiOiJHYXJkZW4gRGlhcmllcyIsImRlc2NyaXB0aW9uIjoiQSBzZWFzb24gaW4gdGhlIHZlZ2V0YWJsZSBwYXRjaC4iLCJzdXBwb3J0IjpudWxsLCJwdWJsaWNFbWFpbCI6bnVsbCwiaXNMb2NhbCI6dHJ1ZSwidXBkYXRlZEF0IjoiMjAyNi0xMC0xOFQwODozNzoyOC44NDdaIiwib3duZXJBY2NvdW50Ijp7InVybCI6Imh0dHBzOi8vcGVlcnR1YmUuZXhhbXBsZS5jb20vYWNjb3VudHMvcm9vdCIsIm5hbWUiOiJyb290IiwiaG9zdCI6InBlZXJ0dWJlLmV4YW1wbGUuY29tIiwiYXZhdGFycyI6W10sImlkIjoyLCJob3N0UmVkdW5kYW5jeUFsbG93ZWQiOmZhbHNlLCJkaXNwbGF5TmFtZSI6InJvb3QifX0seyJ1cmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL3ZpZGVvLWNoYW5uZWxzL3Jvb3RfY2hhbm5lbCIsIm5hbWUiOiJyb290X2NoYW5uZWwiLCJob3N0IjoicGVlcnR1YmUuZXhhbXBsZS5jb20iLCJhdmF0YXJzIjpbXSwiaWQiOjEsImhvc3RSZWR1bmRhbmN5QWxsb3dlZCI6ZmFsc2UsImZvbGxvd2luZ0NvdW50IjowLCJmb2xsb3dlcnNDb3VudCI6MCwiY3JlYXRlZEF0IjoiMjAyNi0xMC0xOFQwODozMToxMS41ODhaIiwiYmFubmVycyI6W10sImRpc3BsYXlOYW1lIjoiTWFpbiByb290IGNoYW5uZWwiLCJkZXNjcmlwdGlvbiI6bnVsbCwic3VwcG9ydCI6bnVsbCwicHVibGljRW1haWwiOm51bGwsImlzTG9jYWwiOnRydWUsInVwZGF0ZWRBdCI6IjIwMjYtMTAtMThUMDg6Mzc6MjkuNDA4WiIsIm93bmVyQWNjb3VudCI6eyJ1cmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2FjY291bnRzL3Jvb3QiLCJuYW1lIjoicm9vdCIsImhvc3QiOiJwZWVydHViZS5leGFtcGxlLmNvbSIsImF2YXRhcnMiOltdLCJpZCI6MiwiaG9zdFJlZHVuZGFuY3lBbGxvd2VkIjpmYWxzZSwiZGlzcGxheU5hbWUiOiJyb290In19XX0=",
+    "setCookie": []
+  }
+}

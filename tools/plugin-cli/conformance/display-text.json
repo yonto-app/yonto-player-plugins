@@ -19,6 +19,7 @@
     "summary": ["title", "year", "rating"],
     "detail": ["title", "year", "rating", "genres"],
     "playbackOption": ["label", "line"],
+    "subtitle": ["label"],
     "subSource": ["name"],
     "health": ["summary"]
   },

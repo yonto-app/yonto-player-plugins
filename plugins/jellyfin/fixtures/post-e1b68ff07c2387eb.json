@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://jellyfin.example.com/Sessions/Playing/Stopped",
+    "body": "{\"ItemId\":\"edb39341c5039551a5157e51fe4a3364\",\"MediaSourceId\":\"edb39341c5039551a5157e51fe4a3364\",\"PlaySessionId\":\"play-session-1\",\"PositionTicks\":300000000,\"IsPaused\":true,\"PlayMethod\":\"Transcode\",\"CanSeek\":true}"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "e30=",
+    "setCookie": []
+  }
+}

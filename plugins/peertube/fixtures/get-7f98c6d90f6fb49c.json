@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://peertube.example.com/api/v1/videos?start=50&count=50&sort=-publishedAt&isLocal=true",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "Retry-After",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 18 Oct 2026 08:37:52 GMT",
+      "keep-alive": "timeout=5",
+      "tk": "N",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-powered-by": "PeerTube",
+      "x-ratelimit-limit": "50",
+      "x-ratelimit-remaining": "39",
+      "x-ratelimit-reset": "1792312678",
+      "x-request-id": "cfbEEz8yuYD49pt2aU6iXv"
+    },
+    "bodyBase64": "eyJ0b3RhbCI6MywiZGF0YSI6W119",
+    "setCookie": []
+  }
+}

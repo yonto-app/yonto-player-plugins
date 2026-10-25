@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/Resume?Limit=30&MediaTypes=Video&EnableUserData=true",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJlcDEiLCJOYW1lIjoiRWFydGhmYWxsIiwiVHlwZSI6IkVwaXNvZGUiLCJJbmRleE51bWJlciI6MSwiUGFyZW50SW5kZXhOdW1iZXIiOjEsIldpZHRoIjoxOTIwLCJIZWlnaHQiOjEwODAsIlVzZXJEYXRhIjp7IlBsYXliYWNrUG9zaXRpb25UaWNrcyI6NzUwMDAwMDAwMCwiUGxheUNvdW50IjoxLCJQbGF5ZWQiOmZhbHNlLCJMYXN0UGxheWVkRGF0ZSI6IjIwMjYtMTAtMTdUMjE6MDU6MDkuMTIzNDU2N1oifSwiU2VyaWVzSWQiOiJzMSIsIlNlcmllc05hbWUiOiJQaW9uZWVyIE9uZSIsIlBhcmVudEJhY2tkcm9wSXRlbUlkIjoiczEiLCJQYXJlbnRCYWNrZHJvcEltYWdlVGFncyI6WyJwaW9uZWVyQmFja2Ryb3BUYWciXSwiU2VyaWVzUHJpbWFyeUltYWdlVGFnIjoicGlvbmVlclByaW1hcnlUYWcifV0sIlRvdGFsUmVjb3JkQ291bnQiOjEsIlN0YXJ0SW5kZXgiOjB9",
+    "setCookie": []
+  }
+}

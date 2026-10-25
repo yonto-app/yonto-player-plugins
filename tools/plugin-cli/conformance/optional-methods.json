@@ -5,5 +5,8 @@
   "getImageHeaders",
   "onImageHeadersRefused",
   "getSubSources",
-  "getStream"
+  "getStream",
+  "getContinueWatching",
+  "reportPlayback",
+  "setPlayed"
 ]

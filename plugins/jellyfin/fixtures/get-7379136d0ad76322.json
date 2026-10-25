@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/MediaSegments/edb39341c5039551a5157e51fe4a3364",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJzZzEiLCJJdGVtSWQiOiJlZGIzOTM0MWM1MDM5NTUxYTUxNTdlNTFmZTRhMzM2NCIsIlR5cGUiOiJJbnRybyIsIlN0YXJ0VGlja3MiOjUwMDAwMDAwLCJFbmRUaWNrcyI6MjAwMDAwMDAwfSx7IklkIjoic2cyIiwiSXRlbUlkIjoiZWRiMzkzNDFjNTAzOTU1MWE1MTU3ZTUxZmU0YTMzNjQiLCJUeXBlIjoiT3V0cm8iLCJTdGFydFRpY2tzIjo1ODAwMDAwMDAwLCJFbmRUaWNrcyI6NTk2MDAwMDAwMH0seyJJZCI6InNnMyIsIkl0ZW1JZCI6ImVkYjM5MzQxYzUwMzk1NTFhNTE1N2U1MWZlNGEzMzY0IiwiVHlwZSI6IlVua25vd24iLCJTdGFydFRpY2tzIjozMDAwMDAwMDAsIkVuZFRpY2tzIjo0MDAwMDAwMDB9XSwiVG90YWxSZWNvcmRDb3VudCI6MywiU3RhcnRJbmRleCI6MH0=",
+    "setCookie": []
+  }
+}

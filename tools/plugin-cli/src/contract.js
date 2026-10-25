@@ -11,6 +11,9 @@ export const METHODS = [
   // Its argument comes out of another step's answer — a `track` off a `getMediaDetail` —
   // and `doctor` walks this list in order, so it has to sit after that one.
   'getStream',
+  // Exported methods of contract 23. `doctor` calls the two readers and never the writer, and
+  // `getSubSources` stays last for the reason below.
+  'getContinueWatching', 'reportPlayback', 'setPlayed',
   // Last, though it reads like a thing to ask first: `doctor` walks this list in order, and
   // `activeId` is the library a source *is reading* rather than the one it means to try.
   // Asked before anything had been read, it named the site a walk was about to start from —
@@ -89,10 +92,25 @@ export const MANIFEST_FACTS = {
  * `stream.live` (contract 22) is on a stream, which both `getMediaDetail` and `getStream` answer
  * with, so it is keyed by `getMediaDetail`, the one every plugin exports. An older app drops it
  * and plays the stream as a title with a length, which is what it always did.
+ *
+ * `played` (contract 23) stands for the read fields on a summary, a detail and a playback option
+ * (`played`, `position`, `playedAt`) and the option's `id`: a plugin that sends one sends the
+ * rest. `stream.subtitles` (contract 23) is on a stream, keyed by `getMediaDetail` like `live`.
+ * `stream.segments` (contract 24) is keyed the same way, and a playback option's `episode` (contract 25) by
+ * `getMediaDetail` too. An older app drops them and shows what it always did.
+ * `stream.session` (contract 26) too, and a host that reads it hands it back as `reportPlayback`'s
+ * `session`; an older app drops it and reports as it always did. A playback option's `video`
+ * (contract 27), what its copy is, is one more: an older app drops it and says nothing of the format.
  */
 export const RESULT_FIELDS = {
   FILTER_INIT: 'getFilters.init',
   STREAM_LIVE: 'getMediaDetail.stream.live',
+  PLAYED: 'getMediaDetail.played',
+  STREAM_SUBTITLES: 'getMediaDetail.stream.subtitles',
+  STREAM_SEGMENTS: 'getMediaDetail.stream.segments',
+  EPISODE: 'getMediaDetail.episode',
+  STREAM_SESSION: 'getMediaDetail.stream.session',
+  VIDEO: 'getMediaDetail.video',
 };
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });

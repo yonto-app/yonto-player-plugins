@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/MediaSegments/ep1",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJzZzQiLCJJdGVtSWQiOiJlcDEiLCJUeXBlIjoiUmVjYXAiLCJTdGFydFRpY2tzIjowLCJFbmRUaWNrcyI6MTI1MDAwMDAwfSx7IklkIjoic2c1IiwiSXRlbUlkIjoiZXAxIiwiVHlwZSI6IkludHJvIiwiU3RhcnRUaWNrcyI6MTUwMDAwMDAwLCJFbmRUaWNrcyI6MTUwMDAwMDAwfSx7IklkIjoic2c2IiwiSXRlbUlkIjoiZXAxIiwiVHlwZSI6Ik91dHJvIiwiU3RhcnRUaWNrcyI6NTAwMDAwMDAwMH1dLCJUb3RhbFJlY29yZENvdW50IjozLCJTdGFydEluZGV4IjowfQ==",
+    "setCookie": []
+  }
+}

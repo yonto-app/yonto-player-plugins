@@ -151,6 +151,23 @@
       "message": "https://site.test/list"
     },
     {
+      "why": "noSearch carries its code and no sentence: the app says it in the viewer's language",
+      "call": {
+        "raise": "noSearch"
+      },
+      "code": "NO_SEARCH",
+      "message": ""
+    },
+    {
+      "why": "noSearch is the plugin's word too: hand-built, it stands",
+      "call": {
+        "handBuilt": {
+          "code": "NO_SEARCH"
+        }
+      },
+      "code": "NO_SEARCH"
+    },
+    {
       "why": "unreachable stands after the host refused a request in the same call, and is not taken for the host's verdict",
       "call": {
         "fetchFirst": "https://elsewhere.test/",
