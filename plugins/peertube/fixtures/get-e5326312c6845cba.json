@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://peertube.example.com/api/v1/videos/5a43dadf-b544-4af1-9c69-cfb78cc65f61/captions",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "Retry-After",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 18 Oct 2026 08:37:52 GMT",
+      "keep-alive": "timeout=5",
+      "tk": "N",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-powered-by": "PeerTube",
+      "x-ratelimit-limit": "50",
+      "x-ratelimit-remaining": "37",
+      "x-ratelimit-reset": "1792312678",
+      "x-request-id": "16eR8GvZUtBX391CSZ8Mfo"
+    },
+    "bodyBase64": "eyJ0b3RhbCI6MiwiZGF0YSI6W3sibGFuZ3VhZ2UiOnsiaWQiOiJlbiIsImxhYmVsIjoiRW5nbGlzaCJ9LCJhdXRvbWF0aWNhbGx5R2VuZXJhdGVkIjpmYWxzZSwiY2FwdGlvblBhdGgiOiIvbGF6eS1zdGF0aWMvdmlkZW8tY2FwdGlvbnMvNDc3NzZlZTgtYTkwOS00MDA4LTkzZjctOTIwOTQyZDg5NmMwLWVuLnZ0dCIsImZpbGVVcmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2xhenktc3RhdGljL3ZpZGVvLWNhcHRpb25zLzQ3Nzc2ZWU4LWE5MDktNDAwOC05M2Y3LTkyMDk0MmQ4OTZjMC1lbi52dHQiLCJtM3U4VXJsIjpudWxsLCJ1cGRhdGVkQXQiOiIyMDI2LTEwLTE4VDA4OjM3OjI4Ljg3NVoifSx7Imxhbmd1YWdlIjp7ImlkIjoiZnIiLCJsYWJlbCI6IkZyZW5jaCJ9LCJhdXRvbWF0aWNhbGx5R2VuZXJhdGVkIjpmYWxzZSwiY2FwdGlvblBhdGgiOiIvbGF6eS1zdGF0aWMvdmlkZW8tY2FwdGlvbnMvNjRlNjQ4YzQtZGIzNS00MmIxLWJkMjEtYTNhYWQ3NWFiMzhmLWZyLnZ0dCIsImZpbGVVcmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2xhenktc3RhdGljL3ZpZGVvLWNhcHRpb25zLzY0ZTY0OGM0LWRiMzUtNDJiMS1iZDIxLWEzYWFkNzVhYjM4Zi1mci52dHQiLCJtM3U4VXJsIjpudWxsLCJ1cGRhdGVkQXQiOiIyMDI2LTEwLTE4VDA4OjM3OjI4Ljg5MloifV19",
+    "setCookie": []
+  }
+}

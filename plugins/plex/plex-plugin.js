@@ -3,13 +3,15 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.1.6",
-  "contractVersion": 21,
+  "version": "1.7.0",
+  "contractVersion": 23,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
   "provides": "source-type",
   "allowedHosts": ["*.plex.direct"],
   "catalogsAreRemote": true,
+  "playbackTokens": true,
+  "deviceProfile": true,
   "configSchema": [
     {
       "id": "serverUrl",
@@ -77,6 +79,7 @@ const LOG_IN_MESSAGE = 'Log in to Plex, or type your own server\'s address, by e
 const ACCOUNT_DOWN_MESSAGE = 'The list of your Plex servers could not be read.';
 const NO_SHARED_SERVERS_MESSAGE =
   'No Plex server is shared with this account. For your own server, add its address and token by editing the source in Settings.';
+const WRITE_REFUSED_MESSAGE = 'The server did not take the update.';
 const NOTHING_TO_PLAY_MESSAGE = 'The server has no playable file for this title.';
 
 function typedServer() {
@@ -286,7 +289,7 @@ function isSuccess(status) {
 
 // A remembered connection that stops answering, or answers with an error, is let go and the
 // connections probed once more.
-async function fetchShared(target, pathAndQuery, what) {
+async function fetchShared(target, pathAndQuery, what, anyAnswerStands = false) {
   let response;
   try {
     if (target.base === null) target.base = await connect(target, what);
@@ -296,18 +299,18 @@ async function fetchShared(target, pathAndQuery, what) {
     if (error?.code !== 'REQUEST_FAILED' && error?.code !== 'UNREACHABLE') throw refusal(error, target);
     await yonto.store.remove(CONNECTION_KEY + target.server.id).catch(() => {});
     if (target.probed) throw refusal({ code: 'REQUEST_FAILED' }, target);
-    return probedAgain(target, pathAndQuery, what);
+    return probedAgain(target, pathAndQuery, what, anyAnswerStands);
   }
-  if (target.probed || isSuccess(response.status)) return response;
+  if (target.probed || anyAnswerStands || isSuccess(response.status)) return response;
   yonto.log('warn', `${what} got HTTP ${response.status} from the connection it kept`);
   await yonto.store.remove(CONNECTION_KEY + target.server.id).catch(() => {});
-  return probedAgain(target, pathAndQuery, what);
+  return probedAgain(target, pathAndQuery, what, anyAnswerStands);
 }
 
-function probedAgain(target, pathAndQuery, what) {
+function probedAgain(target, pathAndQuery, what, anyAnswerStands) {
   target.remembered = null;
   target.base = null;
-  return fetchShared(target, pathAndQuery, what);
+  return fetchShared(target, pathAndQuery, what, anyAnswerStands);
 }
 
 async function get(target, path, what, params) {
@@ -343,6 +346,24 @@ async function get(target, path, what, params) {
     yonto.log('warn', `${what} got HTTP ${response.status}`);
     throw yonto.error.unreachable(SERVER_ERROR_MESSAGE);
   }
+  return containerOf(response, what);
+}
+
+// A read whose refusal says nothing about the login: like a write, it never asks plex.tv again or
+// probes past the kept connection.
+async function ask(target, path, what, params) {
+  const pathAndQuery = `${path}${queryOf(params)}`;
+  const response = target.typed
+    ? await fetchTyped(target, pathAndQuery, what)
+    : await fetchShared(target, pathAndQuery, what, true);
+  if (!isSuccess(response.status)) {
+    yonto.log('warn', `${what} got HTTP ${response.status}`);
+    throw yonto.error.unavailable(SERVER_ERROR_MESSAGE);
+  }
+  return containerOf(response, what);
+}
+
+function containerOf(response, what) {
   let payload;
   try {
     payload = JSON.parse(response.body);
@@ -354,6 +375,33 @@ async function get(target, path, what, params) {
     throw yonto.error.unavailable(UNREADABLE_MESSAGE);
   }
   return payload.MediaContainer;
+}
+
+// A write the server did not take is only logged and thrown: unlike a read, a refusal here must
+// not ask plex.tv again, sign the viewer out or make the kept connection be probed past, since a
+// friend's library may not take writes.
+async function write(target, path, params, what) {
+  const query = queryOf({ identifier: LIBRARY_IDENTIFIER, ...params });
+  const response = target.typed
+    ? await fetchTyped(target, `${path}${query}`, what)
+    : await fetchShared(target, `${path}${query}`, what, true);
+  if (!isSuccess(response.status)) {
+    yonto.log('warn', `${what} got HTTP ${response.status}`);
+    throw yonto.error.unavailable(WRITE_REFUSED_MESSAGE);
+  }
+}
+
+// The ratingKey a report or a mark is for: the episode's, or the title's own for a film.
+async function writeTargetOf({ mediaId, optionId }) {
+  const { target, key } = await targetOf(mediaId);
+  if (!target) throw yonto.error.notFound(mediaId);
+  return { target, ratingKey: optionId || key };
+}
+
+const TIMELINE_STATES = { start: 'playing', progress: 'playing', stop: 'stopped' };
+
+function milliseconds(seconds) {
+  return String(Math.max(Math.round(seconds * 1000), 0));
 }
 
 function list(container, key) {
@@ -395,8 +443,33 @@ function idsOf(item) {
   return Object.keys(ids).length === 0 ? undefined : ids;
 }
 
+const LIBRARY_IDENTIFIER = 'com.plexapp.plugins.library';
+
+// What the server says of the viewer's place, from `viewCount`, `viewOffset` (ms) and
+// `lastViewedAt` (epoch seconds). Plex leaves `viewCount` out of an unwatched title, so a movie or
+// an episode without one is unwatched; a show is watched when every leaf is, and says nothing when
+// it does not count them. A title being watched again has both a count and an offset, and the
+// offset wins, as in Plex Web.
+function playStateOf(item) {
+  const state = {};
+  const offset = Number(item.viewOffset);
+  const resuming = Number.isFinite(offset) && offset > 0;
+  if (item.type === SHOW) {
+    if (Number(item.leafCount) > 0 && Number.isFinite(Number(item.viewedLeafCount))) {
+      state.played = Number(item.viewedLeafCount) >= Number(item.leafCount);
+    }
+  } else {
+    state.played = Number(item.viewCount) > 0 && !resuming;
+  }
+  if (resuming) state.position = offset / 1000;
+  const viewedAt = Number(item.lastViewedAt);
+  if (Number.isFinite(viewedAt) && viewedAt > 0) state.playedAt = new Date(viewedAt * 1000).toISOString();
+  return state;
+}
+
 function toSummary(target, item) {
   return {
+    ...playStateOf(item),
     id: `${target.prefix}${item.ratingKey}`,
     title: item.title,
     type: mediaType(item),
@@ -424,40 +497,282 @@ function firstPartKey(media) {
 const CONTAINER_TYPES = { mkv: 'video/x-matroska', webm: 'video/webm', ts: 'video/mp2t', mpegts: 'video/mp2t' };
 const DEFAULT_FILE_TYPE = 'video/mp4';
 
+// The contract's cap on one stream's subtitles.
+const MAX_SUBTITLES = 32;
+const SUBTITLE_STREAM_TYPE = 3;
+// Plex serves a subtitle file as it is stored, so only the formats the host plays are offered.
+const SUBTITLE_TYPES = {
+  srt: 'application/x-subrip',
+  subrip: 'application/x-subrip',
+  ass: 'text/x-ssa',
+  ssa: 'text/x-ssa',
+  vtt: 'text/vtt',
+  webvtt: 'text/vtt',
+};
+
+// A part's subtitle files: an embedded track has no `key` of its own and is in the file already.
+// A detail carries a part's streams; a listing such as `allLeaves` does not.
+function subtitlesOf(target, media) {
+  const part = (media.Part || [])[0] || {};
+  return list(part, 'Stream')
+    .filter((stream) => stream.streamType === SUBTITLE_STREAM_TYPE && typeof stream.key === 'string'
+      && PATH_ON_THIS_HOST.test(stream.key) && SUBTITLE_TYPES[String(stream.codec).toLowerCase()])
+    .slice(0, MAX_SUBTITLES)
+    .map((stream) => ({
+      url: `${target.base}${stream.key}`,
+      label: stream.displayTitle || stream.language || 'Subtitles',
+      language: stream.languageTag || undefined,
+      mimeType: SUBTITLE_TYPES[String(stream.codec).toLowerCase()],
+      forced: stream.forced === true,
+      default: stream.default === true,
+    }));
+}
+
+// The contract's cap on one stream's segments, and the marker types Plex names that the contract does too.
+const MAX_SEGMENTS = 32;
+const MARKER_TYPES = { intro: 'intro', credits: 'credits' };
+
+// Plex marks in milliseconds. A final credits marker runs to the end of the file, which the
+// contract says by leaving `end` out.
+function segmentsOf(item) {
+  return list(item, 'Marker')
+    .filter((marker) => MARKER_TYPES[marker.type] && Number.isFinite(marker.startTimeOffset) && marker.startTimeOffset >= 0)
+    .slice(0, MAX_SEGMENTS)
+    .map((marker) => {
+      const segment = { type: MARKER_TYPES[marker.type], start: marker.startTimeOffset / 1000 };
+      const ends = marker.endTimeOffset > marker.startTimeOffset;
+      if (ends && marker.final !== true) segment.end = marker.endTimeOffset / 1000;
+      // Only credits may run to the end: for an intro that would be a button to skip the film.
+      return segment.type === 'credits' || ends ? segment : null;
+    })
+    .filter(Boolean);
+}
+
 // The part's own path is Plex's direct play: the file as stored, with the typed token as a
 // header so it is never in a URL the player might log.
-function streamOf(target, media) {
+function streamOf(target, media, item) {
   const stream = {
     url: `${target.base}${firstPartKey(media)}`,
     mimeType: CONTAINER_TYPES[media.container] || DEFAULT_FILE_TYPE,
   };
   const headers = tokenHeaders(target);
   if (headers['X-Plex-Token']) stream.headers = headers;
+  const subtitles = subtitlesOf(target, media);
+  if (subtitles.length > 0) stream.subtitles = subtitles;
+  const segments = segmentsOf(item);
+  if (segments.length > 0) stream.segments = segments;
   return stream;
 }
 
-// One option per version of a movie, named by resolution only when there is more than one.
+// What the device plays, in the names a Plex client profile uses.
+const CONTAINER_NAMES = { mp4: 'mp4,mov', mkv: 'mkv', webm: 'webm', ts: 'mpegts' };
+const AUDIO_NAMES = { dts: 'dca' };
+const TRANSCODE_AUDIO = ['aac', 'ac3', 'eac3'];
+// The transfer each HDR format the screen shows is carried in.
+const SHOWN_TRANSFERS = { hdr10: 'smpte2084', hdr10plus: 'smpte2084', dolbyVision: 'smpte2084', hlg: 'arib-std-b67' };
+const HDR_TRANSFERS = ['smpte2084', 'arib-std-b67'];
+// Profile 5's base layer, which shows right only where the screen decodes Dolby Vision itself.
+const DOLBY_VISION_ONLY_LAYER = '0';
+const HLS_MIME = 'application/x-mpegURL';
+const TRANSCODE = '/video/:/transcode/universal';
+
+function listOf(value) {
+  return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
+}
+
+function limitation(codec, type, name, value) {
+  return `add-limitation(scope=videoCodec&scopeName=${codec}&type=${type}&name=${name}&${value}&isRequired=false)`;
+}
+
+// The device as `X-Plex-Client-Profile-Extra` says it to the `Generic` profile, which has nothing of
+// its own: a video beyond a decoder's size or bit depth is converted to H.264, and HEVC the device
+// plays is copied, in fMP4, the one HLS container AVPlayer takes it in. The screen's range is a
+// limitation only on a server that tone-maps, which takes Plex Pass: without it a conversion is no
+// truer to the colours than the file.
+function profileExtraOf(device, toneMaps) {
+  const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && typeof v.codec === 'string');
+  const audio = listOf(device.audio);
+  const shown = listOf(device.hdr);
+  const containers = listOf(device.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  const transcodeAudio = TRANSCODE_AUDIO.filter((codec) => audio.includes(codec));
+  const copiesHevc = video.some((v) => v.codec === 'hevc');
+  const unshown = HDR_TRANSFERS.filter((transfer) => !shown.some((format) => SHOWN_TRANSFERS[format] === transfer));
+  const parts = [
+    `add-transcode-target(type=videoProfile&context=streaming&protocol=hls&container=${copiesHevc ? 'mp4' : 'mpegts'}`
+      + `&videoCodec=h264&audioCodec=${(transcodeAudio.length > 0 ? transcodeAudio : ['aac']).join(',')})`,
+    ...(copiesHevc ? ['append-transcode-target-codec(type=videoProfile&context=streaming&protocol=hls&videoCodec=hevc)'] : []),
+    `add-direct-play-profile(type=videoProfile&protocol=http&container=${containers.join(',')}`
+      + `&videoCodec=${video.map((v) => v.codec).join(',')}&audioCodec=${audio.map((codec) => AUDIO_NAMES[codec] || codec).join(',')})`,
+  ];
+  for (const v of video) {
+    parts.push(limitation(v.codec, 'upperBound', 'video.width', `value=${v.maxWidth}`));
+    parts.push(limitation(v.codec, 'upperBound', 'video.height', `value=${v.maxHeight}`));
+    parts.push(limitation(v.codec, 'upperBound', 'video.bitDepth', `value=${v.maxBitDepth}`));
+    if (toneMaps && unshown.length > 0) parts.push(limitation(v.codec, 'notMatch', 'video.colorTrc', `list=${unshown.join('|')}`));
+    if (toneMaps && !shown.includes('dolbyVision')) {
+      parts.push(limitation(v.codec, 'notMatch', 'video.DOVIBLCompatID', `list=${DOLBY_VISION_ONLY_LAYER}`));
+    }
+  }
+  return parts.join('+');
+}
+
+// The largest picture any decoder plays, which caps what a conversion encodes.
+function resolutionOf(device) {
+  const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && v.maxWidth > 0 && v.maxHeight > 0);
+  if (video.length === 0) return '1920x1080';
+  const largest = video.reduce((best, v) => (v.maxWidth * v.maxHeight > best.maxWidth * best.maxHeight ? v : best));
+  return `${largest.maxWidth}x${largest.maxHeight}`;
+}
+
+// The server root names its owner's Plex Pass, which its tone mapping needs.
+async function hasPlexPass(target) {
+  try {
+    return (await ask(target, '/', 'server')).myPlexSubscription === true;
+  } catch {
+    return false;
+  }
+}
+
+// Fresh for each play: Plex keys its conversion by it, and a stop that names it ends that one.
+function newPlaySession() {
+  return `${yonto.installId()}-${yonto.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// What the server decided for this device: the file as stored where it plays, or its own HLS
+// conversion. The conversion's address carries everything Plex needs in its query, so the player
+// sends nothing but the token a file would get, and no bitrate cap is sent: one makes Plex convert a
+// file it has not deeply analysed, whose bitrate it then counts as unbounded. Anything the decision
+// cannot answer plays the file as stored, as it always did.
+async function decidedStream(target, item, media, device) {
+  const playSession = newPlaySession();
+  let params;
+  let decided;
+  try {
+    params = {
+      path: `/library/metadata/${item.ratingKey}`,
+      mediaIndex: String((item.Media || []).indexOf(media)),
+      partIndex: '0',
+      protocol: 'hls',
+      directPlay: '1',
+      directStream: '1',
+      directStreamAudio: '1',
+      fastSeek: '1',
+      subtitles: 'none',
+      videoResolution: resolutionOf(device),
+      session: playSession,
+      'X-Plex-Session-Identifier': playSession,
+      'X-Plex-Product': PRODUCT,
+      'X-Plex-Client-Identifier': `lantern-${yonto.installId()}`,
+      'X-Plex-Platform': 'Generic',
+      'X-Plex-Client-Profile-Extra': profileExtraOf(device, await hasPlexPass(target)),
+    };
+    const answer = await ask(target, `${TRANSCODE}/decision`, 'playback decision', params);
+    const part = ((list(answer, 'Metadata')[0] || {}).Media || [])[0];
+    decided = part && ((part.Part || [])[0] || {}).decision;
+  } catch (error) {
+    yonto.log('warn', `the playback decision failed, playing the file as stored: ${error?.code ?? 'no code'}`);
+  }
+  if (decided === 'directplay') return { ...streamOf(target, media, item), session: sessionOf(playSession, 'directplay') };
+  if (decided !== 'transcode') return streamOf(target, media, item);
+  const stream = {
+    url: `${target.base}${TRANSCODE}/start.m3u8${queryOf(params)}`,
+    mimeType: HLS_MIME,
+    session: sessionOf(playSession, 'transcode'),
+  };
+  const headers = tokenHeaders(target);
+  if (headers['X-Plex-Token']) stream.headers = headers;
+  const subtitles = subtitlesOf(target, media);
+  if (subtitles.length > 0) stream.subtitles = subtitles;
+  const segments = segmentsOf(item);
+  if (segments.length > 0) stream.segments = segments;
+  return stream;
+}
+
+// Handed back on every report about this play: a timeline that names it is Plex's own client's,
+// and the stopped one ends the conversion.
+function sessionOf(playSession, method) {
+  return JSON.stringify({ playSession, method });
+}
+
+function playSessionOf(session) {
+  try {
+    const decoded = JSON.parse(session);
+    return decoded && typeof decoded === 'object' && typeof decoded.playSession === 'string' ? decoded.playSession : null;
+  } catch {
+    return null;
+  }
+}
+
+const VIDEO_STREAM_TYPE = 1;
+const TRANSFER_RANGES = { smpte2084: 'hdr10', 'arib-std-b67': 'hlg' };
+
+// What a version is: its size from the `Media`, and its range from its video stream, which only a
+// title's own detail lists (`allLeaves` does not), Dolby Vision whatever layer it carries beside.
+function videoOf(media) {
+  const width = positive(media.width);
+  const height = positive(media.height);
+  const stream = list((media.Part || [])[0] || {}, 'Stream').find((s) => s.streamType === VIDEO_STREAM_TYPE);
+  let range;
+  if (stream) range = stream.DOVIPresent === true ? 'dolbyVision' : TRANSFER_RANGES[stream.colorTrc] || 'sdr';
+  const video = { ...(width ? { width } : {}), ...(height ? { height } : {}), ...(range ? { range } : {}) };
+  return Object.keys(video).length > 0 ? { video } : {};
+}
+
+function positive(value) {
+  return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+// A film's version rides on its track after this, so the version picked is the one redeemed.
+const VERSION_SEPARATOR = '#';
+
+// One option per version of a movie, named by resolution only when there is more than one, each a
+// track redeemed on Play: what the server decides to send is for one play on one device, and a
+// detail is cached and kept.
 function movieOptions(target, item) {
   const playable = (item.Media || []).filter(firstPartKey);
   return playable.map((media) => ({
     label: playable.length > 1 && media.videoResolution ? `Play ${media.videoResolution}` : 'Play',
-    stream: streamOf(target, media),
+    id: String(item.ratingKey),
+    track: playable.length > 1
+      ? `${target.prefix}${item.ratingKey}${VERSION_SEPARATOR}${media.id}`
+      : `${target.prefix}${item.ratingKey}`,
+    ...videoOf(media),
   }));
 }
 
+// An episode is a `track` the player redeems with `getStream`, since `allLeaves` leaves out the
+// streams that list its subtitle files: one detail call for the episode played, not one per episode.
 function episodeOptions(target, episodes) {
   return episodes
-    .map((episode) => ({ episode, media: (episode.Media || [])[0] || {} }))
-    .filter(({ media }) => firstPartKey(media))
-    .map(({ episode, media }) => {
+    .filter((episode) => firstPartKey((episode.Media || [])[0] || {}))
+    .map((episode) => {
       const season = episode.parentIndex ?? 1;
       const number = episode.index ?? 0;
       return {
+        ...playStateOf(episode),
+        id: String(episode.ratingKey),
         label: `S${season}E${String(number).padStart(2, '0')} · ${episode.title}`,
-        stream: streamOf(target, media),
+        track: `${target.prefix}${episode.ratingKey}`,
         season,
+        ...episodeNumberOf(episode),
+        ...videoOf((episode.Media || [])[0] || {}),
       };
     });
+}
+
+// Only the server's own numbers, never the label's defaults: the host asks a skip-times
+// database by them, and a guessed season would ask about another episode.
+function episodeNumberOf(episode) {
+  return Number.isInteger(episode.parentIndex) && Number.isInteger(episode.index) ? { episode: episode.index } : {};
+}
+
+async function metadataOf(mediaId) {
+  const { target, key } = await targetOf(mediaId);
+  if (!target) throw yonto.error.notFound(mediaId);
+  const path = `/library/metadata/${encodeURIComponent(key)}`;
+  const item = list(await get(target, path, mediaId, { includeMarkers: '1' }), 'Metadata')[0];
+  if (!item) throw yonto.error.notFound(mediaId);
+  return { target, path, item };
 }
 
 export default {
@@ -499,11 +814,7 @@ export default {
   },
 
   async getMediaDetail(mediaId) {
-    const { target, key } = await targetOf(mediaId);
-    if (!target) throw yonto.error.notFound(mediaId);
-    const path = `/library/metadata/${encodeURIComponent(key)}`;
-    const item = list(await get(target, path, mediaId), 'Metadata')[0];
-    if (!item) throw yonto.error.notFound(mediaId);
+    const { target, path, item } = await metadataOf(mediaId);
     const options = item.type === SHOW
       ? episodeOptions(target, list(await get(target, `${path}/allLeaves`, mediaId), 'Metadata'))
       : movieOptions(target, item);
@@ -517,6 +828,71 @@ export default {
       synopsis: item.summary || '',
       playbackOptions: options,
     };
+  },
+
+  // A `track` is its media id, after which a film with several versions names the one picked, and
+  // its own detail is what lists its subtitle files. With what the device plays, the server decides;
+  // without it (a download, an older app) the file is sent as stored.
+  async getStream(track, asked) {
+    const [mediaId, version] = track.split(VERSION_SEPARATOR);
+    const { target, item } = await metadataOf(mediaId);
+    const playable = (item.Media || []).filter(firstPartKey);
+    const media = version === undefined ? playable[0] : playable.find((m) => String(m.id) === version);
+    if (!media) {
+      yonto.log('warn', `${item.type} has no media part to play`);
+      throw yonto.error.unavailable(NOTHING_TO_PLAY_MESSAGE);
+    }
+    const device = asked && asked.device;
+    return device && typeof device === 'object' ? decidedStream(target, item, media, device) : streamOf(target, media, item);
+  },
+
+  // Plex's /:/timeline moves the server's resume point and shows a session; a finished title is
+  // scrobbled after it, so the last word on the server is "watched". A play the server decided
+  // names its session, so the stopped timeline ends the server's conversion.
+  async reportPlayback(report) {
+    const { target, ratingKey } = await writeTargetOf(report);
+    const state = report.paused && report.event !== 'stop' ? 'paused' : TIMELINE_STATES[report.event];
+    const playSession = playSessionOf(report.session);
+    const params = {
+      ratingKey,
+      key: `/library/metadata/${ratingKey}`,
+      state,
+      time: milliseconds(report.position),
+      ...(playSession ? { 'X-Plex-Session-Identifier': playSession } : {}),
+    };
+    if (report.duration > 0) params.duration = milliseconds(report.duration);
+    const finished = report.event === 'stop' && report.finished === true;
+    try {
+      await write(target, '/:/timeline', params, 'timeline');
+    } finally {
+      // The scrobble is what marks it watched, so a timeline the server dropped must not skip it.
+      if (finished) await write(target, '/:/scrobble', { key: ratingKey }, 'scrobble');
+    }
+  },
+
+  async setPlayed(change) {
+    const { target, ratingKey } = await writeTargetOf(change);
+    await write(target, change.played ? '/:/scrobble' : '/:/unscrobble', { key: ratingKey }, 'mark');
+  },
+
+  // On Deck: what Plex would resume or play next. An episode is its show's summary with the
+  // episode as the option to open.
+  async getContinueWatching() {
+    const target = await pickedTarget();
+    const items = list(await get(target, '/library/onDeck', 'on deck'), 'Metadata').flatMap((item) => {
+      if (item.type === 'episode' && item.grandparentRatingKey !== undefined) {
+        const show = toSummary(target, {
+          type: SHOW,
+          ratingKey: item.grandparentRatingKey,
+          title: item.grandparentTitle || item.title,
+          thumb: item.grandparentThumb,
+          art: item.grandparentArt,
+        });
+        return [{ ...show, ...playStateOf(item), optionId: String(item.ratingKey) }];
+      }
+      return item.type === MOVIE ? [toSummary(target, item)] : [];
+    });
+    return { items };
   },
 
   async search(query) {

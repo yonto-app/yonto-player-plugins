@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/ep1?Fields=MediaStreams",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJZCI6ImVwMSIsIk5hbWUiOiJFYXJ0aGZhbGwiLCJUeXBlIjoiRXBpc29kZSIsIkluZGV4TnVtYmVyIjoxLCJQYXJlbnRJbmRleE51bWJlciI6MSwiV2lkdGgiOjE5MjAsIkhlaWdodCI6MTA4MCwiVXNlckRhdGEiOnsiUGxheWJhY2tQb3NpdGlvblRpY2tzIjo3NTAwMDAwMDAwLCJQbGF5Q291bnQiOjEsIlBsYXllZCI6ZmFsc2UsIkxhc3RQbGF5ZWREYXRlIjoiMjAyNi0xMC0xN1QyMTowNTowOS4xMjM0NTY3WiJ9LCJTZXJpZXNJZCI6InMxIiwiU2VyaWVzTmFtZSI6IlBpb25lZXIgT25lIiwiUGFyZW50QmFja2Ryb3BJdGVtSWQiOiJzMSIsIlBhcmVudEJhY2tkcm9wSW1hZ2VUYWdzIjpbInBpb25lZXJCYWNrZHJvcFRhZyJdLCJNZWRpYVN0cmVhbXMiOlt7IkNvZGVjIjoiYXNzIiwiTGFuZ3VhZ2UiOiJjaGkiLCJMb2NhbGl6ZWRMYW5ndWFnZSI6IkNoaW5lc2UiLCJEaXNwbGF5VGl0bGUiOiJDaGluZXNlIC0gQVNTIC0gRXh0ZXJuYWwiLCJJc0RlZmF1bHQiOmZhbHNlLCJJc0ZvcmNlZCI6dHJ1ZSwiSXNIZWFyaW5nSW1wYWlyZWQiOmZhbHNlLCJUeXBlIjoiU3VidGl0bGUiLCJJbmRleCI6MCwiSXNFeHRlcm5hbCI6dHJ1ZSwiSXNUZXh0U3VidGl0bGVTdHJlYW0iOnRydWUsIlN1cHBvcnRzRXh0ZXJuYWxTdHJlYW0iOnRydWV9XX0=",
+    "setCookie": []
+  }
+}

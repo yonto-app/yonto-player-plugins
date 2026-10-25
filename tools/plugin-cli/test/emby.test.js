@@ -86,7 +86,7 @@ test('search sends SearchTerm', async () => {
   assert.deepEqual(found.map((f) => f.title), ['Test Pattern']);
 });
 
-test('a series plays each episode directly, with the token in a header and in no url', async () => {
+test('a series plays each episode as a track redeemed directly, with the token in a header and in no url', async () => {
   const { engine, requests } = replayed();
   const detail = await engine.call('getMediaDetail', [SERIES]);
 
@@ -94,7 +94,9 @@ test('a series plays each episode directly, with the token in a header and in no
   assert.deepEqual(detail.genres, ['Drama', 'Science Fiction']);
   assert.deepEqual(detail.playbackOptions.map((o) => o.label),
     ['S1E01 · Pioneer Clips - S01E01', 'S1E02 · Pioneer Clips - S01E02']);
-  const { stream } = detail.playbackOptions[0];
+  assert.deepEqual(detail.playbackOptions.map((o) => [o.season, o.episode]), [[1, 1], [1, 2]]);
+  assert.deepEqual(detail.playbackOptions.map((o) => o.track), ['13', '14']);
+  const stream = await engine.call('getStream', ['13']);
   // No MediaSourceId: Emby answers 400 to the item id there.
   assert.equal(stream.url, `${RECORDED.serverUrl}/emby/Videos/13/stream?Static=true`);
   assert.deepEqual(stream.headers, { 'X-Emby-Token': RECORDED.apiKey });
@@ -105,6 +107,46 @@ test('a series plays each episode directly, with the token in a header and in no
   }
   const urls = [...requests.map((r) => r.url), detail.posterUrl, detail.backdropUrl, stream.url];
   assert.ok(urls.every((u) => !u.includes(RECORDED.apiKey)), 'the key rides in no url');
+});
+
+// A track, redeemed on Play, because what the server sends is for one play on one device and a
+// detail is cached and kept.
+test('a film is one Play option, a track the direct-play endpoint redeems when no device is named', async () => {
+  const { engine, requests } = replayed();
+  const detail = await engine.call('getMediaDetail', ['9']);
+
+  // As recorded: a 320x240 test clip, which Emby calls SDR.
+  assert.deepEqual(detail.playbackOptions, [{ label: 'Play', id: '9', track: '9', video: { width: 320, height: 240, range: 'sdr' } }]);
+  const stream = await engine.call('getStream', ['9']);
+  assert.equal(stream.url, `${RECORDED.serverUrl}/emby/Videos/9/stream?Static=true`);
+  assert.equal(stream.session, undefined);
+  assert.equal(requests.some((r) => r.url.includes('PlaybackInfo') || r.url.includes('Registrations')), false);
+});
+
+test('a film offers its text subtitle files, a format the host cannot play asked for as SubRip', async () => {
+  const stream = await replayed().engine.call('getStream', ['9']);
+  const subtitles = `${RECORDED.serverUrl}/emby/Videos/9/mediasource_9/Subtitles`;
+
+  // The PGS file is a picture and the MOV_TEXT track is inside the video, so neither is offered.
+  assert.deepEqual(stream.subtitles, [
+    { url: `${subtitles}/2/Stream.srt`, label: 'English', language: 'en', mimeType: 'application/x-subrip', forced: false, default: true },
+    { url: `${subtitles}/3/Stream.srt`, label: 'Korean', language: 'ko', mimeType: 'application/x-subrip', forced: false, default: false },
+  ]);
+});
+
+test('an episode offers its own subtitle files when played, under its own media source, and the listing asks for none', async () => {
+  const { engine, requests } = replayed();
+  await engine.call('getMediaDetail', [SERIES]);
+  const stream = await engine.call('getStream', ['13']);
+
+  // The listing asks for each episode's size and never its media sources, which would weigh every open of the show.
+  assert.ok(requests[1].url.includes('Fields=Width%2CHeight&'), requests[1].url);
+  assert.ok(!requests[1].url.includes('MediaSources'), requests[1].url);
+  assert.ok(requests[2].url.endsWith('/Items/13?Fields=MediaSources%2CChapters'), requests[2].url);
+  assert.deepEqual(stream.subtitles.map(({ url, mimeType, forced }) => ({ url, mimeType, forced })), [
+    { url: `${RECORDED.serverUrl}/emby/Videos/13/mediasource_13/Subtitles/2/Stream.srt`, mimeType: 'application/x-subrip', forced: false },
+    { url: `${RECORDED.serverUrl}/emby/Videos/13/mediasource_13/Subtitles/3/Stream.ass`, mimeType: 'text/x-ssa', forced: true },
+  ]);
 });
 
 test('artwork is asked for at the size it is drawn at', async () => {
@@ -160,6 +202,40 @@ function scripted(answers) {
   };
 }
 
+test('an episode says its size from the listing, and only a film its range, from its own media source', async () => {
+  const detail = await replayed().engine.call('getMediaDetail', [SERIES]);
+
+  assert.deepEqual(detail.playbackOptions.map((o) => o.video), [{ width: 1920, height: 1080 }, { width: 3840, height: 2160 }]);
+});
+
+test('each range Emby names becomes the contract\'s, and one it does not know says no range', async () => {
+  const rangeFor = async (VideoRange) => {
+    const film = { Id: '9', Name: 'Film', Type: 'Movie', MediaSources: [{ Id: 'mediasource_9', MediaStreams: [{ Type: 'Video', Width: 3840, Height: 2160, VideoRange }] }] };
+    const transport = scripted({ 'GET Items/9': { status: 200, headers: {}, bodyBase64: body(film) } });
+    return (await hostFor(withKey, transport).engine.call('getMediaDetail', ['9'])).playbackOptions[0].video.range;
+  };
+
+  assert.deepEqual(
+    await Promise.all(['SDR', 'HDR 10', 'HDR 10+', 'HLG', 'DolbyVision', 'Dolby Vision'].map(rangeFor)),
+    ['sdr', 'hdr10', 'hdr10plus', 'hlg', 'dolbyVision', undefined],
+  );
+});
+
+test('an episode the server has not numbered keeps its label and season but sends no episode number', async () => {
+  const transport = scripted({
+    'GET ParentId=11': { status: 200, headers: {}, bodyBase64: body({ Items: [
+      { Id: '12', Name: 'Unaired', Type: 'Episode', ParentIndexNumber: 2 },
+      { Id: '13', Name: 'Special', Type: 'Episode', IndexNumber: 4 },
+    ] }) },
+    'GET Items/11': { status: 200, headers: {}, bodyBase64: body({ Id: '11', Name: 'Show', Type: 'Series' }) },
+  });
+
+  const detail = await hostFor(withKey, transport).engine.call('getMediaDetail', ['11']);
+
+  assert.deepEqual(detail.playbackOptions.map((o) => [o.label, o.season, o.episode]),
+    [['S2E00 · Unaired', 2, undefined], ['S1E04 · Special', 1, undefined]]);
+});
+
 test('a username and password are exchanged for a token that later calls carry', async () => {
   const transport = scripted({ 'POST AuthenticateByName': loginOk, 'GET Views': viewsOk });
   const { engine, yonto } = hostFor(withPassword, transport);
@@ -207,6 +283,25 @@ test('a revoked token logs in again and retries the call once', async () => {
 
   assert.deepEqual(categories.map((c) => c.id), ['3']);
   assert.equal(transport.logins(), 2);
+});
+
+test('an episode played after its session was revoked carries the token the retry won', async () => {
+  let logins = 0;
+  let refusals = 0;
+  const transport = scripted({
+    'POST AuthenticateByName': () => {
+      logins += 1;
+      return { status: 200, headers: {}, bodyBase64: body({ AccessToken: `token-${logins}`, User: { Id: USER } }) };
+    },
+    'GET /Items/13': () => (refusals++ === 0
+      ? refused
+      : { status: 200, headers: {}, bodyBase64: body({ Id: '13', Type: 'Episode', MediaSources: [] }) }),
+  });
+
+  const stream = await hostFor(withPassword, transport).engine.call('getStream', ['13']);
+
+  assert.equal(logins, 2);
+  assert.deepEqual(stream.headers, { 'X-Emby-Token': 'token-2' });
 });
 
 // The listing's 401 for the old token lands after the other call has renewed it; forgetting
@@ -503,4 +598,224 @@ test('an id is one path segment, whatever it holds', async () => {
   await assert.rejects(() => hostFor(withKey, transport).engine.call('getMediaDetail', ['a/b?c#d']));
 
   assert.equal(transport.calls[0].url.split('?')[0], `${SERVER}/emby/Users/dashboard-user/Items/a%2Fb%3Fc%23d`);
+});
+
+test('a film\'s IntroStart and IntroEnd chapters become an intro and its CreditsStart credits to the end', async () => {
+  const stream = await replayed().engine.call('getStream', ['9']);
+
+  assert.deepEqual(stream.segments, [{ type: 'intro', start: 5, end: 20 }, { type: 'credits', start: 280 }]);
+});
+
+test('an IntroStart with no IntroEnd after it is not an intro, and an ordinary chapter is not a segment', async () => {
+  const stream = await replayed().engine.call('getStream', ['13']);
+
+  assert.equal('segments' in stream, false);
+});
+
+test('segments are paired in order: an IntroStart takes only the intro mark right after it, and the cap is 32', async () => {
+  const T = 10000000;
+  const chapters = (marks) => marks.map(([MarkerType, seconds]) => ({ MarkerType, StartPositionTicks: seconds * T, Name: MarkerType }));
+  const film = (Chapters) => ({
+    Id: '9', Name: 'Film', Type: 'Movie', MediaSources: [{ Id: 'mediasource_9', MediaStreams: [] }], Chapters,
+  });
+  const streamOf = async (Chapters) => {
+    const transport = scripted({ 'GET Items/9': { status: 200, headers: {}, bodyBase64: body(film(Chapters)) } });
+    const { engine } = hostFor(withKey, transport);
+    return engine.call('getStream', ['9']);
+  };
+
+  const crossed = await streamOf(chapters([['IntroStart', 3], ['CreditsStart', 50], ['IntroEnd', 9]]));
+  assert.deepEqual(crossed.segments, [{ type: 'intro', start: 3, end: 9 }, { type: 'credits', start: 50 }]);
+  const doubled = await streamOf(chapters([['IntroStart', 3], ['IntroStart', 5], ['IntroEnd', 9]]));
+  assert.deepEqual(doubled.segments, [{ type: 'intro', start: 5, end: 9 }]);
+  const many = await streamOf(chapters(Array.from({ length: 40 }, (_, i) => ['CreditsStart', i])));
+  assert.equal(many.segments.length, 32);
+});
+
+// What a television on a 1080p SDR screen plays.
+const DEVICE = {
+  video: [
+    { codec: 'h264', maxWidth: 1920, maxHeight: 1080, maxBitDepth: 8 },
+    { codec: 'hevc', maxWidth: 1920, maxHeight: 1080, maxBitDepth: 10 },
+  ],
+  audio: ['aac', 'ac3', 'eac3', 'dts'],
+  maxAudioChannels: 6,
+  containers: ['mp4', 'mkv', 'webm', 'ts', 'hls'],
+  hdr: [],
+  subtitles: ['srt', 'vtt', 'ass'],
+};
+
+// A film as Emby 4.10 answers it: its default source's id is not the item id, and one SubRip track
+// is inside the file beside a SubRip file.
+function decidedFilm({ subType = 'None' } = {}) {
+  return {
+    Id: '9', Name: 'Film', Type: 'Movie',
+    MediaSources: [{
+      Id: 'mediasource_9',
+      MediaStreams: [
+        { Type: 'Video', Index: 0, Codec: 'hevc', VideoRange: 'HDR 10', ExtendedVideoType: 'Hdr10', ExtendedVideoSubType: subType },
+        { Type: 'Subtitle', Index: 2, Codec: 'subrip', Language: 'en', DisplayLanguage: 'English', IsExternal: false, IsTextSubtitleStream: true },
+        { Type: 'Subtitle', Index: 3, Codec: 'subrip', Language: 'ko', DisplayLanguage: 'Korean', IsExternal: true, IsTextSubtitleStream: true },
+      ],
+    }],
+    Chapters: [{ MarkerType: 'CreditsStart', StartPositionTicks: 280 * 10000000 }],
+  };
+}
+
+const CONVERTED = {
+  PlaySessionId: 'server-play-session',
+  MediaSources: [{
+    Id: 'mediasource_9',
+    SupportsDirectPlay: false,
+    SupportsTranscoding: true,
+    TranscodingUrl: '/videos/9/master.m3u8?DeviceId=d&MediaSourceId=mediasource_9&PlaySessionId=server-play-session&api_key=server-written-key&VideoCodec=h264&TranscodeReasons=VideoResolutionNotSupported',
+  }],
+};
+
+function deciding({ film = decidedFilm(), premiere = { IsRegistered: false }, decision = CONVERTED } = {}) {
+  const answer = (value) => (typeof value === 'number'
+    ? { status: value, headers: {}, bodyBase64: body({}) }
+    : { status: 200, headers: {}, bodyBase64: body(value) });
+  return scripted({
+    'GET Items/9': answer(film),
+    'GET Registrations/premiere': answer(premiere),
+    'POST PlaybackInfo': answer(decision),
+    'POST Sessions/Playing': { status: 204, headers: {}, bodyBase64: '' },
+  });
+}
+
+function profileSent(transport) {
+  return JSON.parse(transport.calls.find((c) => c.url.includes('/PlaybackInfo')).body).DeviceProfile;
+}
+
+test('with what the device plays, the server is asked, and a stream it converts is its HLS under /emby without the key it wrote in', async () => {
+  const transport = deciding();
+  const stream = await hostFor(withKey, transport).engine.call('getStream', ['9', { device: DEVICE }]);
+
+  const asked = transport.calls.find((c) => c.url.includes('/PlaybackInfo'));
+  assert.equal(asked.url, `${SERVER}/emby/Items/9/PlaybackInfo?UserId=dashboard-user`);
+  assert.equal(stream.url, `${SERVER}/emby/videos/9/master.m3u8?DeviceId=d&MediaSourceId=mediasource_9&PlaySessionId=server-play-session&VideoCodec=h264&TranscodeReasons=VideoResolutionNotSupported`);
+  assert.equal(stream.mimeType, 'application/x-mpegURL');
+  assert.deepEqual(stream.headers, { 'X-Emby-Token': 'dashboard-key' });
+  assert.deepEqual(JSON.parse(stream.session), { playSessionId: 'server-play-session', mediaSourceId: 'mediasource_9', playMethod: 'Transcode' });
+  // A conversion's HLS carries no subtitle track, so the one inside the file is offered as a file too.
+  assert.deepEqual(stream.subtitles.map((s) => s.url), [
+    `${SERVER}/emby/Videos/9/mediasource_9/Subtitles/2/Stream.srt`,
+    `${SERVER}/emby/Videos/9/mediasource_9/Subtitles/3/Stream.srt`,
+  ]);
+  assert.deepEqual(stream.segments, [{ type: 'credits', start: 280 }]);
+  assert.equal(JSON.parse(asked.body).SubtitleStreamIndex, -1, 'no subtitle is ever burned in');
+});
+
+test('the device the server is told about is its decoders, sizes and bit depth, and HEVC it plays is copied into fMP4', async () => {
+  const transport = deciding();
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: DEVICE }]);
+
+  const profile = profileSent(transport);
+  assert.deepEqual(profile.DirectPlayProfiles, [{
+    Type: 'Video', Container: 'mp4,m4v,mov,mkv,webm,ts,mpegts,m2ts', VideoCodec: 'h264,hevc', AudioCodec: 'aac,ac3,eac3,dts,dca',
+  }]);
+  assert.deepEqual(profile.CodecProfiles[1].Conditions.map((c) => [c.Property, c.Value]), [
+    ['Width', '1920'], ['Height', '1080'], ['VideoBitDepth', '10'],
+  ]);
+  assert.equal(profile.TranscodingProfiles[0].VideoCodec, 'h264,hevc');
+  assert.equal(profile.TranscodingProfiles[0].Container, 'mp4');
+  assert.equal(profile.TranscodingProfiles[0].MaxAudioChannels, '6');
+});
+
+test('a device with no HEVC decoder is sent H.264 in transport stream', async () => {
+  const transport = deciding();
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, video: [DEVICE.video[0]] } }]);
+
+  const profile = profileSent(transport);
+  assert.equal(profile.TranscodingProfiles[0].VideoCodec, 'h264');
+  assert.equal(profile.TranscodingProfiles[0].Container, 'ts');
+});
+
+// Without Premiere, Emby 4.10 converts HDR to SDR without tone mapping ("requires an active Emby
+// Premiere subscription"), which is no truer to the colours than the file.
+test('the screen\'s range is a condition only on a server with Premiere, and an unreadable registration is none', async () => {
+  for (const premiere of [{ IsRegistered: false }, 404]) {
+    const transport = deciding({ premiere });
+    await hostFor(withKey, transport).engine.call('getStream', ['9', { device: DEVICE }]);
+    assert.equal(profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange'), false);
+  }
+
+  const transport = deciding({ premiere: { IsRegistered: true } });
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: DEVICE }]);
+  assert.deepEqual(profileSent(transport).CodecProfiles.map((p) => p.Conditions[3]), [
+    { Condition: 'EqualsAny', Property: 'VideoRange', Value: 'SDR', IsRequired: false },
+    { Condition: 'EqualsAny', Property: 'VideoRange', Value: 'SDR', IsRequired: false },
+  ]);
+});
+
+test('a refused Premiere read says nothing about the login: no second sign-in, and the play is still decided', async () => {
+  const json = (value, status = 200) => ({ status, headers: {}, bodyBase64: body(value) });
+  const transport = scripted({
+    'POST AuthenticateByName': json({ AccessToken: TOKEN, User: { Id: USER } }),
+    'GET Items/9': json(decidedFilm()),
+    'GET Registrations/premiere': json({}, 401),
+    'POST PlaybackInfo': json(CONVERTED),
+  });
+  const stream = await hostFor(withPassword, transport).engine.call('getStream', ['9', { device: DEVICE }]);
+
+  assert.equal(transport.logins(), 1);
+  assert.equal(stream.mimeType, 'application/x-mpegURL');
+  assert.equal(profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange'), false);
+});
+
+test('a screen that shows HDR10 lets HDR10 and HDR10+ play as stored, in the names Emby compares', async () => {
+  const transport = deciding({ premiere: { IsRegistered: true } });
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, hdr: ['hdr10'] } }]);
+
+  assert.equal(profileSent(transport).CodecProfiles[0].Conditions[3].Value, 'SDR|HDR 10|HDR 10+');
+});
+
+// Emby's `VideoRange` is `DolbyVision` for every profile, so the item's own profile decides.
+test('Dolby Vision plays as stored only where the screen shows its base layer', async () => {
+  const rangesFor = async (subType, hdr) => {
+    const transport = deciding({ film: decidedFilm({ subType }), premiere: { IsRegistered: true } });
+    await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, hdr } }]);
+    return profileSent(transport).CodecProfiles[0].Conditions[3].Value.split('|');
+  };
+
+  assert.ok((await rangesFor('DoviProfile81', ['hdr10'])).includes('DolbyVision'));
+  assert.ok((await rangesFor('DoviProfile76', ['hdr10'])).includes('DolbyVision'));
+  assert.ok((await rangesFor('DoviProfile84', ['hlg'])).includes('DolbyVision'));
+  assert.ok((await rangesFor('DoviProfile82', [])).includes('DolbyVision'), 'an SDR base layer plays on any screen');
+  assert.equal((await rangesFor('DoviProfile50', ['hdr10'])).includes('DolbyVision'), false, 'profile 5 has no layer but its own');
+  assert.equal((await rangesFor('DoviProfile81', [])).includes('DolbyVision'), false);
+  assert.ok((await rangesFor('DoviProfile50', ['dolbyVision'])).includes('DolbyVision'));
+});
+
+test('a file the server says plays as stored is the direct-play endpoint, under the server\'s own session', async () => {
+  const decision = { PlaySessionId: 'server-play-session', MediaSources: [{ Id: 'mediasource_9', SupportsDirectPlay: true }] };
+  const stream = await hostFor(withKey, deciding({ decision })).engine.call('getStream', ['9', { device: DEVICE }]);
+
+  assert.equal(stream.url, `${SERVER}/emby/Videos/9/stream?Static=true`);
+  assert.equal(stream.mimeType, 'video/mp4');
+  assert.deepEqual(JSON.parse(stream.session), { playSessionId: 'server-play-session', mediaSourceId: 'mediasource_9', playMethod: 'DirectPlay' });
+  assert.deepEqual(stream.subtitles.map((s) => s.url), [`${SERVER}/emby/Videos/9/mediasource_9/Subtitles/3/Stream.srt`]);
+});
+
+test('a server that cannot decide still plays the file as stored', async () => {
+  const stream = await hostFor(withKey, deciding({ decision: 500 })).engine.call('getStream', ['9', { device: DEVICE }]);
+
+  assert.equal(stream.url, `${SERVER}/emby/Videos/9/stream?Static=true`);
+  assert.equal(stream.session, undefined);
+});
+
+test('a report hands the server back its own play session, media source and method, so the stop ends its conversion', async () => {
+  const transport = deciding();
+  const { engine } = hostFor(withKey, transport);
+  const { session } = await engine.call('getStream', ['9', { device: DEVICE }]);
+  await engine.call('reportPlayback', [{ mediaId: '9', event: 'stop', paused: false, position: 30, session }]);
+  await engine.call('reportPlayback', [{ mediaId: '9', event: 'stop', paused: false, position: 30 }]);
+
+  const [decided, plain] = transport.calls.filter((c) => c.url.endsWith('/Sessions/Playing/Stopped')).map((c) => JSON.parse(c.body));
+  assert.deepEqual([decided.PlaySessionId, decided.MediaSourceId, decided.PlayMethod], ['server-play-session', 'mediasource_9', 'Transcode']);
+  // Without one, as before: an id derived from the item, and no MediaSourceId, which the item id is not.
+  assert.match(plain.PlaySessionId, /^lantern-.+-9$/);
+  assert.equal('MediaSourceId' in plain, false);
+  assert.equal(plain.PlayMethod, 'DirectPlay');
 });

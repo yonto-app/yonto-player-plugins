@@ -1,0 +1,67 @@
+[
+  {
+    "name": "the stream's own host, any port or case",
+    "stream": "https://media.test:8096/v/1.mp4",
+    "allowedHosts": [],
+    "subtitles": [
+      "https://media.test:8096/s.srt",
+      "https://MEDIA.test/s.vtt",
+      "https://media.test./s.ass"
+    ],
+    "kept": [
+      "https://media.test:8096/s.srt",
+      "https://MEDIA.test/s.vtt",
+      "https://media.test./s.ass"
+    ]
+  },
+  {
+    "name": "another host is dropped when the manifest names nothing",
+    "stream": "https://media.test/v/1.mp4",
+    "allowedHosts": [],
+    "subtitles": [
+      "https://other.test/b.srt"
+    ],
+    "kept": []
+  },
+  {
+    "name": "a host the manifest names is kept, a wildcard only for subdomains",
+    "stream": "https://media.test/v/1.mp4",
+    "allowedHosts": [
+      "subs.test",
+      "*.cdn.test"
+    ],
+    "subtitles": [
+      "https://subs.test/a.srt",
+      "https://x.cdn.test/b.srt",
+      "https://cdn.test/c.srt",
+      "https://evilcdn.test/d.srt"
+    ],
+    "kept": [
+      "https://subs.test/a.srt",
+      "https://x.cdn.test/b.srt"
+    ]
+  },
+  {
+    "name": "a LAN host passes whenever the stream does",
+    "stream": "http://192.168.1.50:8096/v/1.mp4",
+    "allowedHosts": [],
+    "subtitles": [
+      "http://192.168.1.50:8096/s.srt",
+      "http://192.168.1.51/s.srt"
+    ],
+    "kept": [
+      "http://192.168.1.50:8096/s.srt"
+    ]
+  },
+  {
+    "name": "a spelling of an address is read as the address",
+    "stream": "http://127.0.0.1/v/1.mp4",
+    "allowedHosts": [],
+    "subtitles": [
+      "http://2130706433/s.srt"
+    ],
+    "kept": [
+      "http://2130706433/s.srt"
+    ]
+  }
+]

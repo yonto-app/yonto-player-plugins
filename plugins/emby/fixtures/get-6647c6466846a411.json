@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items/11?Fields=Genres%2COverview%2CProductionYear%2COfficialRating%2CProviderIds",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items/11?Fields=Genres%2COverview%2CProductionYear%2COfficialRating%2CProviderIds%2CMediaSources%2CChapters&EnableUserData=true",
     "body": null
   },
   "response": {

@@ -54,7 +54,10 @@
         "backdropUrl": { "type": "string" },
         "year": { "type": "string" },
         "rating": { "type": "string" },
-        "ids": { "$ref": "#/$defs/ids" }
+        "ids": { "$ref": "#/$defs/ids" },
+        "played": { "type": "boolean" },
+        "position": { "type": "number", "minimum": 0 },
+        "playedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$" }
       }
     },
     "mediaListResult": {
@@ -77,7 +80,44 @@
         "url": { "type": "string", "minLength": 1 },
         "mimeType": { "type": "string" },
         "headers": { "$ref": "#/$defs/headers" },
-        "live": { "type": "boolean", "$comment": "A stream with no end: a television channel. A host never saves a place in one, offers no timeline, and starts it again if it ends or drops. Absent means false, which is what a stream always was." }
+        "live": { "type": "boolean", "$comment": "A stream with no end: a television channel. A host never saves a place in one, offers no timeline, and starts it again if it ends or drops. Absent means false, which is what a stream always was." },
+        "subtitles": {
+          "$comment": "Subtitle files beside the video, at most 32. A url is kept only on the stream url's own host or a host the manifest's allowedHosts names, and is fetched with the stream's headers (a subtitle has none of its own). A file that is not SRT, WebVTT or SSA/ASS, or does not load, is dropped and the video plays on.",
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["url", "label"],
+            "properties": {
+              "url": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 },
+              "language": { "type": "string", "minLength": 1 },
+              "mimeType": { "type": "string" },
+              "forced": { "type": "boolean" },
+              "default": { "type": "boolean" }
+            }
+          }
+        },
+        "segments": {
+          "$comment": "Stretches of the video a source marked, at most 32, in seconds. A segment with an unknown type, a negative start or an end not after its start is dropped and the video plays on. An absent end runs to the end of the video.",
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["type", "start"],
+            "properties": {
+              "type": { "enum": ["intro", "recap", "credits", "preview", "commercial"] },
+              "start": { "type": "number", "minimum": 0 },
+              "end": { "type": "number", "minimum": 0 }
+            }
+          }
+        },
+        "session": {
+          "$comment": "The source's own name for this one playback, which a host hands back verbatim as reportPlayback's session on every report about it, so a server that converted the stream knows which conversion to end. A host never keeps it past the play. One that is not a string, empty or longer than 2048 characters is dropped and the video plays on.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
       }
     },
     "headers": {
@@ -104,8 +144,22 @@
         "stream": { "$ref": "#/$defs/stream" },
         "pan": { "$ref": "#/$defs/pan" },
         "track": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "id": { "type": "string", "minLength": 1, "maxLength": 512, "$comment": "The server's own id for this option, opaque to the host and sent back as it is in a playback report. It is not the option's identity in the host: saved places do not move." },
+        "played": { "type": "boolean" },
+        "position": { "type": "number", "minimum": 0 },
+        "playedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$" },
         "line": { "type": "string" },
-        "season": { "type": "integer" }
+        "season": { "type": "integer" },
+        "episode": { "type": "integer", "minimum": 0, "$comment": "The option's episode number within `season`, as the server numbers it. A host reads it only beside `season`, as the episode's numbers a skip-times database is asked by, and drops a negative one." },
+        "video": {
+          "type": "object",
+          "$comment": "What the copy this option plays is, as stored: its picture's size and dynamic range, for the title page to say (4K, Dolby Vision). It describes the file, not what a device ends up playing. Each field is optional; a host drops a size outside the bounds and a range it does not know, keeping the rest.",
+          "properties": {
+            "width": { "type": "integer", "minimum": 1, "maximum": 16384 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 16384 },
+            "range": { "enum": ["sdr", "hdr10", "hdr10plus", "hlg", "dolbyVision"] }
+          }
+        }
       },
       "oneOf": [{ "required": ["stream"] }, { "required": ["pan"] }, { "required": ["track"] }]
     },
@@ -123,6 +177,9 @@
         "ids": { "$ref": "#/$defs/ids" },
         "genres": { "type": "array", "items": { "type": "string" } },
         "synopsis": { "type": "string" },
+        "played": { "type": "boolean" },
+        "position": { "type": "number", "minimum": 0 },
+        "playedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$" },
         "playbackOptions": { "type": "array", "items": { "$ref": "#/$defs/playbackOption" } }
       }
     },
@@ -170,6 +227,22 @@
       "properties": { "renewable": { "type": "boolean" } }
     },
     "getSubSources":      { "$ref": "#/$defs/subSources" },
+    "reportPlayback": { "$comment": "Writes the viewer's place to the server and answers nothing; an answer is ignored. Its report carries `session` when the stream being played had one, verbatim." },
+    "setPlayed": { "$comment": "Marks a title watched or unwatched on the server and answers nothing; an answer is ignored." },
+    "getContinueWatching": {
+      "$comment": "The server's own continue-watching list. Each item is a summary, with `optionId` naming the option (episode) to resume when the title has several.",
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "allOf": [{ "$ref": "#/$defs/summary" }],
+            "properties": { "optionId": { "type": "string", "minLength": 1, "maxLength": 512 } }
+          }
+        }
+      }
+    },
     "getStream": {
       "$comment": "What a `track` token redeems to. The same `$defs/stream` an option carries directly, never another option: an option that came back could carry another token, and nothing would bound the redemption. A source that cannot produce a URL throws rather than answering without one — an absent `url` fails this schema and is reported as a malformed result, which is the sentence its author can act on.",
       "$ref": "#/$defs/stream"

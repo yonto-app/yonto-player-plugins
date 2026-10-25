@@ -106,6 +106,25 @@ test('a revoked token logs in again and retries the call once', async () => {
   assert.equal(transport.calls.filter((c) => c.url.includes('AuthenticateByName')).length, 2);
 });
 
+test('an episode played after its session was revoked carries the token the retry won', async () => {
+  let logins = 0;
+  let refusals = 0;
+  const transport = scripted({
+    'POST AuthenticateByName': () => {
+      logins += 1;
+      return { status: 200, headers: {}, bodyBase64: body({ AccessToken: `token-${logins}`, User: { Id: USER } }) };
+    },
+    'GET /Items/ep1': () => (refusals++ === 0
+      ? { status: 401, headers: {}, bodyBase64: body({}) }
+      : { status: 200, headers: {}, bodyBase64: body({ Id: 'ep1', Type: 'Episode', MediaStreams: [] }) }),
+  });
+
+  const stream = await hostFor(withPassword, transport).call('getStream', ['ep1']);
+
+  assert.equal(logins, 2);
+  assert.equal(stream.headers.Authorization, 'MediaBrowser Token="token-2"');
+});
+
 test('a second refusal is the account being refused, not an expired session, and stops', async () => {
   // Retrying would log in on every attempt, forever.
   const transport = scripted({

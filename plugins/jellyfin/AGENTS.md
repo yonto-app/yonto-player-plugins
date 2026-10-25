@@ -9,9 +9,10 @@ Field names and shapes below were verified against a live Jellyfin 12.x server, 
 
 ## Files
 
-- `<id>-plugin.js` — the whole plugin: URL building, the eight contract methods it exports (the five required ones, plus `getRecommendations`, `getImageHeaders` and `onImageHeadersRefused`), and the mapping from Jellyfin's item shape to the contract's.
+- `<id>-plugin.js` — the whole plugin: URL building, the twelve contract methods it exports (the five required ones, plus `getRecommendations`, `getImageHeaders`, `onImageHeadersRefused`, `getStream` for an episode and, since contract 23, `getContinueWatching`, `reportPlayback` and `setPlayed`), and the mapping from Jellyfin's item shape to the contract's.
 - `fixtures/` — responses keyed by `fixtureName()` (`tools/plugin-cli/src/transport/record.js`), for `doctor --replay` and the Node test. See "Fixtures" below.
 - `../../tools/plugin-cli/test/jellyfin.test.js` — a fixtures-only regression test, run by `npm test`.
+- `../../tools/plugin-cli/test/jellyfin-play-state.test.js` — the play state: the reads replayed from the fixtures, the writes against a scripted server.
 - `core/src/androidHostTest/kotlin/.../content/plugin/JsJellyfinPluginAdapterTest.kt` — the real gate. It is the deleted Kotlin adapter's own test, unchanged except for its construction, asserting against `MockWebServer`.
 
 ## Auth, and the host allowlist
@@ -84,31 +85,97 @@ Emby does the same, and `tools/plugin-cli/test/default-port.test.js` holds both.
 | `getCategories` | `GET /Users/{userId}/Views`, kept to `CollectionType` of `movies` or `tvshows` |
 | `getFilters` | `GET /Items/Filters?UserId&ParentId&IncludeItemTypes` |
 | `getMediaList` | `GET /Users/{userId}/Items?ParentId&Recursive&IncludeItemTypes&SortBy=SortName` |
-| `getMediaDetail` | `GET /Users/{userId}/Items/{id}`, then `?ParentId={id}&IncludeItemTypes=Episode` for a series |
+| `getMediaDetail` | `GET /Users/{userId}/Items/{id}`, then `?ParentId={id}&IncludeItemTypes=Episode` for a series; a film's one option and each episode a `track` |
+| `getStream` | `GET /Users/{userId}/Items/{id}?Fields=MediaStreams` of the film or episode, for its stream and subtitle files, then, with what the device plays, `POST /Items/{id}/PlaybackInfo?UserId` for the server's decision, then `GET /MediaSegments/{id}` for its segments |
 | `search` | `GET /Users/{userId}/Items?searchTerm&Recursive` |
 | `getRecommendations` | `GET /Users/{userId}/Items?SortBy=CommunityRating&SortOrder=Descending&Limit=10` |
+| `getContinueWatching` | `GET /Users/{userId}/Items/Resume?Limit&MediaTypes=Video` |
+| `reportPlayback` | `POST /Sessions/Playing`, `/Sessions/Playing/Progress`, `/Sessions/Playing/Stopped` |
+| `setPlayed` | `POST` or `DELETE /Users/{userId}/PlayedItems/{id}` |
+| a subtitle file | `GET /Videos/{id}/{id}/Subtitles/{index}/Stream.{srt\|vtt\|ass\|ssa}`, the item id twice since it is the media source id too |
 
 `checkHealth` is **not** exported on purpose.
 The Kotlin interface's default probes `getCategories()`, which is exactly what a Jellyfin source did before the port; exporting one here would change what Settings reports.
 
-## Things that will bite you
+## Play state (contract 23)
+
+The design is `docs/design/2026-10-18-play-state-and-external-subtitles.md`; this is what a real Jellyfin 12.2 (Docker, 2026-10-18) confirmed.
+
+- **Reading.** Every item call sends `EnableUserData=true`, which the server's own OpenAPI document (`/api-docs/openapi.json`, 12.2) lists as `enableUserData` on `GET /Items` and `GET /UserItems/Resume`; `Fields` does not carry it, and `EnableUserData=false` removes `UserData` altogether. `UserData.Played` is `played`, `PlaybackPositionTicks` is `position` (ticks are 100 ns, so divided by 10 000 000, and only sent above 0), and `LastPlayedDate` is `playedAt` as the server writes it (seven fractional digits, `Z`). A series carries the `Played` the server computes from its episodes. An item the server sends no `UserData` for says nothing.
+- **`id`.** Each episode option and the film's one option carries the server item id.
+- **Reporting.** The three events post `ItemId`, `MediaSourceId`, `PlaySessionId` and `PlayMethod` from the stream's `session` where the server decided it (*What the device plays* below), else the item id, a `PlaySessionId` derived from the device id and the item (so the three of one play agree without state) and `DirectPlay`; and `PositionTicks`, `IsPaused`. All three answer 204. `finished` is ignored: the server decides *played* from the position on stop, and it does so against the item's length (a stop at 1195 s of 1200 s marked it played, one at 420 s kept it resumable). A 2-minute test clip was marked played by a stop 30 s in, so use clips of several minutes to see a resume point (the likely cause is Jellyfin's minimum resume duration, which was not looked up). The body fields are those of `PlaybackStartInfo` and `UserItemDataDto` in that document.
+- **`setPlayed`** is `POST /Users/{userId}/PlayedItems/{id}` (played) or `DELETE` (unplayed). Unmarking clears `LastPlayedDate`, which is why the design keeps a local finish over a server's *not played*.
+- **`getContinueWatching`** is `Items/Resume`, which returns the unfinished movies and episodes newest first. An episode is its series with `optionId` naming the episode, and the played-state fields are the episode's. **`Shows/NextUp` is not read**: its items have no `LastPlayedDate`, so the host could not place them in the newest-first merge. Add it when the host has a rule for an item with no date.
+- **The paths are the legacy `/Users/{userId}/…` ones this plugin already uses for everything.** The 12.2 document lists only `/UserItems/Resume` and `/UserPlayedItems/{itemId}?userId=` (and `/Items`), but the legacy routes answered 200 on 12.2 and are the ones older servers have, so the plugin stays on them; the day a server drops them, every call in this file moves together.
+- A failed write is `unavailable` (any non-2xx), `notFound` or `unauthenticated` like every other call; the host drops it quietly.
+- Checked by driving the plugin with `yonto-plugin run` against that server: a watched mark, a resume point, the three reports, `setPlayed` both ways and the Resume list. Not checked: a Jellyfin older than 12.
+
+## External subtitles (contract 23)
+
+Checked on 2026-10-18 against Jellyfin 12.2 in Docker, with `Movie.en.srt` and a SAMI `Movie.ko.smi` beside a film and two `.srt` beside an episode, and played on a TV emulator.
+
+- A stream's `subtitles` are the item's `MediaStreams` that are `Type: Subtitle`, `IsExternal` and `IsTextSubtitleStream`: the files beside the video. A track inside the file is in the stream already, and a picture format (PGS, VobSub) is not text the player can take, so neither is offered.
+- **A film and an episode are each a `track`** (the manifest declares `playbackTokens`) that `getStream` redeems with the item's own answer, asking for its `MediaStreams`. A film's became one on 2026-10-24, because what the server decides to send is for one play and a detail is kept; for an episode it keeps a show's listing as small as it was: with the streams in it an episode grew from about 1.0 KB to 3.6 KB on 12.2, which a long show pays on every open. It costs one request when an episode is played, which also carries the session's current token.
+- The address is `/Videos/{id}/{id}/Subtitles/{Index}/Stream.{format}`, on the stream's host, fetched with the stream's `Authorization` header (the server answered it without one too). The format is the file's own for SubRip (`subrip`), WebVTT and SSA/ASS, and `srt` for any other text format, which the server converts (SAMI was).
+- The label is the stream's `Title`, else its `LocalizedLanguage` (English, Korean), else the code; `language` is the server's ISO 639-2 code (`eng`), which the player reads, and `und` is left out. `IsForced` and `IsDefault` are `forced` and `default`.
+- A file the server stops serving (renamed away after the detail was read: 404) is dropped from the picker when chosen, and the video plays on.
+
 
 - **`Fields` is not optional.** Jellyfin omits `Overview`, `Genres` and `ProductionYear` from a response unless they are named in `Fields`. Leaving it out is not a request error — it is silently-empty data, which is what a missing `Fields` on the detail call once caused: blank synopsis and genres against a real server, while the list view looked perfectly correct.
 - **List and detail ask for different fields, on purpose.** `LIST_ITEM_FIELDS` is `ProductionYear` alone because the contract's summary carries no synopsis and no genres; asking for them would pull a paragraph per item for up to `PAGE_SIZE` items a shelf, decode it, and drop it. `DETAIL_ITEM_FIELDS` is the full set, for one item at a time. The episode listing asks for no fields at all, because an episode label is built from its name and index.
 - **`PAGE_SIZE` is a cap on what Home can ever show, not just a page size.** `MainViewModel.loadHome()` only ever requests page 1 and there is no "load more" anywhere, so a title past item 500 of a library is invisible until someone searches for it by name. Raising the number is not the fix; paging in `ContentRepository` / `MainViewModel` / `MediaShelf` is.
 - **Images are resized server-side or they are megabytes.** A library's posters are commonly 1000×1500+ JPEGs and Jellyfin serves the original unless asked not to. `maxWidth` keeps the aspect ratio; 480 is sized for a focused 160dp card at 2× density and 1920 for a full-bleed backdrop. A shelf scroll's smoothness on a TV box is mostly this.
-- **The stream URL skips `PlaybackInfo` deliberately.** `/Videos/{id}/stream?static=true` with the item id reused as `mediaSourceId` is correct for the single-file-per-item case (verified against a live server) and saves a negotiation round trip before playback starts. A library with multiple media sources per item would need the real negotiation.
+- **The file as stored skips `PlaybackInfo`.** With no device (a download, its size, an older app, the source's conversion turned off) `getStream` answers `/Videos/{id}/stream?static=true` with the item id reused as `mediaSourceId`, which is correct for the single-file-per-item case (verified against a live server). A library with multiple media sources per item would need the real negotiation, and the decided stream's direct play uses the same address.
 - **An episode usually has no artwork of its own**, so a backdrop falls back to `ParentBackdropItemId` + `ParentBackdropImageTags`. Without it a series' hero has a hole in it.
 - **Unrated titles are dropped from recommendations, not shown.** Jellyfin sorts items with no `CommunityRating` in among the rated ones, so a "best rated" shelf would otherwise lead with titles nobody rated.
 - **A non-2xx logs the status and throws `yonto.error.unavailable`, never a plain `Error`.** This file used to say the opposite, and the reasoning was almost right: a plain throw reaches the host as `METHOD_THREW` and becomes an `Unavailable` carrying the status as its *cause*, which does keep the status off the television. What it missed is what the app then says instead. An `Unavailable` with no `reason` falls back to `error_unreachable_body` — "Check the TV's network connection, then try again" — so a server answering 503 told the viewer their network was down (kangzj/yonto#264). The status goes to `yonto.log` and the throw carries a sentence, which is what `iyingshi`'s `read()` always did. 401/403 and 404 use `yonto.error.*` for a different reason: they map to distinct app behaviour (`Unauthenticated`, `NotFound`). These are `HttpJsonClient`'s rules — that is where every HTTP-backed source in the app implements them.
   A 2xx that is not a JSON object (a proxy's sign-in page, a captive portal, a mistyped address that reached some other site, or valid JSON such as `null`) is `unavailable` too, with a sentence pointing at the server URL, rather than a throw reaching the app as `METHOD_THREW` with no sentence at all (kangzj/yonto#725, #753). Emby does the same.
 - **Every sentence a viewer reads is a named constant at the top of the file.** `contracts/content-source-http.md` is the rule and it is narrow: a `reason` carries no status code, no URL or path, no raw config value, and it names the part of the source that failed rather than the source — the headline above it already said `Can't reach <source>`. A sentence built with a template literal is the way that gets broken, so the constants are there to make interpolating one a visible choice rather than the obvious one.
 
+## Intro and credits (contract 24)
+
+A stream's `segments` come from one `GET /MediaSegments/{itemId}` made when the stream is built (`getStream`, for a film and an episode).
+`Intro`, `Recap`, `Preview` and `Commercial` keep their names, `Outro` is `credits`, and `Unknown` is dropped; `StartTicks` and `EndTicks` are 100 ns ticks, sent as seconds.
+Any failure of the call, including the 404 a server before 10.10 answers, is a stream with no segments and never a stream that does not play.
+The call is made before the stream's token is read, because a 401 on it alone renews the session and revokes a token read earlier; it is serial, so a server that hangs on it adds up to the request timeout before the stream appears.
+Only credits may have no end: any other segment whose end is missing or not after its start is dropped, since the contract reads a missing `end` as "to the end of the video".
+Declared at 23, not 24: `segments` is a result field an older app drops.
+Measured on the Docker Jellyfin 10.10.7 (2026-10-22): the endpoint answers `{"Items":[],"TotalRecordCount":0,"StartIndex":0}` with HTTP 200 for an item with none. Segments exist only once a provider (the Chapter Segments Provider, Intro Skipper, TheIntroDB) has filled them in by a scan, so a new title has none, and the segment fields are from the SDK's `MediaSegmentDto`, not from a real non-empty answer.
+`tools/plugin-cli/scripts/write-jellyfin-fixtures.js` writes the segment fixtures; the second episode's is a 404.
+
+## Episode numbers (contract 25)
+
+An episode's option carries `episode`, its `IndexNumber`, beside `season`, and only when the server has both `ParentIndexNumber` and `IndexNumber`: the host asks TheIntroDB by those numbers, so the label's `S1E00` defaults for an unnumbered episode are never sent as numbers.
+The plugin still declares 23, since `episode` is a result field an older app drops.
+
+## What a copy is (contract 27)
+
+A film's option carries `video` from its video stream in the detail's `MediaStreams`: `Width`, `Height` and `VideoRangeType` (`SDR`, `HDR10`, `HDR10Plus`, `HLG`, and every `DOVI…` as `dolbyVision`, the strongest thing the file is).
+An episode carries its size alone: the listing asks `Fields=Width,Height`, which Jellyfin 10.10.7 answers on each item, and never `MediaStreams`, which would weigh every open of the show; its range is only in its own streams.
+Declared at 23 still, since `video` is a result field an older app drops.
+The fixtures' film is a 3840x1606 `DOVIWithHDR10` stream and the episodes 1080p and 4K, written into `write-jellyfin-fixtures.js` (kangzj/yonto#2435).
+
+## What the device plays (2026-10-24)
+
+The design is `docs/design/2026-10-24-a-server-converts-what-the-device-cannot-play.md`; the manifest declares `deviceProfile`, so a player's `getStream(track, { device })` asks the server to decide.
+
+- **The request** is `POST /Items/{id}/PlaybackInfo?UserId` with `DeviceProfile`, `MaxStreamingBitrate` (200 Mbps, so nothing is converted for its size), direct play, direct stream and transcoding enabled, stream copy allowed and `SubtitleStreamIndex: -1`, so no subtitle is burned in.
+- **The DeviceProfile** (`deviceProfileOf`): one `DirectPlayProfile` of the device's containers, video and audio codecs (`dts` as `dts,dca`); one `CodecProfile` per video codec, `Width`, `Height` and `VideoBitDepth` at most the decoder's and `VideoRangeType` one of `SDR`, `DOVIWithSDR` and what the screen shows (`hdr10` adds `HDR10`, `HDR10Plus` and `DOVIWithHDR10`, `hlg` adds `HLG` and `DOVIWithHLG`, `dolbyVision` every `DOVI` type), since HDR10+ and Dolby Vision play as the layer under them, none `IsRequired`, so an unknown value passes; and one HLS `TranscodingProfile`: `h264` in `ts`, or `h264,hevc` in `mp4` (fMP4) where the device decodes HEVC, so HEVC is copied rather than encoded again and AVPlayer can take it. Jellyfin encodes to the first codec and copies any it lists.
+- **The answer's first `MediaSources` entry**: `SupportsDirectPlay` is the static address above; otherwise `TranscodingUrl`, on the server's base, with any `api_key` or `ApiKey` taken out, since the `Authorization` header goes with every hop on the host, and `application/x-mpegURL`. A failed or unreadable decision is the static address with no `session`. A conversion's HLS carries no subtitle track, so `subtitlesOf(item, true)` adds the text tracks inside the file, at the same `/Subtitles/{Index}/Stream.{format}` address, which the server answers by extracting the track (checked with an embedded SubRip in an MKV).
+- **`session`** is `{ playSessionId, mediaSourceId, playMethod }` as JSON, `DirectPlay` or `Transcode`; the stop that carries the server's `PlaySessionId` ends its encode (the log shows *Deleting partial stream file(s)* on that call's thread). With reporting off no stop is sent, and the server ends the job when its segments stop being asked for.
+- **Tone mapping** is the server's *Enable tone mapping* setting; with it on, 10.10.7 with no hardware acceleration uses `tonemapx=bt2390`. With it off, HDR is converted to H.264 untouched.
+- **A resume or a far seek** restarts the encode with `-ss <place> -noaccurate_seek`, at the keyframe before the place, as for Jellyfin's own clients.
+- An AVI with H.264 in it was encoded again, not copied, though its only reason was `ContainerNotSupported`; an HEVC MKV was copied. That is the server's choice.
+- Checked on 2026-10-24 against the Docker 10.10.7 with an 8K HEVC clip (`VideoResolutionNotSupported`), a 4K HDR10 Main10 one (`VideoBitDepthNotSupported, VideoRangeTypeNotSupported`), an SDR 1080p H.264 MP4 (direct play), an AVI and an HEVC MKV, from the TV emulator and with `yonto-plugin run`.
+
 ## Fixtures
 
 Built from the payloads `JsJellyfinPluginAdapterTest` already asserts against, which were themselves taken from a live 12.x server.
 They are not recorded from a server in this repository, because there is none.
 `ProviderIds` (the title's `ids`: `Tmdb`, `Imdb`, `Tvdb`, asked for in `Fields` on a listing and a detail) is hand-added to the movie in the generator's payloads, with invented ids (TMDB 9003, IMDb tt9000003).
+The movie's `UserData` is a played mark with a date, the first episode's a resume point half way in (750 s), and the series has none, so one fixture set holds all three cases the plugin reads; the Resume list is the half-watched episode.
+The film's own answer carries four subtitle streams in the shape 12.2 answers with (a default SubRip, a SAMI, a PGS file and a track inside the file), and each episode's its streams: a forced ASS for the first, none for the second.
+The `PlaybackInfo` answers are the server's decisions for `DEVICE`, a 1080p SDR television: the film is converted, with a key the server wrote into its address; the first episode plays as stored; the second episode's answer is a 500. Two stop reports follow, with and without the film's `session`.
 
 Regenerate them with `node tools/plugin-cli/scripts/write-jellyfin-fixtures.js` after changing a URL this plugin builds — fixture identity is `sha256(url + "\n" + body)`, so a changed query parameter orphans its fixture and the replay transport will report a miss rather than silently serving the old one.
 

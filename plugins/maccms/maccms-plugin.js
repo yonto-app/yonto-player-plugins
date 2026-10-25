@@ -3,8 +3,8 @@
   "kind": "content-source",
   "id": "maccms",
   "name": "MacCMS format",
-  "version": "1.0.15",
-  "contractVersion": 21,
+  "version": "1.1.0",
+  "contractVersion": 28,
   "description": "Reads sites that serve the MacCMS format, over their JSON or XML API. You supply the address; Yonto Player includes no site.",
   "probeQuery": "画皮",
   "provides": "source-type",
@@ -103,7 +103,6 @@ const SERVER_REFUSED_MESSAGE = 'This source refused access. Try another source.'
 const SERVER_UNREADABLE_MESSAGE = "This source answered with something that can't be read. Try another source.";
 /** The server answered and said it could not do what was asked. */
 const SERVER_FAILED_MESSAGE = 'This source returned nothing this time. Try again later.';
-const NO_SEARCH_MESSAGE = "This source doesn't have search. Try another source.";
 /**
  * The host refused where the request was going (`HOST_NOT_ALLOWED`): a redirect off the `api`'s
  * host, or a private address the viewer did not type — the latter only once a repo can name an
@@ -267,7 +266,7 @@ function refusesSearch(params, text) {
 
 function noSearch() {
   yonto.log('info', 'the server has no search');
-  return yonto.error.unavailable(NO_SEARCH_MESSAGE);
+  return yonto.error.noSearch();
 }
 
 /**
@@ -715,7 +714,7 @@ export default {
    */
   async search(query) {
     const site = server();
-    if (!site.searchable) throw yonto.error.unavailable(NO_SEARCH_MESSAGE);
+    if (!site.searchable) throw yonto.error.noSearch();
     const page = await ask(site, { ac: TITLES_ACTION[site.dialect], wd: query });
     return uniqueById(page.vods.map(summaryOf));
   },

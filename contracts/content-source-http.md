@@ -163,6 +163,12 @@ by the host's own parser and cannot be.
   a bearer token scoped to the CDN rather than the API. Each name is an
   RFC 9110 token and each value printable ASCII, space or tab; a host
   refuses a stream carrying any other (see "Media the app fetches for a plugin").
+- `subtitles` (optional, contract 23) lists subtitle files beside the video; see
+  *Play state and subtitles*.
+- `segments` (optional, contract 24) lists the intro, recap and credits as seconds; see
+  *`stream.segments`*.
+- `session` (optional, contract 26) is the source's own name for one play, handed back on
+  every report about it; see *What the device plays*.
 - Multiple `playbackOptions` render as multiple choices in the UI (e.g.
   different cuts, mirrors, or qualities); TV episodes are modeled the same
   way today (one option per episode) until a dedicated `/seasons` endpoint
@@ -178,6 +184,27 @@ by the host's own parser and cannot be.
   It groups only — the `label` should still say what the option is on its
   own, since the player's title bar and History show it with no heading
   beside it.
+- `episode` (optional, contract 25) is the option's episode number within
+  `season`, as the server numbers it, an integer from 0. The app reads it only
+  beside `season`, and asks a skip-times database by the two (with the title's
+  ids) where the source marks no intro or no credits; it drops a negative one
+  and keeps the option. It shows nothing on its own, so the `label` still says
+  the episode.
+- `video` (optional, contract 27) is what the copy this option plays is, as
+  stored: `width` and `height` in pixels (1 to 16384) and `range`, one of
+  `sdr`, `hdr10`, `hdr10plus`, `hlg` and `dolbyVision`, each optional. The
+  title page says it after the title's facts (4K, Dolby Vision): a film the
+  copy Play plays, a series the largest picture its episodes have. It describes
+  the file, never what a device ends up playing after a server converts it, and
+  a plugin sends only what its source says (a series' episodes their size, say,
+  where only the episode's own streams carry its range). A size outside the
+  bounds or a range the app does not know is dropped, keeping the rest.
+- `id` (optional, contract 23) is the server's own id for the option, 1 to 512
+  characters, opaque to the host and sent back as it is in a playback report
+  (see *Play state and subtitles*). It is not the option's identity in the host:
+  saved places do not move when a source starts sending it.
+- `played`, `position` and `playedAt` (optional, contract 23) are what the server
+  says about the viewer's place in the option, as on the title below.
 - `404` if `mediaId` does not exist.
 
 ### `GET /v1/search?q=<query>`
@@ -226,6 +253,9 @@ Used inline in the media-list and search responses:
 
 All fields except `id`, `title` are optional.
 
+`played`, `position` and `playedAt` (contract 23) are what the server says about the viewer's place in the title: whether it counts it watched, where the viewer is in it in seconds, and when it last saw it played as an RFC 3339 date-time.
+They are on a summary, on a detail and on a playback option (an episode), and see *Play state and subtitles*.
+
 `ids` is the title's identity in the public databases: `tmdb`, `imdb`, `tvdb` and `douban`, each optional, so two sources listing the same work can be told apart from two works that share a name.
 Give only the ones you know; a TMDB id is unique only within a `type`, so it is read with the title's `type`.
 `tmdb`, `tvdb` and `douban` are digits, and `imdb` is `tt` and digits; the app drops a value of any other shape, and a key it does not know.
@@ -269,7 +299,10 @@ own business:
 | `getRecommendations()` | none |
 | `checkHealth()` | none |
 | `getSubSources()` | none — which one is active is the host's to say, and it says it through `yonto.subSource()` rather than as an argument here |
-| `getStream(token)` | **a `track` this source itself issued**, verbatim — the string off one of its own `playbackOptions`, never anything a host composed |
+| `getStream(token, request?)` | **a `track` this source itself issued**, verbatim — the string off one of its own `playbackOptions`, never anything a host composed — then, only for a manifest that declares `deviceProfile` and only when the host is about to play the stream, **one request object** `{ device }`; see *What the device plays* |
+| `getContinueWatching()` | none |
+| `reportPlayback(report)` | **one report object** — `{ mediaId, optionId?, event, paused, position, duration?, finished?, session? }`; see *Play state and subtitles* |
+| `setPlayed(change)` | **one change object** — `{ mediaId, optionId?, played }`; see *Play state and subtitles* |
 | `getImageHeaders()` | none — the one method with no `ContentSourceAdapter` counterpart, since what it answers is used by the app's image loader rather than by the source interface |
 | `onImageHeadersRefused(refused)` | **the headers that were refused** — the map this source last returned from `getImageHeaders()`, exactly as it went out |
 
@@ -334,9 +367,9 @@ A Yonto plugin (`tools/plugin-cli`, `plugins/*`) doesn't speak HTTP, so it
 has no status code to carry the distinctions above — it signals failure by
 throwing. `yonto.error.notFound(id)`, `yonto.error.unauthenticated(message)`,
 `yonto.error.unavailable(reason)`, `yonto.error.misconfigured(reason)`,
-`yonto.error.unreachable(reason)` and `yonto.error.challenged(url)` each return an
+`yonto.error.unreachable(reason)`, `yonto.error.challenged(url)` and `yonto.error.noSearch()` each return an
 `Error` whose `code` is `NOT_FOUND`, `UNAUTHENTICATED`, `UNAVAILABLE`, `MISCONFIGURED`,
-`UNREACHABLE` or `CHALLENGED`; a plugin throws the one that fits. A host maps each onto the same exception the
+`UNREACHABLE`, `CHALLENGED` or `NO_SEARCH`; a plugin throws the one that fits. A host maps each onto the same exception the
 table above maps HTTP statuses to:
 
 | Yonto code      | App exception                            |
@@ -347,6 +380,7 @@ table above maps HTTP statuses to:
 | `MISCONFIGURED`     | `ContentSourceException.Misconfigured`, reason `INCOMPLETE_CONFIG` |
 | `UNREACHABLE`       | `ContentSourceException.Unavailable`, marked `serverDidNotAnswer` |
 | `CHALLENGED`        | `ContentSourceException.Challenged` where the host admits it, and `Unavailable` otherwise |
+| `NO_SEARCH`         | `ContentSourceException.NoSearch` from `search`, and `Unavailable` from any other method |
 
 **`misconfigured` is about the source's own form, and arrived in contract
 version 6.** Raise it when a field the manifest's `configSchema` offers is blank
@@ -409,6 +443,18 @@ requests failed. That record is what keeps the host's codes (`HOST_NOT_ALLOWED`,
 `REQUEST_FAILED`, `REQUEST_INVALID`, `REDIRECT_REFUSED`, `STORE_REFUSED`, `RESPONSE_TOO_LARGE`
 and `TIMEOUT`) the host's (below), and it has no say here. A plugin can only grey its own source with it,
 which is why nothing checks it.
+
+**`noSearch` says the source has no search, and arrived in contract version 28.**
+`search` raises `yonto.error.noSearch()` when the source cannot search at all: a MacCMS server
+that answers 暂不支持搜索, a catalog with no search of its own. It is a fact about the source,
+not a failure, so the app says the source has no search, offers no Retry, and does not name it
+among the sources a search across them heard nothing from (kangzj/yonto#2464). It takes no
+sentence: the app says it in the viewer's own language, which a plugin's `reason` never is.
+Raised from any other method it means nothing, and the host reports it as an ordinary
+`Unavailable`. An older app turns the code into `METHOD_THREW`, a source that failed, so a
+plugin that raises it declares 28, which `lint` works out as it does for `unreachable`.
+A search that could not be asked this time (the server down, the site being read resting) is
+still `unavailable` or `unreachable`: only a source no retry would let search says `noSearch`.
 
 **`CHALLENGED` asks for a browser, and arrived in contract version 17.** A plugin
 throws it, with the URL that answered with the check as its message, when it recognises
@@ -494,6 +540,8 @@ has that server to solve this on.
 - Raise `unavailable(reason)` for anything else the plugin can't recover
   from itself: the site is unreachable, its markup no longer matches what
   the plugin expects, or it answered with something the plugin can't parse.
+- Raise `noSearch()` from `search` when the source has no search at all, which no retry
+  changes. See *`noSearch` says the source has no search*, above.
 - Raise `unreachable(reason)` instead when the server did not answer, and
   asking it again soon would get the same: a transport failure (above), or a
   status the table above sends to `unavailable`. It is `unavailable` with one
@@ -842,9 +890,9 @@ against rather than one it may quietly outgrow.
 An empty list reads as *searched and found nothing*, and a source that asked nobody has not
 searched — kangzj/yonto#229, where a 仓 whose sites were all resting told a viewer
 exactly that.
-So where the active library cannot be reached, cannot be compiled, or has no search of its
-own, `search` raises `unavailable(reason)` naming that library, under the rules `reason`
-already carries.
+So where the active library cannot be reached or cannot be compiled, `search` raises
+`unavailable(reason)` naming that library, under the rules `reason` already carries, and where
+it has no search of its own, `search` raises `noSearch()` (contract 28).
 A 仓 is no exception: it searches the one site being read, so a site that is resting and one
 with no search are both this source not searching, and in both the viewer's move is to switch
 library.
@@ -1053,9 +1101,12 @@ are optional, and a host that finds one absent carries on as the table says.
 | `onImageHeadersRefused` | optional | the host asks `getImageHeaders` again instead |
 | `getSubSources` | optional | one library, no picker |
 | `getStream` | optional | a `track` option fails as unavailable; `lint` refuses the export without `playbackTokens` |
+| `getContinueWatching` | optional | the server's list is not shown |
+| `reportPlayback` | optional | nothing is reported to the server |
+| `setPlayed` | optional | the viewer cannot mark a title on the server |
 
-**There is no way to say "this source has no search".** A source without one still exports
-`search`, and throws `yonto.error.unavailable(reason)` with a sentence that says so.
+**A source with no search still exports `search`**, and throws `yonto.error.noSearch()` from it
+(contract 28; before it, `unavailable(reason)` with a sentence that said so).
 Answering `[]` instead tells a viewer the source searched and found nothing.
 
 ## What a host is
@@ -1337,6 +1388,116 @@ Optional. Given a `track` this source issued, answer the `stream` it stands for:
   it is written here and not as a second disclosure key: a viewer who has agreed that a
   source downloads and runs a program cannot act differently on *when* it runs.
 
+### What the device plays
+
+A media server can convert a file the device cannot play, as its own apps ask it to: a 4K file for a 1080p box, HDR tone-mapped for a screen without it.
+A manifest that declares **`deviceProfile: true`** is handed what the device plays as `getStream`'s second argument, when and only when the host is about to play the stream:
+
+```jsonc
+// getStream("…", { device }) — device:
+{
+  "video": [ { "codec": "h264", "maxWidth": 1920, "maxHeight": 1080, "maxBitDepth": 8 },
+             { "codec": "hevc", "maxWidth": 3840, "maxHeight": 2160, "maxBitDepth": 10 } ],
+  "audio": ["aac", "mp3", "ac3", "eac3"],
+  "maxAudioChannels": 8,
+  "containers": ["mp4", "mkv", "webm", "ts", "hls"],
+  "hdr": ["hdr10", "hlg"],
+  "subtitles": ["srt", "vtt", "ass"]
+}
+```
+
+- `video[].codec` is `h264`, `hevc`, `vp9` or `av1`; `audio` is from `aac`, `mp3`, `ac3`, `eac3`, `dts`, `truehd`, `flac`, `opus`, `vorbis` and `alac`; `containers` from `mp4`, `mkv`, `webm`, `ts` and `hls`; `subtitles` from `srt`, `vtt` and `ass`. A plugin ignores a value it does not know, so a new name needs no version.
+- **The lists are what the platform player plays in hardware**, never what a software player could struggle through, so a server converts a file a box would stutter on.
+- **`hdr` is what the screen shows**, `hdr10`, `hdr10plus`, `hlg` or `dolbyVision`; empty is an SDR screen, which a server answers by tone-mapping. A host lists `dolbyVision` only where the device has a Dolby Vision decoder.
+- **Without the argument the plugin answers the file as stored.** A host calls with the token alone for a download, for a download's size, and wherever the viewer turned conversion off for the source; an app too old to know `deviceProfile` drops the key and does the same, which is why it is not a version.
+- **A stream the server decided carries a `session`**, the source's own name for that one play, which the host hands back verbatim on every report about it (see *`reportPlayback(report)` and `setPlayed(change)`*), so the server can end its conversion on the stop. A host keeps it for the play and never writes it down.
+- **Anything the server's decision cannot answer plays the file as stored.** A decision that fails is never worse than not asking.
+- **It is declared, so no other plugin learns the device's decoders.** `lint` refuses `deviceProfile` without a `getStream` export.
+- Converting is the viewer's own server's work, on its own settings (tone mapping, hardware acceleration); nothing passes through anybody else.
+
+
+## Play state and subtitles
+
+Contract 23 lets a source say where the viewer is in a title and send subtitle files beside a video, and lets a host hand the viewer's place back.
+Everything here is optional, and a source that sends none of it behaves as it always did.
+The apps read the state (kangzj/yonto#1994), and the Android apps offer the subtitles (#2000); nothing calls the three methods yet (#1995), so what a host does with them below is the contract that issue builds.
+The fields below are on the shapes both the HTTP contract and a plugin carry.
+The three methods are a plugin's only: an HTTP provider has no endpoint for them.
+
+### Reading the server's state
+
+`played` (boolean), `position` (a number of seconds, at least 0) and `playedAt` (an RFC 3339 date-time) are on a summary, a detail and a playback option.
+Absent means the server does not say.
+`played: false` with no `position` is a server saying not watched, not unknown.
+A `position` on a played item is ignored, since a watched title restarts.
+A host drops a `position` it cannot use, a negative, non-finite or past-the-duration one, and keeps the rest of the item, as it drops a bad `year`.
+A host reads the state when a title is opened or listed and never writes it into its own saved places.
+A playback option may also carry an `id`, the server's own id for it, which the host sends back in a report.
+A film is one option with the title's own id, or none, and the plugin falls back to the `mediaId`.
+
+### `getContinueWatching()`
+
+Optional. Answers the server's own continue-watching list:
+
+```jsonc
+{ "items": [ { "id": "…", "title": "…", "played": false, "position": 612, "playedAt": "2026-10-18T09:30:00Z", "optionId": "…" } ] }
+```
+
+Each item is a summary with an optional `optionId` naming the option to resume.
+It is a read, so `doctor` calls it.
+
+### `reportPlayback(report)` and `setPlayed(change)`
+
+Optional, and both answer nothing: an answer is ignored.
+
+```jsonc
+// reportPlayback({ mediaId, optionId?, event, paused, position, duration?, finished?, session? })
+{ "mediaId": "…", "optionId": "…", "event": "progress", "paused": false, "position": 612.5, "duration": 2700 }
+// setPlayed({ mediaId, optionId?, played })
+{ "mediaId": "…", "played": true }
+```
+
+- `event` is `"start"`, `"progress"` or `"stop"`. `paused` is the player's play-when-ready turned off. `position` and `duration` are seconds. `finished` is only on `stop` and says the viewer reached the credits; a server that decides watched itself from the position may ignore it.
+- `optionId` is the option's `id`, or absent for a film.
+- `session` is the played stream's own `session`, verbatim, and absent when it had none (contract 26).
+- `setPlayed` is the viewer marking a title watched or unwatched themselves.
+- **They write to the viewer's real server, so `doctor` never calls them.** It prints them as not called.
+- A host never reports a live stream or a `pan` option, and a title with episodes only for an option that has an `id`.
+- Reports are plugin calls under *What bounds one call*, and one source runs one call at a time. A host skips a `start` or `progress` while the source has any call outstanding, runs a report under its own short timeout, and drops a failed one without telling the viewer. Local progress is saved either way.
+
+### `stream.subtitles`
+
+An array of at most 32 subtitle files beside the video:
+
+```jsonc
+{ "url": "https://…/1.en.srt", "label": "English", "language": "en", "mimeType": "application/x-subrip", "forced": false, "default": true }
+```
+
+`url` and `label` are required. `language` is a BCP 47 tag, `forced` marks forced narrative, and `default` is the server's default.
+`mimeType` is `application/x-subrip`, `text/vtt` or `text/x-ssa`, and a missing one is read from the URL's extension; a file that is none of the three is dropped.
+**A subtitle's URL is kept only on the stream URL's own host or a host the manifest's `allowedHosts` names**, in canonical form as *What a host is* defines (a host only the viewer's config adds does not count), and any other is dropped (`doctor` warns of one it would drop; `conformance/subtitle-hosts.json` is the record both hosts are held to).
+That holds a subtitle to the hosts the plugin declared, as its other requests are; it is not a guard against a stream pointing elsewhere, and it says nothing about the private-address floor, so a subtitle on a LAN host passes whenever its stream does.
+**A subtitle is fetched with the stream's `headers`**, under the stream's own rule, and has no headers of its own.
+Only the first 32 entries are read.
+An entry of any other wrong shape (a `url` that is not a string, `forced: "yes"`, a string where an object belongs) is dropped on its own, and a `subtitles` that is not an array means none, so a malformed entry never fails the stream.
+A subtitle that fails to load is dropped and the video plays on.
+SSA/ASS plays without its styling on Android.
+The Android apps offer them beside the file's own tracks; iOS, the Mac and the web read the field and offer none of them yet.
+
+### `stream.segments`
+
+An array of at most 32 stretches of the video the source marked, in seconds:
+
+```jsonc
+{ "type": "intro", "start": 12.5, "end": 84 }
+```
+
+`type` is `intro`, `recap`, `credits`, `preview` or `commercial`, and `start` is required.
+A missing `end` means the segment runs to the end of the video, which is how a server says its final credits.
+A host drops a segment on its own, and plays on, when its `type` is unknown, its `start` is negative or not a number, or its `end` is not after its `start`; only the first 32 entries are read, and a `segments` that is not an array means none.
+A segment carries no URL, so no host rule applies to it.
+The app offers to skip an `intro`, a `recap` and `credits`; it carries the other two for later.
+Units are the plugin's to convert: Plex marks are milliseconds and Jellyfin's and Emby's are 100 ns ticks, and the wire is seconds.
 
 ## What `yonto.fetch` answers
 
@@ -2172,8 +2333,8 @@ as `lantern`, the host's old name, which it kept as a deprecated alias.
 earlier version may call `lantern` and would die at its first call, so every host refuses a
 manifest declaring less than 21 (`oldest` in `contract-versions.json`) rather than run it, and
 every plugin declares 21. The versions above say when each piece of surface arrived; a plugin
-declares one of them again only once it needs something that arrived after 21 (version 22's `live`
-is a result field a plugin may send without declaring it).
+declares one of them again only once it needs something that arrived after 21 (version 22's `live`,
+version 23's play state and `subtitles`, version 24's `segments`, version 25's `episode`, version 26's `session` and version 27's `video` are result fields a plugin may send without declaring them, and version 28's `noSearch` is the first code since).
 
 **Version 22** added `live` on a stream: a stream with no end, a television channel.
 A host never saves a place in one or marks it finished, draws no timeline or speed, and starts it
@@ -2184,6 +2345,33 @@ It is a result field, keyed `getMediaDetail.stream.live` because both `getMediaD
 `getStream` answer with a stream; nothing in a plugin's source says it answers with one, so `lint`
 accepts a declaration of exactly 22 from any plugin and requires none.
 An older app drops the key and plays the stream as it did, so a plugin that wants to run there too declares 21 and sets the key anyway; declaring 22 says the plugin needs it, and an app older than 22 refuses a manifest above its own version.
+
+**Version 23** added play state and external subtitles, as described in *Play state and subtitles*.
+The exports `reportPlayback(report)`, `setPlayed(change)` and `getContinueWatching()` are optional, and an older app does not know to call them, so a plugin that exports one declares 23.
+The fields are `played`, `position` and `playedAt` on a summary, a detail and a playback option, an `id` on a playback option, and `subtitles` on a stream.
+They are result fields, recorded as `getMediaDetail.played` (the read fields and the option's `id`, one entry, since a plugin that sends one sends the rest) and `getMediaDetail.stream.subtitles`, so `lint` accepts a declaration of exactly 23 from any plugin and requires none.
+An older app drops them and shows what it always did, so a plugin that only reads state or sends subtitles may declare 22 and keep its older users.
+Declaring 23 for an optional method drops the whole plugin on an older app, not just reporting.
+
+**Version 24** added `stream.segments`, as described in *`stream.segments`*.
+It is a result field, recorded as `getMediaDetail.stream.segments`, so `lint` accepts a declaration of exactly 24 from any plugin and requires none.
+An older app drops it and plays the stream as it did, so a plugin that only sends segments may declare 23 and keep its older users.
+
+**Version 25** added a playback option's `episode`, as described under `GET /v1/media/{mediaId}`.
+It is a result field, recorded as `getMediaDetail.episode`, so `lint` accepts a declaration of exactly 25 from any plugin and requires none.
+An older app drops it, so a plugin that only sends it may declare 24 or less and keep its older users.
+
+**Version 26** added `stream.session` and its return on `reportPlayback`'s report, as described in *What the device plays*.
+It is a result field, recorded as `getMediaDetail.stream.session`, so `lint` accepts a declaration of exactly 26 from any plugin and requires none.
+An older app drops it and reports as it did, so a plugin that sends one may declare 23 and keep its older users.
+`deviceProfile`, the manifest key that asks for what the device plays, has no version: an older app drops it and calls `getStream` with the token alone, which such a plugin answers with the file as stored.
+
+**Version 27** added a playback option's `video`, as described under `GET /v1/media/{mediaId}`.
+It is a result field, recorded as `getMediaDetail.video`, so `lint` accepts a declaration of exactly 27 from any plugin and requires none.
+An older app drops it and says nothing of the format, so a plugin that sends it may declare 23 and keep its older users.
+
+**Version 28** added `yonto.error.noSearch()` and its code `NO_SEARCH`, a search refused because the source has none, as described under *Yonto plugin errors*.
+An older app turns the code into `METHOD_THREW`, which reads as a source that failed, so a plugin that raises it, by the constructor or by writing the code out, declares 28.
 
 **Without a version of its own**: `yonto.fetch` hands over at most 16 MB of a body,
 refusing more as `RESPONSE_TOO_LARGE`, and `bodyBase64` is asked of the host when first read

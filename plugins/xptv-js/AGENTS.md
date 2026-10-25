@@ -33,7 +33,7 @@ Names that sit among a catalog's own Chinese ones stay Chinese: the 网盘 and �
 | `getMediaList` | `getCards`, with `page` and the chosen `filters` put **into the tab's `ext`**: 45 of their 48 read `ext.page`, and the five that filter read `ext.filters` |
 | `getMediaDetail` | `getTracks`: every episode a `track` option, their groups our 线路, every share a `pan` option on a 网盘 line of its own; the synopsis is the card's `vod_content` where a listing kept one |
 | `getStream` | `getPlayinfo`, asked about the one track that was pressed: `urls[0]` and `headers[0]` |
-| `search` | their `search`, with the query under `text`, page one |
+| `search` | their `search`, with the query under `text`, page one. A catalog with no `search` of its own raises `yonto.error.noSearch()` (contract 28), never an empty list |
 | `checkHealth` | loads the program as every path does, and says it is usable when that worked (*`checkHealth` loads the program*) |
 
 Not exported, each on purpose: `getSubSources` and `catalogsAreRemote` (one entry is one source, and `lint` refuses both on a handler), `getRecommendations` (XPTV ranks nothing, and Home falls back to page one of each category), and `getImageHeaders` / `onImageHeadersRefused` (a `hostsFromConfig` plugin cannot have signed artwork).

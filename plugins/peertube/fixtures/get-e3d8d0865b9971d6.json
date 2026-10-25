@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://peertube.example.com/api/v1/search/videos?search=tomatoes&searchTarget=local&start=0&count=50&isLocal=true",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "Retry-After",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 18 Oct 2026 08:37:52 GMT",
+      "keep-alive": "timeout=5",
+      "tk": "N",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-powered-by": "PeerTube",
+      "x-ratelimit-limit": "50",
+      "x-ratelimit-remaining": "36",
+      "x-ratelimit-reset": "1792312678",
+      "x-request-id": "c4dHLSe67VE5xAuTfu1ZdZ"
+    },
+    "bodyBase64": "eyJ0b3RhbCI6MSwiZGF0YSI6W3siaWQiOjEsInV1aWQiOiI0MzhlMzFiOS0wZTdiLTRiNGYtYTNjYS1mODYxMWM1ZmZjMDciLCJzaG9ydFVVSUQiOiI5a1FCMzV6OTI2TGJCQVI3OFBHTUdrIiwidXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS92aWRlb3Mvd2F0Y2gvNDM4ZTMxYjktMGU3Yi00YjRmLWEzY2EtZjg2MTFjNWZmYzA3IiwibmFtZSI6IlBsYW50aW5nIHRoZSB0b21hdG9lcyIsImNhdGVnb3J5Ijp7ImlkIjoxNSwibGFiZWwiOiJTY2llbmNlICYgVGVjaG5vbG9neSJ9LCJsaWNlbmNlIjp7ImlkIjpudWxsLCJsYWJlbCI6IlVua25vd24ifSwibGFuZ3VhZ2UiOnsiaWQiOiJlbiIsImxhYmVsIjoiRW5nbGlzaCJ9LCJwcml2YWN5Ijp7ImlkIjoxLCJsYWJlbCI6IlB1YmxpYyJ9LCJuc2Z3IjpmYWxzZSwibnNmd0ZsYWdzIjowLCJuc2Z3U3VtbWFyeSI6bnVsbCwidHJ1bmNhdGVkRGVzY3JpcHRpb24iOiJGaXJzdCB3ZWVrIG9mIHRoZSBzZWFzb246ICoqdG9tYXRvZXMqKiBnbyBpbi5cblxuU2hvdCBvbiBhIFN1bmRheSBtb3JuaW5nLiIsImRlc2NyaXB0aW9uIjoiRmlyc3Qgd2VlayBvZiB0aGUgc2Vhc29uOiAqKnRvbWF0b2VzKiogZ28gaW4uXG5cblNob3Qgb24gYSBTdW5kYXkgbW9ybmluZy4iLCJpc0xvY2FsIjp0cnVlLCJkdXJhdGlvbiI6MTUwLCJhc3BlY3RSYXRpbyI6MS43Nzc4LCJ2aWV3cyI6MCwidmlld2VycyI6MCwiZG93bmxvYWRzIjowLCJsaWtlcyI6MCwiZGlzbGlrZXMiOjAsInRodW1ibmFpbFBhdGgiOiIvbGF6eS1zdGF0aWMvdGh1bWJuYWlscy8xYmM0NTk2Zi1hZjMzLTRjYjktOGU3Mi1hYTcyNjJiY2Q3YTkuanBnIiwicHJldmlld1BhdGgiOiIvbGF6eS1zdGF0aWMvdGh1bWJuYWlscy85OWM0MWU3OC1iZDM1LTQ0MWQtOTlhNC1mYTI4YTU2NTNmMDcuanBnIiwidGh1bWJuYWlscyI6W3siaGVpZ2h0IjoxNTcsIndpZHRoIjoyODAsImFzcGVjdFJhdGlvIjoiMTY6OSIsImZpbGVVcmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2xhenktc3RhdGljL3RodW1ibmFpbHMvMWJjNDU5NmYtYWYzMy00Y2I5LThlNzItYWE3MjYyYmNkN2E5LmpwZyJ9LHsiaGVpZ2h0Ijo0ODAsIndpZHRoIjo4NTAsImFzcGVjdFJhdGlvIjoiMTY6OSIsImZpbGVVcmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2xhenktc3RhdGljL3RodW1ibmFpbHMvOWFkOGRhMDktZjMzMC00M2E4LWI5NmMtYTBmZGM2NGM1YzMyLmpwZyJ9LHsiaGVpZ2h0Ijo3MjAsIndpZHRoIjoxMjgwLCJhc3BlY3RSYXRpbyI6IjE2OjkiLCJmaWxlVXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS9sYXp5LXN0YXRpYy90aHVtYm5haWxzLzc4YjBkMThhLWUxZWMtNDU0OS04ZTZlLTE4YjMxYWQ0OTY1NC5qcGcifSx7ImhlaWdodCI6MTQwMCwid2lkdGgiOjE0MDAsImFzcGVjdFJhdGlvIjoiMToxIiwiZmlsZVVybCI6Imh0dHBzOi8vcGVlcnR1YmUuZXhhbXBsZS5jb20vbGF6eS1zdGF0aWMvdGh1bWJuYWlscy84ODU1ZTJlYi1kMzVhLTQ2MjgtOTg3NC0xZjllZWI3NmFkYTMuanBnIn0seyJoZWlnaHQiOjEwODAsIndpZHRoIjoxOTIwLCJhc3BlY3RSYXRpbyI6IjE2OjkiLCJmaWxlVXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS9sYXp5LXN0YXRpYy90aHVtYm5haWxzLzk5YzQxZTc4LWJkMzUtNDQxZC05OWE0LWZhMjhhNTY1M2YwNy5qcGcifV0sImVtYmVkUGF0aCI6Ii92aWRlb3MvZW1iZWQvOWtRQjM1ejkyNkxiQkFSNzhQR01HayIsImNyZWF0ZWRBdCI6IjIwMjYtMTAtMThUMDg6MzI6NTUuNzg5WiIsInVwZGF0ZWRBdCI6IjIwMjYtMTAtMThUMDg6MzM6MDEuMDIzWiIsInB1Ymxpc2hlZEF0IjoiMjAyNi0xMC0xOFQwODozMzowMS4wMjJaIiwib3JpZ2luYWxseVB1Ymxpc2hlZEF0IjpudWxsLCJpc0xpdmUiOmZhbHNlLCJhY2NvdW50Ijp7ImlkIjoyLCJkaXNwbGF5TmFtZSI6InJvb3QiLCJuYW1lIjoicm9vdCIsInVybCI6Imh0dHBzOi8vcGVlcnR1YmUuZXhhbXBsZS5jb20vYWNjb3VudHMvcm9vdCIsImhvc3QiOiJwZWVydHViZS5leGFtcGxlLmNvbSIsImF2YXRhcnMiOltdfSwiY2hhbm5lbCI6eyJpZCI6MiwibmFtZSI6ImdhcmRlbl9kaWFyaWVzIiwiZGlzcGxheU5hbWUiOiJHYXJkZW4gRGlhcmllcyIsInVybCI6Imh0dHBzOi8vcGVlcnR1YmUuZXhhbXBsZS5jb20vdmlkZW8tY2hhbm5lbHMvZ2FyZGVuX2RpYXJpZXMiLCJob3N0IjoicGVlcnR1YmUuZXhhbXBsZS5jb20iLCJhdmF0YXJzIjpbXX0sImNvbW1lbnRzIjowfV19",
+    "setCookie": []
+  }
+}

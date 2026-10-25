@@ -489,6 +489,14 @@ async function lint(dir) {
       'may answer one is a manifest no host will offer a token to',
       { dir });
   }
+  // What the device plays reaches only `getStream`, so the declaration without it is a promise
+  // to read an argument nothing will ever pass.
+  if (manifest.deviceProfile === true && !surface.exports.includes('getStream')) {
+    throw new PluginError(Code.MANIFEST_INVALID,
+      'deviceProfile is declared and getStream is not exported — what the device plays is ' +
+      'handed to getStream alone, so a source that answers no track never sees it',
+      { dir });
+  }
 
   // A picker whose answer nothing reads. `getSubSources` offers a viewer a choice, and
   // `yonto.subSource()` is the only way that choice comes back — so a plugin exporting one
@@ -664,6 +672,7 @@ async function doctor(dir, flags) {
   const report = await runDoctor({
     engine, requests, logs, takePartial, query, category: manifest.probeCategory ?? null,
     sources: (await pluginSources(dir)).sources, pagination: manifest.pagination, loggedOut,
+    allowedHosts: manifest.allowedHosts ?? [],
   });
   report.steps.unshift(...linkSteps);
   report.ok = report.ok && linkSteps.every((step) => step.ok);

@@ -459,15 +459,14 @@ test('search asks the catalog with the query under their own key', async () => {
   assert.deepEqual(asked(host, 'search'), { text: '庆余年', page: 1 });
 });
 
-test('a catalog with no search of its own is a sentence, never an empty list', async () => {
+test('a catalog with no search of its own says so, never with an empty list', async () => {
   const { engine } = engineOver(catalogSource({ search: null }));
 
   const error = await engine.call('search', ['庆余年']).then(() => null, (e) => e);
 
   // An empty list reads as *searched and found nothing*, and a source that asked nobody has
   // not searched — kangzj/lantern-tv#229, and #390's rule for a source of many catalogs.
-  assert.equal(error?.code, Code.UNAVAILABLE);
-  assert.match(error.message, /doesn't have search/);
+  assert.equal(error?.code, Code.NO_SEARCH);
 });
 
 test("a catalog answering a listing with HTML is the catalog's program, not the engine's words", async () => {

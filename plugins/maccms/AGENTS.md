@@ -80,7 +80,7 @@ A title is **matched**: `ids=42` answered with anything but vod 42 is `notFound`
 | 401, 403 | `unavailable`, *refused access* | no |
 | a body neither dialect can read | `unavailable`, *something that can't be read* | no |
 | `{"code":0}` with nothing in it | `unavailable`, *returned nothing this time* | no |
-| 暂不支持搜索 to a search, as text or as `msg` | `unavailable`, *doesn't have search* | no |
+| 暂不支持搜索 to a search, as text or as `msg` | `noSearch` (contract 28), which the app says in its own words | no |
 
 - **401/403 is `unavailable`, not `unauthenticated`**, which is an exception to the *Error mapping mirrors `HttpJsonClient`* in `docs/agents/plugins.md`: a MacCMS site has no login, and `unauthenticated` sends a viewer to a sign-in that does not exist.
 - **`code 0` rests nothing.** The retired 仓 plugin rested a site for it because its search raced every site and the empty answer arrived first; a source here is one server, and a build that answers `code 0` to a search with no matches would grey the catalog the viewer is in for finding nothing.
@@ -92,7 +92,7 @@ A title is **matched**: `ids=42` answered with anything but vod 42 is `notFound`
 
 ## Search
 
-A source whose `searchable` is false is refused without asking the server (Jasper, 2026-09-23), as TVBox and FongMi do, in the same sentence as a server that answered 暂不支持搜索.
+A source whose `searchable` is false is refused without asking the server (Jasper, 2026-09-23), as TVBox and FongMi do, with `yonto.error.noSearch()`, as a server that answered 暂不支持搜索 is (kangzj/yonto#2464).
 suoniapi's JSON API is one that answers that way, which is why `doctor.json` names lziapi rather than it.
 
 ## A title

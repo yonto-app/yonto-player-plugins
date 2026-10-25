@@ -37,6 +37,7 @@ const remoteCatalogsDir = fileURLToPath(new URL('../test-plugins/remote-catalogs
 const subSourcesDir = fileURLToPath(new URL('../test-plugins/sub-sources/', import.meta.url));
 const redeemsTokensDir = fileURLToPath(new URL('../test-plugins/redeems-tokens/', import.meta.url));
 const redeemsUndeclaredDir = fileURLToPath(new URL('../test-plugins/redeems-undeclared/', import.meta.url));
+const deviceWithoutStreamDir = fileURLToPath(new URL('../test-plugins/device-without-stream/', import.meta.url));
 const remoteCatalogsNoPickerDir = fileURLToPath(new URL('../test-plugins/remote-catalogs-no-picker/', import.meta.url));
 const writesToLoginDir = fileURLToPath(new URL('../test-plugins/writes-to-login/', import.meta.url));
 
@@ -896,6 +897,18 @@ test('lint refuses a plugin that exports getStream without declaring playbackTok
   );
 });
 
+// What the device plays is handed to getStream alone, so asking for it without one is a promise
+// to read an argument nothing will pass.
+test('lint refuses a plugin that declares deviceProfile without exporting getStream', () => {
+  assert.throws(
+    () => execFileSync('node', [cli, 'lint', deviceWithoutStreamDir], { encoding: 'utf8', stdio: 'pipe' }),
+    (error) => {
+      assert.match(error.stderr, /deviceProfile is declared and getStream is not exported/);
+      return true;
+    },
+  );
+});
+
 test('a source that declares playbackTokens and redeems its own token lints clean', () => {
   const output = execFileSync('node', [cli, 'lint', redeemsTokensDir], { encoding: 'utf8' });
 
@@ -1013,7 +1026,7 @@ test('lint reads the XPTV loader whole: a derived contract version and no warnin
   const output = execFileSync('node', [cli, 'lint', pluginDir], { encoding: 'utf8' });
 
   // Printed only when the version the scan derived equals the one the manifest declares.
-  assert.match(output, /✓ contract {10}21\n/);
+  assert.match(output, /✓ contract {10}28 — yonto\.error\.noSearch\n/);
   // The shims are named calls, so the host surface is read rather than guessed at: a
   // destructured host would have been warned about as one no name can be read out of.
   assert.doesNotMatch(output, /⚠/);

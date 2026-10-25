@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/MediaSegments/ep2",
+    "body": null
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W10sIlRvdGFsUmVjb3JkQ291bnQiOjAsIlN0YXJ0SW5kZXgiOjB9",
+    "setCookie": []
+  }
+}

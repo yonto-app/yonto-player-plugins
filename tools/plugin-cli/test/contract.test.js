@@ -9,6 +9,8 @@ test('the contract methods are listed in the order doctor calls them', () => {
     'onImageHeadersRefused',
     // After the detail, because that is where its argument comes from.
     'getStream',
+    // Contract 23's exports. Nothing feeds them, and `doctor` never calls the writers.
+    'getContinueWatching', 'reportPlayback', 'setPlayed',
     // After the library, not before it: activeId is what a source is reading.
     'getSubSources',
   ]);
@@ -83,6 +85,51 @@ test('a stream may say it is live, and only with a boolean', () => {
   assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8', live: true }).valid, true);
   assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8' }).valid, true);
   assert.equal(validateResult('getStream', { url: 'https://v/1.m3u8', live: 'yes' }).valid, false);
+});
+
+// Contract 23: what a server says about the viewer's place, on a summary, a detail and an option.
+test('play state is optional and typed on a summary, a detail and an option', () => {
+  const state = { played: true, position: 61.5, playedAt: '2026-10-18T09:30:00Z' };
+  const option = { label: 'a', id: 'ep-1', stream: { url: 'https://v/1' }, ...state };
+
+  assert.equal(validateResult('search', [{ id: 'm', title: 'M', ...state }]).valid, true);
+  assert.equal(validateResult('getMediaDetail', { id: 'm', title: 'M', ...state, playbackOptions: [option] }).valid, true);
+  assert.equal(validateResult('getMediaDetail', { id: 'm', title: 'M', playbackOptions: [{ label: 'a', stream: { url: 'https://v/1' } }] }).valid, true);
+
+  for (const bad of [{ played: 'yes' }, { position: -1 }, { position: '5' }, { playedAt: 'yesterday' }]) {
+    assert.equal(validateResult('search', [{ id: 'm', title: 'M', ...bad }]).valid, false, JSON.stringify(bad));
+  }
+  assert.equal(validateResult('getMediaDetail', { id: 'm', title: 'M', playbackOptions: [{ ...option, id: '' }] }).valid, false);
+  assert.equal(validateResult('getMediaDetail', { id: 'm', title: 'M', playbackOptions: [{ ...option, id: 'x'.repeat(513) }] }).valid, false);
+});
+
+test('a stream may carry up to 32 well-formed subtitles', () => {
+  const stream = (subtitles) => validateResult('getStream', { url: 'https://v/1.mp4', subtitles });
+  const track = { url: 'https://v/1.en.srt', label: 'English', language: 'en', mimeType: 'application/x-subrip', forced: false, default: true };
+
+  assert.equal(stream([track]).valid, true);
+  assert.equal(stream([{ url: 'https://v/1.en.srt', label: 'English' }]).valid, true);
+  assert.equal(stream(Array(32).fill(track)).valid, true);
+  assert.equal(stream(Array(33).fill(track)).valid, false);
+  assert.equal(stream([{ label: 'English' }]).valid, false, 'a url is required');
+  assert.equal(stream([{ url: 'https://v/1.en.srt' }]).valid, false, 'a label is required');
+  assert.equal(stream([{ ...track, forced: 'no' }]).valid, false);
+  assert.equal(stream('en').valid, false);
+});
+
+test('the continue-watching list is summaries with an optional option id', () => {
+  const answer = (items) => validateResult('getContinueWatching', { items });
+
+  assert.equal(answer([{ id: 'm', title: 'M', played: false, position: 30, optionId: 'ep-2' }]).valid, true);
+  assert.equal(answer([]).valid, true);
+  assert.equal(answer([{ id: 'm' }]).valid, false);
+  assert.equal(answer([{ id: 'm', title: 'M', optionId: '' }]).valid, false);
+  assert.equal(validateResult('getContinueWatching', []).valid, false);
+});
+
+test('the writers answer nothing, and an answer is ignored', () => {
+  assert.equal(validateResult('reportPlayback', undefined).valid, true);
+  assert.equal(validateResult('setPlayed', { anything: 1 }).valid, true);
 });
 
 // A name that is not a token, or a value OkHttp would refuse, never reaches a player or an

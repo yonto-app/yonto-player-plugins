@@ -15,7 +15,7 @@ import { JSENCRYPT_FILE, buildJsEncrypt } from '../../scripts/build-jsencrypt.mj
 // with it, which is recorded here in Node, where the plugin cannot reach: nothing in its realm
 // can vouch for a host code, since the plugin can rewrite all of it (kangzj/lantern-tv#342).
 const HONOURED_CODES = new Set([
-  Code.NOT_FOUND, Code.UNAUTHENTICATED, Code.UNAVAILABLE, Code.MISCONFIGURED, Code.UNREACHABLE, Code.CHALLENGED,
+  Code.NOT_FOUND, Code.UNAUTHENTICATED, Code.UNAVAILABLE, Code.MISCONFIGURED, Code.UNREACHABLE, Code.CHALLENGED, Code.NO_SEARCH,
 ]);
 
 /** What the plugin reads when what it handed a host function could not be used. The device's words. */
@@ -269,6 +269,7 @@ globalThis.yonto = {
     misconfigured: (reason) => Object.assign(new Error(reason), { code: 'MISCONFIGURED' }),
     unreachable: (reason) => Object.assign(new Error(reason), { code: 'UNREACHABLE' }),
     challenged: (url) => Object.assign(new Error(String(url ?? '')), { code: 'CHALLENGED' }),
+    noSearch: () => Object.assign(new Error(''), { code: 'NO_SEARCH' }),
   },
 };
 // Registered only for a plugin whose linkLogin a host runs.

@@ -225,3 +225,8 @@ The `recorded-*` files are real documents: box.iqinu.com and an hjys PNG as kang
 `synthetic.json` is written by hand, one rule a case, and says so.
 
 Add a case when a document turns up that the two readers could read differently; never edit an `expected` to match a reader that changed.
+
+## `subtitle-hosts.json`
+
+Which of a stream's subtitles an app keeps: those on the stream URL's own host or a host the manifest's `allowedHosts` names, in canonical form.
+`test/subtitles.test.js` walks it against the CLI's `subtitlesKept`, and `SubtitleHostsConformanceTest` against the device's `withSubtitlesOn`.

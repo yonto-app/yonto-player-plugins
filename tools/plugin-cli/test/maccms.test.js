@@ -519,10 +519,10 @@ test('a server its repo says does not search is not asked, and says so as a serv
   const answered = await failure(refused.engine.call('search', ['画皮']));
 
   // `searchable: 0` in the index, as TVBox and FongMi read it (Jasper, 2026-09-23): nothing is
-  // sent, and the viewer reads the one sentence this handler has for a catalog with no search.
+  // sent, and the source has no search either way.
   assert.deepEqual(transport.calls, []);
-  assert.equal(error?.code, Code.UNAVAILABLE);
-  assert.equal(error.message, answered.message);
+  assert.equal(error?.code, Code.NO_SEARCH);
+  assert.equal(answered.code, Code.NO_SEARCH);
 });
 
 test('a search answered with 暂不支持搜索 says the catalog has no search', async () => {
@@ -535,8 +535,7 @@ test('a search answered with 暂不支持搜索 says the catalog has no search',
 
     const error = await failure(engine.call('search', ['画皮']));
 
-    assert.equal(error.code, Code.UNAVAILABLE, how);
-    assert.match(error.message, /doesn't have search/, how);
+    assert.equal(error.code, Code.NO_SEARCH, how);
     assert.ok(host.logs.some((e) => e.level === 'info' && e.message === 'the server has no search'), JSON.stringify(host.logs));
   }
 });
@@ -832,5 +831,5 @@ test('an XML server answering a search with 暂不支持搜索 has no search', a
 
   const error = await failure(engine.call('search', ['画皮']));
 
-  assert.match(error?.message ?? '', /doesn't have search/);
+  assert.equal(error?.code, Code.NO_SEARCH);
 });

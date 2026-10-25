@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/s1?Fields=Genres%2COverview%2CProductionYear%2CProviderIds",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items/s1?Fields=Genres%2COverview%2CProductionYear%2CProviderIds%2CMediaStreams&EnableUserData=true",
     "body": null
   },
   "response": {

@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://jellyfin.example.com/Items/ep2/PlaybackInfo?UserId=fixture-user-id",
+    "body": "{\"DeviceProfile\":{\"Name\":\"Yonto Player\",\"MaxStreamingBitrate\":200000000,\"DirectPlayProfiles\":[{\"Type\":\"Video\",\"Container\":\"mp4,m4v,mov,mkv,webm,ts,mpegts,m2ts\",\"VideoCodec\":\"h264,hevc\",\"AudioCodec\":\"aac,mp3,ac3,eac3,dts,dca\"}],\"TranscodingProfiles\":[{\"Type\":\"Video\",\"Container\":\"mp4\",\"Protocol\":\"hls\",\"Context\":\"Streaming\",\"VideoCodec\":\"h264,hevc\",\"AudioCodec\":\"aac,ac3,eac3\",\"MaxAudioChannels\":\"8\",\"MinSegments\":1,\"BreakOnNonKeyFrames\":true}],\"CodecProfiles\":[{\"Type\":\"Video\",\"Codec\":\"h264\",\"Conditions\":[{\"Condition\":\"LessThanEqual\",\"Property\":\"Width\",\"Value\":\"1920\",\"IsRequired\":false},{\"Condition\":\"LessThanEqual\",\"Property\":\"Height\",\"Value\":\"1080\",\"IsRequired\":false},{\"Condition\":\"LessThanEqual\",\"Property\":\"VideoBitDepth\",\"Value\":\"8\",\"IsRequired\":false},{\"Condition\":\"EqualsAny\",\"Property\":\"VideoRangeType\",\"Value\":\"SDR|DOVIWithSDR\",\"IsRequired\":false}]},{\"Type\":\"Video\",\"Codec\":\"hevc\",\"Conditions\":[{\"Condition\":\"LessThanEqual\",\"Property\":\"Width\",\"Value\":\"1920\",\"IsRequired\":false},{\"Condition\":\"LessThanEqual\",\"Property\":\"Height\",\"Value\":\"1080\",\"IsRequired\":false},{\"Condition\":\"LessThanEqual\",\"Property\":\"VideoBitDepth\",\"Value\":\"8\",\"IsRequired\":false},{\"Condition\":\"EqualsAny\",\"Property\":\"VideoRangeType\",\"Value\":\"SDR|DOVIWithSDR\",\"IsRequired\":false}]}],\"SubtitleProfiles\":[{\"Format\":\"srt\",\"Method\":\"Embed\"},{\"Format\":\"srt\",\"Method\":\"External\"},{\"Format\":\"subrip\",\"Method\":\"Embed\"},{\"Format\":\"subrip\",\"Method\":\"External\"},{\"Format\":\"ass\",\"Method\":\"Embed\"},{\"Format\":\"ass\",\"Method\":\"External\"},{\"Format\":\"ssa\",\"Method\":\"Embed\"},{\"Format\":\"ssa\",\"Method\":\"External\"},{\"Format\":\"vtt\",\"Method\":\"Embed\"},{\"Format\":\"vtt\",\"Method\":\"External\"}]},\"MaxStreamingBitrate\":200000000,\"EnableDirectPlay\":true,\"EnableDirectStream\":true,\"EnableTranscoding\":true,\"AllowVideoStreamCopy\":true,\"AllowAudioStreamCopy\":true,\"SubtitleStreamIndex\":-1,\"AutoOpenLiveStream\":true}"
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "e30=",
+    "setCookie": []
+  }
+}

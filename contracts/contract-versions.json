@@ -27,6 +27,16 @@
     "yonto.session.servers": 18,
     "yonto.session.refused": 18,
     "yonto.jsEncrypt": 20,
-    "getMediaDetail.stream.live": 22
+    "getMediaDetail.stream.live": 22,
+    "reportPlayback": 23,
+    "setPlayed": 23,
+    "getContinueWatching": 23,
+    "getMediaDetail.played": 23,
+    "getMediaDetail.stream.subtitles": 23,
+    "getMediaDetail.stream.segments": 24,
+    "getMediaDetail.episode": 25,
+    "getMediaDetail.stream.session": 26,
+    "getMediaDetail.video": 27,
+    "yonto.error.noSearch": 28
   }
 }

@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/library/onDeck",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjowLCJhbGxvd1N5bmMiOmZhbHNlLCJpZGVudGlmaWVyIjoiY29tLnBsZXhhcHAucGx1Z2lucy5saWJyYXJ5IiwibWVkaWFUYWdQcmVmaXgiOiIvc3lzdGVtL2J1bmRsZS9tZWRpYS9mbGFncy8iLCJtZWRpYVRhZ1ZlcnNpb24iOjE3ODY5MTQ1MTMsIm1peGVkUGFyZW50cyI6dHJ1ZX19"
+  }
+}

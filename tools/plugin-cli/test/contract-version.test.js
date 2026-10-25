@@ -33,10 +33,15 @@ test('a host function that arrived later raises what any plugin needs', async ()
 test('what each shipped plugin needs is what its own surface says, not what it declares', async () => {
   // Jellyfin reaches version 3 twice over: it can be told its artwork signature was refused
   // (#133), and it asks the host what to call itself to a server, because a plugin has
-  // nowhere of its own to keep that (#134). The scrapers' half is `private/scrapers.test.js`.
+  // nowhere of its own to keep that (#134). Version 23 adds the three methods that read and
+  // write the server's play state, and an episode is a track its `getStream` redeems (#2000).
+  // The scrapers' half is `private/scrapers.test.js`.
   assert.deepEqual(
     only(await contractVersionOf(sourceOf('jellyfin'))).sort(),
-    ['getImageHeaders', 'onImageHeadersRefused', 'yonto.error.misconfigured', 'yonto.installId'],
+    [
+      'getContinueWatching', 'getImageHeaders', 'getStream', 'onImageHeadersRefused', 'reportPlayback', 'setPlayed',
+      'yonto.error.misconfigured', 'yonto.installId',
+    ],
   );
 });
 
@@ -441,6 +446,14 @@ test('raising unreachable places the plugin at the version that added it', async
   assert.deepEqual(scanned.calls, ['yonto.error.unreachable']);
 });
 
+// An older app delivers NO_SEARCH as METHOD_THREW, a source that failed (kangzj/yonto#2464).
+test('saying a source has no search places the plugin at the version that added it', async () => {
+  const placed = (body) => contractVersionOf({ 'demo-plugin.js': body }).then((surface) => surface.required);
+
+  assert.equal(await placed('export default { async search() { throw yonto.error.noSearch(); } };'), RECORD.since['yonto.error.noSearch']);
+  assert.equal(await placed("export default { async search() { throw { code: 'NO_SEARCH' }; } };"), RECORD.since['yonto.error.noSearch']);
+});
+
 // A hand-built `{ code: 'UNREACHABLE' }` is honoured like the constructor's, so it needs what
 // the constructor needs, though the source calls nothing (#650's review). A code reaches a
 // thrown value through many shapes, and each one missed lets the plugin declare too low.
@@ -553,13 +566,22 @@ test('a plugin that may answer with a result field is justified in declaring its
   assert.deepEqual(without.mayAnswerWith, []);
 });
 
-// `live` is on a stream, which getMediaDetail answers with, so any plugin that exports it (all of
-// them) may declare 22 without being required to: an older app plays the stream as it did.
-test('a plugin exporting getMediaDetail may answer with a live stream, and is not required to', async () => {
+// `live` (22) and the play state and subtitles (23) are on what getMediaDetail answers with, so any
+// plugin that exports it (all of them) may declare either version without being required to: an
+// older app plays the stream as it did.
+test('a plugin exporting getMediaDetail may answer with a live stream, play state, subtitles, segments and episode numbers, and is not required to', async () => {
   const surface = await contractVersionOf({
     'demo-plugin.js': 'export default { async getMediaDetail() { return {}; } };',
   });
 
-  assert.deepEqual(surface.mayAnswerWith, [{ name: RESULT_FIELDS.STREAM_LIVE, version: 22 }]);
+  assert.deepEqual(surface.mayAnswerWith, [
+    { name: RESULT_FIELDS.STREAM_LIVE, version: 22 },
+    { name: RESULT_FIELDS.PLAYED, version: 23 },
+    { name: RESULT_FIELDS.STREAM_SUBTITLES, version: 23 },
+    { name: RESULT_FIELDS.STREAM_SEGMENTS, version: 24 },
+    { name: RESULT_FIELDS.EPISODE, version: 25 },
+    { name: RESULT_FIELDS.STREAM_SESSION, version: 26 },
+    { name: RESULT_FIELDS.VIDEO, version: 27 },
+  ]);
   assert.equal(surface.required, 1);
 });

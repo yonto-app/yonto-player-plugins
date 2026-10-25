@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://peertube.example.com/api/v1/videos/438e31b9-0e7b-4b4f-a3ca-f8611c5ffc07/captions",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "Retry-After",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 18 Oct 2026 08:38:12 GMT",
+      "keep-alive": "timeout=5",
+      "tk": "N",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "x-powered-by": "PeerTube",
+      "x-ratelimit-limit": "50",
+      "x-ratelimit-remaining": "48",
+      "x-ratelimit-reset": "1792312703",
+      "x-request-id": "uSCUQo7KsjHuWbHoCSGpy2"
+    },
+    "bodyBase64": "eyJ0b3RhbCI6MiwiZGF0YSI6W3sibGFuZ3VhZ2UiOnsiaWQiOiJlbiIsImxhYmVsIjoiRW5nbGlzaCJ9LCJhdXRvbWF0aWNhbGx5R2VuZXJhdGVkIjpmYWxzZSwiY2FwdGlvblBhdGgiOiIvbGF6eS1zdGF0aWMvdmlkZW8tY2FwdGlvbnMvZDgwODhhOTQtMTI5Ni00MTRkLWIzOTYtOGUxNTBhNjk2N2EzLWVuLnZ0dCIsImZpbGVVcmwiOiJodHRwczovL3BlZXJ0dWJlLmV4YW1wbGUuY29tL2xhenktc3RhdGljL3ZpZGVvLWNhcHRpb25zL2Q4MDg4YTk0LTEyOTYtNDE0ZC1iMzk2LThlMTUwYTY5NjdhMy1lbi52dHQiLCJtM3U4VXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS9zdGF0aWMvc3RyZWFtaW5nLXBsYXlsaXN0cy9obHMvNDM4ZTMxYjktMGU3Yi00YjRmLWEzY2EtZjg2MTFjNWZmYzA3L2Q4MDg4YTk0LTEyOTYtNDE0ZC1iMzk2LThlMTUwYTY5NjdhMy1lbi5tM3U4IiwidXBkYXRlZEF0IjoiMjAyNi0xMC0xOFQwODozMzowMC44NTNaIn0seyJsYW5ndWFnZSI6eyJpZCI6ImZyIiwibGFiZWwiOiJGcmVuY2gifSwiYXV0b21hdGljYWxseUdlbmVyYXRlZCI6ZmFsc2UsImNhcHRpb25QYXRoIjoiL2xhenktc3RhdGljL3ZpZGVvLWNhcHRpb25zLzNjNGEyOTg3LWE0MzQtNDEwYi1hM2Y4LTAxYmNkNGM3YjQ0Zi1mci52dHQiLCJmaWxlVXJsIjoiaHR0cHM6Ly9wZWVydHViZS5leGFtcGxlLmNvbS9sYXp5LXN0YXRpYy92aWRlby1jYXB0aW9ucy8zYzRhMjk4Ny1hNDM0LTQxMGItYTNmOC0wMWJjZDRjN2I0NGYtZnIudnR0IiwibTN1OFVybCI6Imh0dHBzOi8vcGVlcnR1YmUuZXhhbXBsZS5jb20vc3RhdGljL3N0cmVhbWluZy1wbGF5bGlzdHMvaGxzLzQzOGUzMWI5LTBlN2ItNGI0Zi1hM2NhLWY4NjExYzVmZmMwNy8zYzRhMjk4Ny1hNDM0LTQxMGItYTNmOC0wMWJjZDRjN2I0NGYtZnIubTN1OCIsInVwZGF0ZWRBdCI6IjIwMjYtMTAtMThUMDg6MzM6MDAuODU1WiJ9XX0=",
+    "setCookie": []
+  }
+}

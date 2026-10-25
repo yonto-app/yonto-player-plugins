@@ -11,6 +11,7 @@
   "encoding.hexToBase64",
   "error.challenged",
   "error.misconfigured",
+  "error.noSearch",
   "error.notFound",
   "error.unauthenticated",
   "error.unavailable",

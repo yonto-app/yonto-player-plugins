@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "http://localhost:18400/library/metadata/3",
+    "url": "http://localhost:18400/library/metadata/3?includeMarkers=1",
     "body": null
   },
   "response": {

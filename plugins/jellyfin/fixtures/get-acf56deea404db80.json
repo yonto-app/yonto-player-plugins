@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?ParentId=s1&IncludeItemTypes=Episode&Recursive=true&Fields=Width%2CHeight&EnableUserData=true&SortBy=ParentIndexNumber%2CIndexNumber&SortOrder=Ascending",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJlcDEiLCJOYW1lIjoiRWFydGhmYWxsIiwiVHlwZSI6IkVwaXNvZGUiLCJJbmRleE51bWJlciI6MSwiUGFyZW50SW5kZXhOdW1iZXIiOjEsIldpZHRoIjoxOTIwLCJIZWlnaHQiOjEwODAsIlVzZXJEYXRhIjp7IlBsYXliYWNrUG9zaXRpb25UaWNrcyI6NzUwMDAwMDAwMCwiUGxheUNvdW50IjoxLCJQbGF5ZWQiOmZhbHNlLCJMYXN0UGxheWVkRGF0ZSI6IjIwMjYtMTAtMTdUMjE6MDU6MDkuMTIzNDU2N1oifSwiU2VyaWVzSWQiOiJzMSIsIlNlcmllc05hbWUiOiJQaW9uZWVyIE9uZSIsIlBhcmVudEJhY2tkcm9wSXRlbUlkIjoiczEiLCJQYXJlbnRCYWNrZHJvcEltYWdlVGFncyI6WyJwaW9uZWVyQmFja2Ryb3BUYWciXX0seyJJZCI6ImVwMiIsIk5hbWUiOiJDYWNoZXMiLCJUeXBlIjoiRXBpc29kZSIsIkluZGV4TnVtYmVyIjoyLCJQYXJlbnRJbmRleE51bWJlciI6MSwiV2lkdGgiOjM4NDAsIkhlaWdodCI6MjE2MCwiU2VyaWVzSWQiOiJzMSIsIlNlcmllc05hbWUiOiJQaW9uZWVyIE9uZSIsIlBhcmVudEJhY2tkcm9wSXRlbUlkIjoiczEiLCJQYXJlbnRCYWNrZHJvcEltYWdlVGFncyI6WyJwaW9uZWVyQmFja2Ryb3BUYWciXX1dLCJUb3RhbFJlY29yZENvdW50IjoyLCJTdGFydEluZGV4IjowfQ==",
+    "setCookie": []
+  }
+}
