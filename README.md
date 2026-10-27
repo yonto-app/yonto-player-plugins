@@ -70,7 +70,7 @@ The `index` release holds `index.json`, a repo listing every plugin, which **Set
 
 It is exported from the app's private repository, so some of what you read points there:
 
-- `ddys` and `iyingshi`, which some tests and notes here still name, are older plugins of the private repository. They are not published, and Yonto Player does not ship them.
+- `ddys` and `iyingshi`, which some tests and notes here still name, are older plugins of the private repository. They are not published here, and Yonto Player does not ship them.
 - `plugins/xptv-js` has no fixtures here. Its recordings embed XPTV catalogs, programs from a repository that carries no licence, so they cannot be published under this one. The suite's recorded indexes (`conformance/index-reading/recorded-*.json`) are kept: they are lists of names and addresses, not anybody's code.
 
 ## Licence
