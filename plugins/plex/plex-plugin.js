@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.7.0",
+  "version": "1.10.0",
   "contractVersion": 23,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
@@ -40,6 +40,18 @@ const SEARCH_LIMIT = 50;
 const MOVIE = 'movie';
 const SHOW = 'show';
 const LIBRARY_TYPES = [MOVIE, SHOW];
+
+const SORT_FILTER = 'sort';
+// A listing with no sort is a Home shelf, so it is the latest first. `episode.addedAt` is a show's
+// newest episode, and in a film section Plex reads it as the film's own `addedAt`.
+const ADDED_SORT = 'added';
+const SORTS = {
+  [ADDED_SORT]: { name: 'Recently added', by: 'episode.addedAt:desc' },
+  title: { name: 'Title', by: 'titleSort' },
+  year: { name: 'Year', by: 'year:desc' },
+  rating: { name: 'Rating', by: 'audienceRating:desc' },
+};
+const SORT_OPTIONS = Object.keys(SORTS).map((id) => ({ id, name: SORTS[id].name }));
 
 // Plex serves the stored artwork unless asked to resize it; these are the sizes a poster card
 // and a full-bleed backdrop are drawn at on a 1080p screen.
@@ -589,7 +601,7 @@ function limitation(codec, type, name, value) {
 // plays is copied, in fMP4, the one HLS container AVPlayer takes it in. The screen's range is a
 // limitation only on a server that tone-maps, which takes Plex Pass: without it a conversion is no
 // truer to the colours than the file.
-function profileExtraOf(device, toneMaps) {
+function profileExtraOf(device, toneMaps, media) {
   const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && typeof v.codec === 'string');
   const audio = listOf(device.audio);
   const shown = listOf(device.hdr);
@@ -603,6 +615,7 @@ function profileExtraOf(device, toneMaps) {
     ...(copiesHevc ? ['append-transcode-target-codec(type=videoProfile&context=streaming&protocol=hls&videoCodec=hevc)'] : []),
     `add-direct-play-profile(type=videoProfile&protocol=http&container=${containers.join(',')}`
       + `&videoCodec=${video.map((v) => v.codec).join(',')}&audioCodec=${audio.map((codec) => AUDIO_NAMES[codec] || codec).join(',')})`,
+    ...softwareProfileOf(device, video, media),
   ];
   for (const v of video) {
     parts.push(limitation(v.codec, 'upperBound', 'video.width', `value=${v.maxWidth}`));
@@ -616,6 +629,23 @@ function profileExtraOf(device, toneMaps) {
   return parts.join('+');
 }
 
+// What the device's software player also plays as stored: its containers, with the video it decodes in the device's own
+// hardware and a picture it shows, SDR or a range it names, never Dolby Vision.
+function softwareProfileOf(device, video, media) {
+  const player = device.softwarePlayer;
+  if (!player || typeof player !== 'object' || !showsRange(player, (videoOf(media).video || {}).range)) return [];
+  const codecs = listOf(player.video).filter((codec) => video.some((v) => v.codec === codec));
+  const containers = listOf(player.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  if (codecs.length === 0 || containers.length === 0) return [];
+  return [`add-direct-play-profile(type=videoProfile&protocol=http&container=${containers.join(',')}`
+    + `&videoCodec=${codecs.join(',')}&audioCodec=${listOf(player.audio).map((codec) => AUDIO_NAMES[codec] || codec).join(',')})`];
+}
+
+// An unread range is taken as SDR, as a player takes a file that says nothing of its colour.
+function showsRange(player, range = 'sdr') {
+  return range !== 'dolbyVision' && (range === 'sdr' || listOf(player.hdr).includes(range));
+}
+
 // The largest picture any decoder plays, which caps what a conversion encodes.
 function resolutionOf(device) {
   const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && v.maxWidth > 0 && v.maxHeight > 0);
@@ -624,10 +654,22 @@ function resolutionOf(device) {
   return `${largest.maxWidth}x${largest.maxHeight}`;
 }
 
-// The server root names its owner's Plex Pass, which its tone mapping needs.
+/** Each server's answer, by `passKeyOf`, kept while the plugin runs. */
+const plexPasses = new Map();
+
+function passKeyOf(target) {
+  return target.typed ? `typed ${target.base} ${token()}` : `shared ${target.server.id}`;
+}
+
+// The server root names its owner's Plex Pass, which its tone mapping needs. A read that failed is
+// not kept, so the next play asks again.
 async function hasPlexPass(target) {
+  const key = passKeyOf(target);
+  if (plexPasses.has(key)) return plexPasses.get(key);
   try {
-    return (await ask(target, '/', 'server')).myPlexSubscription === true;
+    const pass = (await ask(target, '/', 'server')).myPlexSubscription === true;
+    plexPasses.set(key, pass);
+    return pass;
   } catch {
     return false;
   }
@@ -643,7 +685,7 @@ function newPlaySession() {
 // sends nothing but the token a file would get, and no bitrate cap is sent: one makes Plex convert a
 // file it has not deeply analysed, whose bitrate it then counts as unbounded. Anything the decision
 // cannot answer plays the file as stored, as it always did.
-async function decidedStream(target, item, media, device) {
+async function decidedStream(target, item, media, device, start) {
   const playSession = newPlaySession();
   let params;
   let decided;
@@ -664,7 +706,9 @@ async function decidedStream(target, item, media, device) {
       'X-Plex-Product': PRODUCT,
       'X-Plex-Client-Identifier': `lantern-${yonto.installId()}`,
       'X-Plex-Platform': 'Generic',
-      'X-Plex-Client-Profile-Extra': profileExtraOf(device, await hasPlexPass(target)),
+      'X-Plex-Client-Profile-Extra': profileExtraOf(device, await hasPlexPass(target), media),
+      // Where the play starts, so a conversion starts there rather than at 0 and again at the seek.
+      ...(start > 0 ? { offset: String(Math.floor(start)) } : {}),
     };
     const answer = await ask(target, `${TRANSCODE}/decision`, 'playback decision', params);
     const part = ((list(answer, 'Metadata')[0] || {}).Media || [])[0];
@@ -802,11 +846,16 @@ export default {
       .map((section) => ({ id: String(section.key), name: section.title }));
   },
 
+  async getFilters() {
+    return [{ id: SORT_FILTER, name: 'Sort', options: SORT_OPTIONS, init: ADDED_SORT }];
+  },
+
   async getMediaList(categoryId, options) {
-    const { page = 1 } = options || {};
+    const { page = 1, filters = {} } = options || {};
     const target = await pickedTarget();
     const container = await get(target, `/library/sections/${encodeURIComponent(categoryId)}/all`, categoryId, {
       ...WITH_GUIDS,
+      sort: SORTS[filters[SORT_FILTER] || ADDED_SORT].by,
       'X-Plex-Container-Start': String(Math.max(page - 1, 0) * PAGE_SIZE),
       'X-Plex-Container-Size': String(PAGE_SIZE),
     });
@@ -843,7 +892,8 @@ export default {
       throw yonto.error.unavailable(NOTHING_TO_PLAY_MESSAGE);
     }
     const device = asked && asked.device;
-    return device && typeof device === 'object' ? decidedStream(target, item, media, device) : streamOf(target, media, item);
+    const start = asked && Number.isFinite(asked.start) ? asked.start : 0;
+    return device && typeof device === 'object' ? decidedStream(target, item, media, device, start) : streamOf(target, media, item);
   },
 
   // Plex's /:/timeline moves the server's resume point and shows a session; a finished title is

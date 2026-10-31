@@ -21,12 +21,13 @@ import { CONFIG, DEVICE, MOVIE_ID, PLAY_SESSION, SERIES_ID } from '../scripts/wr
 // as NO_FIXTURE rather than quietly against a live server.
 const dir = fileURLToPath(new URL('../../../plugins/jellyfin/', import.meta.url));
 
-function engine() {
+/** [answer] answers what it returns a response for, and the recordings the rest. */
+function engine(answer = () => null) {
   const manifest = loadManifest(dir);
   const replay = createReplayTransport({ dir: join(dir, 'fixtures') });
   // What went out, bodies included, which the host's own log of requests leaves out.
   const sent = [];
-  const transport = { request: (req) => { sent.push(req); return replay.request(req); } };
+  const transport = { request: (req) => { sent.push(req); return answer(req) || replay.request(req); } };
   const storeDir = scratchDir('lp-jellyfin-');
   const host = createHost({
     pluginDir: dir,
@@ -51,10 +52,12 @@ test('only movie and tv show libraries become categories', async () => {
 test('filters offer type statically, and the genres and years the library actually holds', async () => {
   const filters = await engine().engine.call('getFilters', ['lib-movies']);
 
-  assert.deepEqual(filters.map((f) => f.id), ['type', 'genre', 'year']);
+  assert.deepEqual(filters.map((f) => f.id), ['type', 'genre', 'year', 'sort']);
   assert.deepEqual(filters[0].options.map((o) => o.id), ['Movie', 'Series']);
   assert.deepEqual(filters[1].options.map((o) => o.id), ['Action', 'Drama']);
   assert.deepEqual(filters[2].options.map((o) => o.id), ['2014', '2010', '2008']);
+  assert.deepEqual(filters[3].options.map((o) => o.id), ['added', 'title', 'year', 'rating']);
+  assert.equal(filters[3].init, 'added');
 });
 
 test('a listing asks for the year and the ids alone, never the fields a summary cannot carry', async () => {
@@ -254,6 +257,51 @@ test('the device the server is told about is its decoders, sizes, bit depth and 
   assert.equal(DeviceProfile.TranscodingProfiles[0].Protocol, 'hls');
   assert.equal(DeviceProfile.TranscodingProfiles[0].VideoCodec, 'h264,hevc');
   assert.equal(DeviceProfile.TranscodingProfiles[0].Container, 'mp4');
+});
+
+const SOFTWARE = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hdr10'] };
+const answered = (value) => ({ status: 200, headers: {}, bodyBase64: Buffer.from(JSON.stringify(value), 'utf8').toString('base64') });
+
+/** An engine whose film is [film] and whose server plays it as stored. */
+function decidingFilm(film) {
+  return engine((req) => {
+    if (req.url.includes(`/Items/${MOVIE_ID}/PlaybackInfo`)) {
+      return answered({ PlaySessionId: 'p', MediaSources: [{ Id: MOVIE_ID, SupportsDirectPlay: true }] });
+    }
+    if (new URL(req.url).pathname.endsWith(`/Items/${MOVIE_ID}`)) return answered({ Id: MOVIE_ID, Name: 'Film', Type: 'Movie', ...film });
+    return null;
+  });
+}
+
+const softwareProfileSent = (sent) => JSON.parse(sent.findLast((r) => r.url.includes('/PlaybackInfo')).body).DeviceProfile.DirectPlayProfiles[1];
+
+test('what the software player plays is a second direct play profile, of the video the device decodes, never Dolby Vision', async () => {
+  const sdr = decidingFilm({ Container: 'mkv', MediaStreams: [{ Type: 'Video', Codec: 'hevc', VideoRangeType: 'SDR' }] });
+  await sdr.engine.call('getStream', [MOVIE_ID, { device: { ...DEVICE, softwarePlayer: SOFTWARE } }]);
+  assert.deepEqual(softwareProfileSent(sdr.sent), { Type: 'Video', Container: 'mkv', VideoCodec: 'h264,hevc', AudioCodec: 'aac,dts,dca,truehd' });
+
+  const shownFor = async (VideoRangeType, hdr) => {
+    const { engine: e, sent } = decidingFilm({ Container: 'mkv', MediaStreams: [{ Type: 'Video', Codec: 'hevc', VideoRangeType }] });
+    await e.call('getStream', [MOVIE_ID, { device: { ...DEVICE, softwarePlayer: { ...SOFTWARE, hdr } } }]);
+    return softwareProfileSent(sent) !== undefined;
+  };
+  assert.equal(await shownFor('HDR10', ['hdr10']), true);
+  assert.equal(await shownFor('HDR10', []), false, 'the Mac, whose VLCKit picture shows no HDR');
+  assert.equal(await shownFor('DOVIWithHDR10', ['hdr10', 'dolbyVision']), false);
+  for (const type of ['DOVIWithEL', 'DOVIWithHDR10Plus', 'DOVIWithELHDR10Plus', 'DOVIInvalid']) {
+    assert.equal(await shownFor(type, ['hdr10']), false, `${type}, Jellyfin 10.11's`);
+  }
+});
+
+test('a file played as stored says its container where Jellyfin names it, and is a hint where it does not', async () => {
+  const typeOf = async (Container) => {
+    const { engine: e } = decidingFilm({ Container, MediaStreams: [] });
+    return (await e.call('getStream', [MOVIE_ID, { device: DEVICE }])).mimeType;
+  };
+
+  assert.equal(await typeOf('mkv'), 'video/x-matroska');
+  assert.equal(await typeOf('mov,mp4,m4a,3gp,3g2,mj2'), 'video/mp4');
+  assert.equal(await typeOf(undefined), 'video/mp4');
 });
 
 test('a device with no HEVC decoder is sent H.264 in transport stream', async () => {

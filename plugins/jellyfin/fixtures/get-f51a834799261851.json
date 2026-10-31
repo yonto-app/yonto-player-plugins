@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2CProviderIds&EnableUserData=true&Ids=s1",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJJdGVtcyI6W3siSWQiOiJzMSIsIk5hbWUiOiJQaW9uZWVyIE9uZSIsIlR5cGUiOiJTZXJpZXMiLCJPdmVydmlldyI6IkEgU292aWV0LWVyYSBjYXBzdWxlIGZhbGxzIG92ZXIgTW9udGFuYS4iLCJHZW5yZXMiOlsiRHJhbWEiLCJTY2llbmNlIEZpY3Rpb24iXSwiUHJvZHVjdGlvblllYXIiOjIwMTAsIkltYWdlVGFncyI6eyJQcmltYXJ5IjoicGlvbmVlclByaW1hcnlUYWcifSwiQmFja2Ryb3BJbWFnZVRhZ3MiOlsicGlvbmVlckJhY2tkcm9wVGFnIl19XSwiVG90YWxSZWNvcmRDb3VudCI6MSwiU3RhcnRJbmRleCI6MH0=",
+    "setCookie": []
+  }
+}

@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "emby",
   "name": "Emby",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "contractVersion": 23,
   "description": "An Emby media server, reached with an ordinary login or with a server-generated API key. Not affiliated with Emby.",
   "probeQuery": "pattern",
@@ -58,10 +58,21 @@ const SERIES_TYPE = 'Series';
 const TYPE_FILTER = 'type';
 const GENRE_FILTER = 'genre';
 const YEAR_FILTER = 'year';
+const SORT_FILTER = 'sort';
 const TYPE_OPTIONS = [
   { id: 'Movie', name: 'Movies' },
   { id: 'Series', name: 'Series' },
 ];
+
+// A listing with no sort is a Home shelf, so it is the latest first: a series by its newest episode.
+const ADDED_SORT = 'added';
+const SORTS = {
+  [ADDED_SORT]: { name: 'Recently added', by: 'DateLastContentAdded,DateCreated', order: 'Descending' },
+  title: { name: 'Title', by: 'SortName', order: 'Ascending' },
+  year: { name: 'Year', by: 'ProductionYear,SortName', order: 'Descending,Ascending' },
+  rating: { name: 'Rating', by: 'CommunityRating,SortName', order: 'Descending,Ascending' },
+};
+const SORT_OPTIONS = Object.keys(SORTS).map((id) => ({ id, name: SORTS[id].name }));
 
 // A listing leaves these out unless they are named, CommunityRating included (unlike Jellyfin).
 const LIST_ITEM_FIELDS = 'ProductionYear,OfficialRating,ProviderIds';
@@ -78,6 +89,8 @@ const IMAGE_QUALITY = 90;
 
 // A hint for a progressive stream, not a claim about the container: the player sniffs the bytes.
 const MIME_MP4 = 'video/mp4';
+// A claim, where the server names the container: a player that cannot open it hands it on at once.
+const MIME_BY_CONTAINER = { mkv: 'video/x-matroska', webm: 'video/webm', avi: 'video/x-msvideo' };
 const MIME_HLS = 'application/x-mpegURL';
 
 // jellyfin-plugin.js has the why of these; Emby converts SAMI to SubRip too (checked on 4.9.3).
@@ -501,9 +514,10 @@ function segmentsOf(item) {
 // No MediaSourceId: Emby's is not the item id (it answers 400 to that), and without one it
 // serves the item's default source.
 function streamOf(item, token) {
+  const container = String((defaultSource(item) || {}).Container || '').toLowerCase();
   const stream = {
     url: url(['Videos', item.Id, 'stream'], { Static: 'true' }),
-    mimeType: MIME_MP4,
+    mimeType: MIME_BY_CONTAINER[container] || MIME_MP4,
     headers: authHeaders(token),
   };
   const subtitles = subtitlesOf(item);
@@ -563,6 +577,7 @@ function deviceProfileOf(device, item, toneMaps) {
   const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && typeof v.codec === 'string');
   const audio = listOf(device.audio);
   const containers = listOf(device.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  const software = softwareProfileOf(device, video, item);
   const ranges = rangesFor(device, item);
   const transcodeAudio = TRANSCODE_AUDIO.filter((codec) => audio.includes(codec));
   const channels = Number.isInteger(device.maxAudioChannels) && device.maxAudioChannels > 0 ? device.maxAudioChannels : 2;
@@ -577,7 +592,7 @@ function deviceProfileOf(device, item, toneMaps) {
       Container: containers.join(','),
       VideoCodec: video.map((v) => v.codec).join(','),
       AudioCodec: audio.map((codec) => AUDIO_NAMES[codec] || codec).join(','),
-    }],
+    }, ...(software ? [software] : [])],
     TranscodingProfiles: [{
       Type: 'Video',
       Container: copiesHevc ? 'mp4' : 'ts',
@@ -606,15 +621,56 @@ function deviceProfileOf(device, item, toneMaps) {
   };
 }
 
+/** `{ token, registered }`: the server's answer for the sign-in that asked, kept until a new one. */
+let premiere = null;
+
+// What the device's software player also plays as stored: its containers, with the video it decodes in the device's own
+// hardware and a picture it shows, SDR or a range it names, never Dolby Vision.
+function softwareProfileOf(device, video, item) {
+  const player = device.softwarePlayer;
+  if (!player || typeof player !== 'object' || !showsRange(player, RANGE_OF[(videoStreamOf(item) || {}).VideoRange])) return null;
+  const codecs = listOf(player.video).filter((codec) => video.some((v) => v.codec === codec));
+  const containers = listOf(player.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  if (codecs.length === 0 || containers.length === 0) return null;
+  return {
+    Type: 'Video',
+    Container: containers.join(','),
+    VideoCodec: codecs.join(','),
+    AudioCodec: listOf(player.audio).map((codec) => AUDIO_NAMES[codec] || codec).join(','),
+  };
+}
+
+// An unread range is taken as SDR, as a player takes a file that says nothing of its colour.
+function showsRange(player, range = 'sdr') {
+  return range !== 'dolbyVision' && (range === 'sdr' || listOf(player.hdr).includes(range));
+}
+
 // A viewer may read whether the server has Premiere, though not whether its tone mapping is on.
 // Not through `request`: a refusal here says nothing about the login, which must not be renewed for it.
+// Only a settled answer is kept: a server's error or a request that got no answer is asked again next play.
 async function hasPremiere() {
+  let me;
+  let response;
   try {
-    const me = await session();
-    const response = await send(url(['Registrations', 'premiere'], {}), {
+    me = await session();
+    if (premiere && premiere.token === me.token) return premiere.registered;
+    response = await send(url(['Registrations', 'premiere'], {}), {
       headers: { Accept: 'application/json', ...authHeaders(me.token) },
     });
-    return response.status >= 200 && response.status < 300 && JSON.parse(response.body).IsRegistered === true;
+  } catch {
+    return false;
+  }
+  const registered = response.status >= 200 && response.status < 300 && registeredIn(response.body);
+  if (SETTLED.test(String(response.status))) premiere = { token: me.token, registered };
+  return registered;
+}
+
+// A 2xx, or a server that refuses or lacks the read, whose answer will not change for this sign-in.
+const SETTLED = /^(2\d\d|401|403|404)$/;
+
+function registeredIn(body) {
+  try {
+    return JSON.parse(body).IsRegistered === true;
   } catch {
     return false;
   }
@@ -801,19 +857,21 @@ export default {
         name: 'Year',
         options: names(years).sort((a, b) => Number(b) - Number(a)).map((year) => ({ id: year, name: year })),
       },
+      { id: SORT_FILTER, name: 'Sort', options: SORT_OPTIONS, init: ADDED_SORT },
     ];
   },
 
   async getMediaList(categoryId, options) {
     const { page = 1, filters = {} } = options || {};
+    const sort = SORTS[filters[SORT_FILTER] || ADDED_SORT];
     return items(await get(['Users', ME, 'Items'], categoryId, {
       ParentId: categoryId,
       Recursive: 'true',
       IncludeItemTypes: filters[TYPE_FILTER] || ALL_ITEM_TYPES,
       Fields: LIST_ITEM_FIELDS,
       EnableUserData: 'true',
-      SortBy: 'SortName',
-      SortOrder: 'Ascending',
+      SortBy: sort.by,
+      SortOrder: sort.order,
       StartIndex: String(Math.max(page - 1, 0) * PAGE_SIZE),
       Limit: String(PAGE_SIZE),
       Genres: filters[GENRE_FILTER] || undefined,

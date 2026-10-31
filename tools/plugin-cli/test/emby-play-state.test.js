@@ -80,6 +80,21 @@ test('every item call asks for user data by name', async () => {
   assert.ok(transport.calls.every((call) => call.url.includes('EnableUserData=true')));
 });
 
+test('a listing is the latest first unless another sort is picked, a series by its newest episode', async () => {
+  const sorted = async (filters) => {
+    const transport = scripted(() => json({ Items: [] }));
+    await engineFor(withKey, transport).call('getMediaList', ['lib', { page: 1, filters }]);
+    const params = new URL(transport.calls[0].url).searchParams;
+    return [params.get('SortBy'), params.get('SortOrder')];
+  };
+
+  assert.deepEqual(await sorted({}), ['DateLastContentAdded,DateCreated', 'Descending']);
+  assert.deepEqual(await sorted({ sort: 'added' }), ['DateLastContentAdded,DateCreated', 'Descending']);
+  assert.deepEqual(await sorted({ sort: 'title' }), ['SortName', 'Ascending']);
+  assert.deepEqual(await sorted({ sort: 'year' }), ['ProductionYear,SortName', 'Descending,Ascending']);
+  assert.deepEqual(await sorted({ sort: 'rating' }), ['CommunityRating,SortName', 'Descending,Ascending']);
+});
+
 test('reportPlayback keeps one play session id across the three events, and no media source id', async () => {
   const transport = scripted(() => ({ status: 204, headers: {}, bodyBase64: '' }));
   const engine = engineFor(withKey, transport);

@@ -38,9 +38,11 @@ test('genres and years come from their own endpoints, since Emby has no /Items/F
   const { engine, requests } = replayed();
   const filters = await engine.call('getFilters', [MOVIES]);
 
-  assert.deepEqual(filters.map((f) => f.id), ['type', 'genre', 'year']);
+  assert.deepEqual(filters.map((f) => f.id), ['type', 'genre', 'year', 'sort']);
   assert.deepEqual(filters[1].options.map((o) => o.id), ['Documentary', 'Drama', 'Science Fiction']);
   assert.deepEqual(filters[2].options.map((o) => o.id), ['2014', '2010']);
+  assert.deepEqual(filters[3].options.map((o) => o.id), ['added', 'title', 'year', 'rating']);
+  assert.equal(filters[3].init, 'added');
   assert.deepEqual(requests.map((r) => r.url.split('?')[0].split('/emby/')[1]).sort(), ['Genres', 'Years']);
 });
 
@@ -684,8 +686,9 @@ function deciding({ film = decidedFilm(), premiere = { IsRegistered: false }, de
   });
 }
 
+// The latest play's.
 function profileSent(transport) {
-  return JSON.parse(transport.calls.find((c) => c.url.includes('/PlaybackInfo')).body).DeviceProfile;
+  return JSON.parse(transport.calls.findLast((c) => c.url.includes('/PlaybackInfo')).body).DeviceProfile;
 }
 
 test('with what the device plays, the server is asked, and a stream it converts is its HLS under /emby without the key it wrote in', async () => {
@@ -721,6 +724,51 @@ test('the device the server is told about is its decoders, sizes and bit depth, 
   assert.equal(profile.TranscodingProfiles[0].VideoCodec, 'h264,hevc');
   assert.equal(profile.TranscodingProfiles[0].Container, 'mp4');
   assert.equal(profile.TranscodingProfiles[0].MaxAudioChannels, '6');
+});
+
+const SOFTWARE = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hdr10'] };
+
+test('what the software player plays is a second direct play profile, of the video the device decodes', async () => {
+  const transport = deciding({ film: decidedFilm({ subType: 'None' }) });
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, softwarePlayer: SOFTWARE } }]);
+
+  assert.deepEqual(profileSent(transport).DirectPlayProfiles[1], {
+    Type: 'Video', Container: 'mkv', VideoCodec: 'h264,hevc', AudioCodec: 'aac,dts,dca,truehd',
+  });
+});
+
+test('a title the software player cannot show is never its: HDR it names no range for, and Dolby Vision even where named', async () => {
+  const profilesFor = async (VideoRange, hdr) => {
+    const film = decidedFilm();
+    film.MediaSources[0].MediaStreams[0].VideoRange = VideoRange;
+    const transport = deciding({ film });
+    await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, softwarePlayer: { ...SOFTWARE, hdr } } }]);
+    return profileSent(transport).DirectPlayProfiles.length;
+  };
+
+  assert.equal(await profilesFor('HDR 10', []), 1, 'the Mac, whose VLCKit picture shows no HDR');
+  assert.equal(await profilesFor('HLG', ['hdr10']), 1);
+  assert.equal(await profilesFor('DolbyVision', ['hdr10', 'dolbyVision']), 1);
+  assert.equal(await profilesFor('SDR', []), 2);
+  assert.equal(await profilesFor(undefined, []), 2, 'a range the server never read is taken as SDR');
+
+  const without = deciding();
+  await hostFor(withKey, without).engine.call('getStream', ['9', { device: DEVICE }]);
+  assert.equal(profileSent(without).DirectPlayProfiles.length, 1);
+});
+
+test('a file played as stored says its container where Emby names it, and is a hint where it does not', async () => {
+  const typeOf = async (Container) => {
+    const film = decidedFilm();
+    film.MediaSources[0].Container = Container;
+    const transport = deciding({ film, decision: { PlaySessionId: 'p', MediaSources: [{ Id: 'mediasource_9', SupportsDirectPlay: true }] } });
+    return (await hostFor(withKey, transport).engine.call('getStream', ['9', { device: DEVICE }])).mimeType;
+  };
+
+  assert.equal(await typeOf('mkv'), 'video/x-matroska');
+  assert.equal(await typeOf('MKV'), 'video/x-matroska');
+  assert.equal(await typeOf('strm'), 'video/mp4', 'a .strm Emby never read');
+  assert.equal(await typeOf(undefined), 'video/mp4');
 });
 
 test('a device with no HEVC decoder is sent H.264 in transport stream', async () => {
@@ -762,6 +810,74 @@ test('a refused Premiere read says nothing about the login: no second sign-in, a
   assert.equal(transport.logins(), 1);
   assert.equal(stream.mimeType, 'application/x-mpegURL');
   assert.equal(profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange'), false);
+});
+
+const premiereReads = (transport) => transport.calls.filter((c) => c.url.includes('Registrations/premiere')).length;
+
+test('Premiere is read once per sign-in, and again for a new one', async () => {
+  let logins = 0;
+  const json = (value, status = 200) => ({ status, headers: {}, bodyBase64: body(value) });
+  let revoked = false;
+  const transport = scripted({
+    'POST AuthenticateByName': () => json({ AccessToken: `token-${++logins}`, User: { Id: USER } }),
+    'GET Items/9': (req) => (revoked && req.headers['X-Emby-Token'] === 'token-1' ? json({}, 401) : json(decidedFilm())),
+    'GET Registrations/premiere': json({ IsRegistered: true }),
+    'POST PlaybackInfo': json(CONVERTED),
+  });
+  const { engine } = hostFor(withPassword, transport);
+
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  assert.equal(premiereReads(transport), 1);
+  assert.ok(profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange'), 'the kept answer still decides');
+
+  revoked = true;
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  assert.equal(transport.logins(), 2);
+  assert.equal(premiereReads(transport), 2);
+});
+
+test('a server error on the Premiere read is not kept, and a refusal is', async () => {
+  const readsAfter = async (first) => {
+    let status = first;
+    const json = (value, code = 200) => ({ status: code, headers: {}, bodyBase64: body(value) });
+    const transport = scripted({
+      'GET Items/9': json(decidedFilm()),
+      'GET Registrations/premiere': () => json(status === 200 ? { IsRegistered: true } : {}, status),
+      'POST PlaybackInfo': json(CONVERTED),
+    });
+    const { engine } = hostFor(withKey, transport);
+    await engine.call('getStream', ['9', { device: DEVICE }]);
+    status = 200;
+    await engine.call('getStream', ['9', { device: DEVICE }]);
+    return [premiereReads(transport), profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange')];
+  };
+
+  assert.deepEqual(await readsAfter(502), [2, true]);
+  assert.deepEqual(await readsAfter(429), [2, true]);
+  assert.deepEqual(await readsAfter(404), [1, false]);
+  assert.deepEqual(await readsAfter(401), [1, false]);
+});
+
+test('a Premiere read that got no answer is not kept', async () => {
+  let failing = true;
+  const json = (value) => ({ status: 200, headers: {}, bodyBase64: body(value) });
+  const transport = scripted({
+    'GET Items/9': json(decidedFilm()),
+    'GET Registrations/premiere': () => {
+      if (failing) throw Object.assign(new Error('connection reset'), { code: 'REQUEST_FAILED' });
+      return json({ IsRegistered: true });
+    },
+    'POST PlaybackInfo': json(CONVERTED),
+  });
+  const { engine } = hostFor(withKey, transport);
+
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  failing = false;
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  await engine.call('getStream', ['9', { device: DEVICE }]);
+  assert.equal(premiereReads(transport), 2);
+  assert.ok(profileSent(transport).CodecProfiles[0].Conditions.some((c) => c.Property === 'VideoRange'));
 });
 
 test('a screen that shows HDR10 lets HDR10 and HDR10+ play as stored, in the names Emby compares', async () => {

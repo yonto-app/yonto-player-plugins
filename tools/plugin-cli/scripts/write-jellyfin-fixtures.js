@@ -223,7 +223,14 @@ function bodyFor(url) {
   if (pathname.endsWith('/Views')) return VIEWS;
   if (pathname.endsWith('/Items/Resume')) return RESUME;
   if (pathname.endsWith('/Items/Filters')) return FILTERS;
-  if (searchParams.get('IncludeItemTypes') === 'Episode') return { Items: EPISODES, TotalRecordCount: 2, StartIndex: 0 };
+  if (searchParams.get('IncludeItemTypes') === 'Episode') {
+    const episodes = searchParams.get('ParentId') === 'lib-movies' ? [] : EPISODES;
+    return { Items: episodes, TotalRecordCount: episodes.length, StartIndex: 0 };
+  }
+  if (searchParams.has('Ids')) {
+    const found = [MOVIE, SERIES].filter((item) => searchParams.get('Ids').split(',').includes(item.Id));
+    return { Items: found, TotalRecordCount: found.length, StartIndex: 0 };
+  }
   if (searchParams.has('searchTerm')) return SEARCH;
   if (searchParams.get('SortBy') === 'CommunityRating') return RECOMMENDED;
 
