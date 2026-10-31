@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items?ParentId=3&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2COfficialRating%2CProviderIds&EnableUserData=true&SortBy=SortName&SortOrder=Ascending&StartIndex=0&Limit=500",
+    "url": "https://emby.example.com/emby/Users/fixture-user-id/Items?ParentId=3&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2COfficialRating%2CProviderIds&EnableUserData=true&SortBy=DateLastContentAdded%2CDateCreated&SortOrder=Descending&StartIndex=0&Limit=500",
     "body": null
   },
   "response": {

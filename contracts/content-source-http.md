@@ -157,7 +157,10 @@ plugin-written string selecting which of the host's code runs; a field name is r
 by the host's own parser and cannot be.
 
 - `mimeType` defaults to `application/x-mpegURL` (HLS) if omitted; the app
-  also recognizes `video/mp4`.
+  also recognizes `video/mp4`, a hint for a file as stored that claims no
+  container, and a container's own type (`video/x-matroska`, `video/webm`,
+  `video/x-msvideo` and the like), which says what the file is where its
+  address does not, so a player that cannot open it hands it on at once.
 - `headers` (optional) are attached to the player's HTTP data source for
   that stream only — use it for a signed-URL scheme, a session cookie, or
   a bearer token scoped to the CDN rather than the API. Each name is an
@@ -299,7 +302,7 @@ own business:
 | `getRecommendations()` | none |
 | `checkHealth()` | none |
 | `getSubSources()` | none — which one is active is the host's to say, and it says it through `yonto.subSource()` rather than as an argument here |
-| `getStream(token, request?)` | **a `track` this source itself issued**, verbatim — the string off one of its own `playbackOptions`, never anything a host composed — then, only for a manifest that declares `deviceProfile` and only when the host is about to play the stream, **one request object** `{ device }`; see *What the device plays* |
+| `getStream(token, request?)` | **a `track` this source itself issued**, verbatim — the string off one of its own `playbackOptions`, never anything a host composed — then, only for a manifest that declares `deviceProfile` and only when the host is about to play the stream, **one request object** `{ device, start? }`; see *What the device plays* |
 | `getContinueWatching()` | none |
 | `reportPlayback(report)` | **one report object** — `{ mediaId, optionId?, event, paused, position, duration?, finished?, session? }`; see *Play state and subtitles* |
 | `setPlayed(change)` | **one change object** — `{ mediaId, optionId?, played }`; see *Play state and subtitles* |
@@ -310,6 +313,12 @@ own business:
 arguments so that a later option can be added without every published plugin
 having to count its parameters — and because a host that passed them
 positionally would be handing `{ page }` a number.
+
+A category's page 1 with no filters is its Home shelf, so a source lists it
+latest first wherever it can: what was added or updated last, a series by its
+newest episode. A source that offers other orders offers them as a filter
+group with an `init` naming that one, and answers a listing that names no
+choice for the group as its `init`, since Home names none.
 
 This was worth writing down: the Android adapter passed
 `(categoryId, page, filters)` while `tools/plugin-cli` passed
@@ -1402,13 +1411,16 @@ A manifest that declares **`deviceProfile: true`** is handed what the device pla
   "maxAudioChannels": 8,
   "containers": ["mp4", "mkv", "webm", "ts", "hls"],
   "hdr": ["hdr10", "hlg"],
-  "subtitles": ["srt", "vtt", "ass"]
+  "subtitles": ["srt", "vtt", "ass"],
+  "softwarePlayer": { "containers": ["mkv"], "video": ["h264", "hevc"], "audio": ["aac", "ac3", "eac3", "dts", "truehd", "flac"], "hdr": ["hdr10", "hlg"] }
 }
 ```
 
 - `video[].codec` is `h264`, `hevc`, `vp9` or `av1`; `audio` is from `aac`, `mp3`, `ac3`, `eac3`, `dts`, `truehd`, `flac`, `opus`, `vorbis` and `alac`; `containers` from `mp4`, `mkv`, `webm`, `ts` and `hls`; `subtitles` from `srt`, `vtt` and `ass`. A plugin ignores a value it does not know, so a new name needs no version.
 - **The lists are what the platform player plays in hardware**, never what a software player could struggle through, so a server converts a file a box would stutter on.
+- **`softwarePlayer`, where present, is what the device's software player also plays as stored**: a file in one of its `containers` whose video is one of its `video`, which it decodes in the same hardware, within `video[]`'s sizes, whose sound is one of its `audio`, and whose picture is SDR or one of its `hdr`, the ranges it shows on this screen. It shows no Dolby Vision, so `hdr` never names it and a Dolby Vision title is still the server's to convert. The Apple apps send it for VLCKit, MKV of H.264 or HEVC, with the screen's HDR10 and HLG on iOS and the Apple TV and none on the Mac, whose VLCKit picture is drawn without its colour; absent, there is none.
 - **`hdr` is what the screen shows**, `hdr10`, `hdr10plus`, `hlg` or `dolbyVision`; empty is an SDR screen, which a server answers by tone-mapping. A host lists `dolbyVision` only where the device has a Dolby Vision decoder.
+- **`start`, where present, is where the play starts**, in seconds and past 0: the viewer's saved place, which the player seeks to as it starts. A server that can begin its conversion there is told so (Plex's `offset`), so it does not convert from 0 and then again from the place. Emby and Jellyfin start a job at 0 for the first request whatever they are told, so their plugins send nothing for it.
 - **Without the argument the plugin answers the file as stored.** A host calls with the token alone for a download, for a download's size, and wherever the viewer turned conversion off for the source; an app too old to know `deviceProfile` drops the key and does the same, which is why it is not a version.
 - **A stream the server decided carries a `session`**, the source's own name for that one play, which the host hands back verbatim on every report about it (see *`reportPlayback(report)` and `setPlayed(change)`*), so the server can end its conversion on the stop. A host keeps it for the play and never writes it down.
 - **Anything the server's decision cannot answer plays the file as stored.** A decision that fails is never worse than not asking.

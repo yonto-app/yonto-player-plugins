@@ -68,14 +68,78 @@ test('a title the server sends no user data for says nothing about it', async ()
 });
 
 test('every item call asks for user data by name', async () => {
-  const transport = scripted(() => json({ Items: [] }));
+  const newestEpisodes = (call) => call.url.includes('IncludeItemTypes=Episode');
+  const transport = scripted((req) => json({ Items: newestEpisodes(req) ? [{ Id: 'e1', Type: 'Episode', SeriesId: 's1' }] : [] }));
   const engine = engineFor(withKey, transport);
   await engine.call('getMediaList', ['lib', { page: 1, filters: {} }]);
   await engine.call('search', ['x']);
   await engine.call('getRecommendations', []);
 
-  assert.equal(transport.calls.length, 3);
-  assert.ok(transport.calls.every((call) => call.url.includes('EnableUserData=true')), 'user data is asked for');
+  // The newest episodes are read for their series alone, which is asked for with the user data.
+  const titles = transport.calls.filter((call) => !newestEpisodes(call));
+  assert.equal(titles.length, 4);
+  assert.ok(titles.some((call) => call.url.includes('Ids=s1')));
+  assert.ok(titles.every((call) => call.url.includes('EnableUserData=true')), 'user data is asked for');
+});
+
+test('a listing is the latest first unless another sort is picked', async () => {
+  const sorted = async (filters) => {
+    const transport = scripted(() => json({ Items: [] }));
+    await engineFor(withKey, transport).call('getMediaList', ['lib', { page: 1, filters }]);
+    const params = new URL(transport.calls.find((call) => call.url.includes('StartIndex=')).url).searchParams;
+    return [params.get('SortBy'), params.get('SortOrder')];
+  };
+
+  assert.deepEqual(await sorted({}), ['DateLastContentAdded,DateCreated', 'Descending']);
+  assert.deepEqual(await sorted({ sort: 'title' }), ['SortName', 'Ascending']);
+  assert.deepEqual(await sorted({ sort: 'year' }), ['ProductionYear,SortName', 'Descending,Ascending']);
+  assert.deepEqual(await sorted({ sort: 'rating' }), ['CommunityRating,SortName', 'Descending,Ascending']);
+});
+
+// Jellyfin never moves a series' own date when an episode arrives, so its newest episodes decide.
+test('the latest first page leads with the series of the newest episodes, narrowed like the listing', async () => {
+  const listed = [{ Id: 'old', Name: 'Old', Type: 'Series' }, { Id: 's2', Name: 'Second', Type: 'Series' }, { Id: 'm1', Name: 'Film', Type: 'Movie' }];
+  const transport = scripted((req) => {
+    const params = new URL(req.url).searchParams;
+    if (params.get('IncludeItemTypes') === 'Episode') {
+      return json({ Items: ['s1', 's2', 's1', 'gone'].map((SeriesId, i) => ({ Id: `e${i}`, Type: 'Episode', SeriesId })) });
+    }
+    // The server keeps what the genre allows, in its own order; `gone` is not in it.
+    if (params.has('Ids')) return json({ Items: [{ Id: 's2', Name: 'Second', Type: 'Series' }, { Id: 's1', Name: 'First', Type: 'Series' }] });
+    return json({ Items: listed });
+  });
+  const engine = engineFor(withKey, transport);
+
+  const items = await engine.call('getMediaList', ['lib', { page: 1, filters: { genre: 'Drama' } }]);
+
+  assert.deepEqual(items.map((item) => item.id), ['s1', 's2', 'old', 'm1']);
+  const ids = new URL(transport.calls.find((call) => call.url.includes('Ids=')).url).searchParams;
+  assert.equal(ids.get('Ids'), 's1,s2,gone');
+  assert.equal(ids.get('Genres'), 'Drama');
+
+  for (const filters of [{ sort: 'title' }, { type: 'Movie' }]) {
+    const quiet = scripted(() => json({ Items: listed }));
+    await engineFor(withKey, quiet).call('getMediaList', ['lib', { page: 1, filters }]);
+    assert.equal(quiet.calls.length, 1, `no episodes are read for ${JSON.stringify(filters)}`);
+  }
+  const later = scripted(() => json({ Items: listed }));
+  await engineFor(withKey, later).call('getMediaList', ['lib', { page: 2, filters: {} }]);
+  assert.equal(later.calls.length, 1, 'only the first page is led');
+});
+
+test('a lead that fails leaves the listing as the server sorts it, and names forty series at most', async () => {
+  const listed = [{ Id: 's1', Name: 'First', Type: 'Series' }];
+  const refusing = scripted((req) => (req.url.includes('IncludeItemTypes=Episode') ? json({}, 500) : json({ Items: listed })));
+  const items = await engineFor(withKey, refusing).call('getMediaList', ['lib', { page: 1, filters: {} }]);
+  assert.deepEqual(items.map((item) => item.id), ['s1']);
+
+  const busy = scripted((req) => json({
+    Items: req.url.includes('IncludeItemTypes=Episode') ? Array.from({ length: 60 }, (_, i) => ({ Id: `e${i}`, Type: 'Episode', SeriesId: `s${i}` })) : [],
+  }));
+  await engineFor(withKey, busy).call('getMediaList', ['lib', { page: 1, filters: {} }]);
+  const ids = new URL(busy.calls.find((call) => call.url.includes('Ids=')).url).searchParams.get('Ids').split(',');
+  assert.equal(ids.length, 40);
+  assert.equal(ids[0], 's0');
 });
 
 test('reportPlayback maps each event to its session endpoint, in ticks', async () => {

@@ -83,8 +83,8 @@ Emby does the same, and `tools/plugin-cli/test/default-port.test.js` holds both.
 | Method | Jellyfin call |
 |---|---|
 | `getCategories` | `GET /Users/{userId}/Views`, kept to `CollectionType` of `movies` or `tvshows` |
-| `getFilters` | `GET /Items/Filters?UserId&ParentId&IncludeItemTypes` |
-| `getMediaList` | `GET /Users/{userId}/Items?ParentId&Recursive&IncludeItemTypes&SortBy=SortName` |
+| `getFilters` | `GET /Items/Filters?UserId&ParentId&IncludeItemTypes`, then a static Sort group |
+| `getMediaList` | `GET /Users/{userId}/Items?ParentId&Recursive&IncludeItemTypes&SortBy&SortOrder`, the sort `DateLastContentAdded,DateCreated` descending unless another is picked; the latest first page also reads the library's newest episodes (`IncludeItemTypes=Episode&SortBy=DateCreated`) and their series by `Ids` |
 | `getMediaDetail` | `GET /Users/{userId}/Items/{id}`, then `?ParentId={id}&IncludeItemTypes=Episode` for a series; a film's one option and each episode a `track` |
 | `getStream` | `GET /Users/{userId}/Items/{id}?Fields=MediaStreams` of the film or episode, for its stream and subtitle files, then, with what the device plays, `POST /Items/{id}/PlaybackInfo?UserId` for the server's decision, then `GET /MediaSegments/{id}` for its segments |
 | `search` | `GET /Users/{userId}/Items?searchTerm&Recursive` |
@@ -96,6 +96,14 @@ Emby does the same, and `tools/plugin-cli/test/default-port.test.js` holds both.
 
 `checkHealth` is **not** exported on purpose.
 The Kotlin interface's default probes `getCategories()`, which is exactly what a Jellyfin source did before the port; exporting one here would change what Settings reports.
+
+## The latest first (2026-10-29)
+
+A Home shelf is a library's first page with no filters, so a listing is the latest first, and the Sort group (Recently added, Title, Year, Rating) opens on that.
+`DateLastContentAdded` is `DateLastMediaAdded`, which a film never has, hence `,DateCreated` after it.
+Jellyfin sets a series' `DateLastMediaAdded` when the series is first added and never again: on 10.10.7 a third episode left it where it was, while the server's own `Items/Latest` put the series first (a known gap, features.jellyfin.org posts/3236).
+So the latest first page reads the library's 200 newest episodes (`IsMissing=false`, since a placeholder for a missing episode is no arrival), takes their first 40 series in that order (an `Ids` list a server's request line holds), asks for those with the listing's own type, genre and year so a filter still holds, and puts them ahead of the rest; a lead that fails is dropped and the page is the server's order. A film library is asked too, since a listing does not know its library's type, and answers with nothing; `Items/Latest` itself answers a bare array and an episode where a series had one new, which is why it is not read.
+Browse drops a title a later page repeats, so page 2 needs no such lead.
 
 ## Play state (contract 23)
 
@@ -161,6 +169,8 @@ The design is `docs/design/2026-10-24-a-server-converts-what-the-device-cannot-p
 
 - **The request** is `POST /Items/{id}/PlaybackInfo?UserId` with `DeviceProfile`, `MaxStreamingBitrate` (200 Mbps, so nothing is converted for its size), direct play, direct stream and transcoding enabled, stream copy allowed and `SubtitleStreamIndex: -1`, so no subtitle is burned in.
 - **The DeviceProfile** (`deviceProfileOf`): one `DirectPlayProfile` of the device's containers, video and audio codecs (`dts` as `dts,dca`); one `CodecProfile` per video codec, `Width`, `Height` and `VideoBitDepth` at most the decoder's and `VideoRangeType` one of `SDR`, `DOVIWithSDR` and what the screen shows (`hdr10` adds `HDR10`, `HDR10Plus` and `DOVIWithHDR10`, `hlg` adds `HLG` and `DOVIWithHLG`, `dolbyVision` every `DOVI` type), since HDR10+ and Dolby Vision play as the layer under them, none `IsRequired`, so an unknown value passes; and one HLS `TranscodingProfile`: `h264` in `ts`, or `h264,hevc` in `mp4` (fMP4) where the device decodes HEVC, so HEVC is copied rather than encoded again and AVPlayer can take it. Jellyfin encodes to the first codec and copies any it lists.
+- **The software player's containers** (`softwareProfileOf`, kangzj/yonto#2761): where the device sends `softwarePlayer` (the Apple apps, for VLCKit), a second `DirectPlayProfile` of its containers, the video codecs it lists that the device also decodes, and its audio, so an H.264 or HEVC MKV plays as stored, only where its `VideoRangeType` is SDR (or unread) or a range the player's `hdr` names (none on the Mac, whose VLCKit picture shows no HDR), and never a `DOVI` one, which VLC cannot show, so those are still converted for AVPlayer. A file played as stored is `video/x-matroska` where the item's `Container` is `mkv` (`webm` and `avi` likewise), so the player knows it from an address that names nothing; otherwise `video/mp4`, a hint. Checked against the Docker 10.10.7 for an Apple device: the HEVC and HDR10 MKVs went from `Transcode` to `DirectPlay`, the AVI stayed converted.
+- **A resumed conversion starts twice, and `StartTimeTicks` does not change it** (kangzj/yonto#2762): the first request (an fMP4's init segment) starts ffmpeg at 0, and the segment at the place stops it and starts another at `-ss` the place. Sent with `PlaybackInfo`'s `StartTimeTicks`, the address carries it and the first job still starts at 0, so the plugin sends nothing for `getStream`'s `start`. Measured on the Docker Jellyfin with an AVI resumed at 60 s, reading the server's log.
 - **The answer's first `MediaSources` entry**: `SupportsDirectPlay` is the static address above; otherwise `TranscodingUrl`, on the server's base, with any `api_key` or `ApiKey` taken out, since the `Authorization` header goes with every hop on the host, and `application/x-mpegURL`. A failed or unreadable decision is the static address with no `session`. A conversion's HLS carries no subtitle track, so `subtitlesOf(item, true)` adds the text tracks inside the file, at the same `/Subtitles/{Index}/Stream.{format}` address, which the server answers by extracting the track (checked with an embedded SubRip in an MKV).
 - **`session`** is `{ playSessionId, mediaSourceId, playMethod }` as JSON, `DirectPlay` or `Transcode`; the stop that carries the server's `PlaySessionId` ends its encode (the log shows *Deleting partial stream file(s)* on that call's thread). With reporting off no stop is sent, and the server ends the job when its segments stop being asked for.
 - **Tone mapping** is the server's *Enable tone mapping* setting; with it on, 10.10.7 with no hardware acceleration uses `tonemapx=bt2390`. With it off, HDR is converted to H.264 untouched.

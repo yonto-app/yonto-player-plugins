@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?ParentId=lib-movies&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2CProviderIds&EnableUserData=true&SortBy=SortName&SortOrder=Ascending&StartIndex=0&Limit=500",
+    "url": "https://jellyfin.example.com/Users/fixture-user-id/Items?ParentId=lib-movies&Recursive=true&IncludeItemTypes=Movie%2CSeries&Fields=ProductionYear%2CProviderIds&EnableUserData=true&SortBy=DateLastContentAdded%2CDateCreated&SortOrder=Descending&StartIndex=0&Limit=500",
     "body": null
   },
   "response": {

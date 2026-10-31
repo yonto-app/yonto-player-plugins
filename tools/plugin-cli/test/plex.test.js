@@ -58,6 +58,21 @@ test('a listing pages with the container start and size', async () => {
   assert.ok(requests[0].url.includes('X-Plex-Container-Size=60'), requests[0].url);
 });
 
+test('a listing is the latest first unless another sort is picked, a show by its newest episode', async () => {
+  const filters = await replayed().engine.call('getFilters', ['1']);
+  assert.deepEqual(filters.map((f) => [f.id, f.init, f.options.map((o) => o.id)]), [['sort', 'added', ['added', 'title', 'year', 'rating']]]);
+
+  const sorted = async (chosen) => {
+    const { engine, requests } = answering(200, { MediaContainer: { Metadata: [] } });
+    await engine.call('getMediaList', ['1', { page: 1, filters: chosen }]);
+    return new URL(requests.at(-1).url).searchParams.get('sort');
+  };
+  assert.equal(await sorted({}), 'episode.addedAt:desc');
+  assert.equal(await sorted({ sort: 'title' }), 'titleSort');
+  assert.equal(await sorted({ sort: 'year' }), 'year:desc');
+  assert.equal(await sorted({ sort: 'rating' }), 'audienceRating:desc');
+});
+
 test('a movie is a summary with its artwork resized by the server', async () => {
   const items = await replayed().engine.call('getMediaList', ['1', { page: 1 }]);
 
@@ -737,6 +752,25 @@ test('a shared server refusing its decision plays the file as stored, keeps the 
   assert.equal(account.calls.length, 1, 'plex.tv is not asked again');
 });
 
+test('Plex Pass is kept per shared server: one server\'s answer is not another\'s', async () => {
+  const { engine, servers } = linked({ subSource: FRIEND.id });
+  const replayed = servers.request.bind(servers);
+  servers.request = async (req) => {
+    if (new URL(req.url).pathname !== '/') return replayed(req);
+    servers.calls.push(req);
+    return { status: 200, headers: {}, bodyBase64: body({ MediaContainer: { myPlexSubscription: req.url.includes('.aaaa.') } }) };
+  };
+  const toneMapped = async (server) => {
+    await engine.call('getStream', [`${server.id}|${MOVIE_ID}`, { device: DEVICE }]);
+    return decisionOf(servers.calls).get('X-Plex-Client-Profile-Extra').includes('video.colorTrc');
+  };
+
+  assert.equal(await toneMapped(FRIEND), true);
+  assert.equal(await toneMapped(NEIGHBOUR), false);
+  assert.equal(await toneMapped(FRIEND), true);
+  assert.equal(servers.calls.filter((c) => new URL(c.url).pathname === '/').length, 2);
+});
+
 // Misconfigured, not unauthenticated: the viewer is logged in, and what is missing is the form's server.
 test('logged in with nothing shared and no server typed, every call says to type your own server', async () => {
   const { engine, servers } = linked({ resources: RESOURCES.filter((entry) => entry.owned) });
@@ -1072,8 +1106,9 @@ function deciding({ item = subtitled, decision = DECIDED('transcode'), root = { 
   ]);
 }
 
+// The latest play's.
 function decisionOf(sent) {
-  return new URL(sent.find((r) => r.url.includes('/transcode/universal/decision')).url).searchParams;
+  return new URL(sent.findLast((r) => r.url.includes('/transcode/universal/decision')).url).searchParams;
 }
 
 test('with what the device plays, the server decides, and a conversion is its HLS with everything in its address but the token', async () => {
@@ -1127,6 +1162,39 @@ test('the device the server is told about is its decoders, sizes and bit depth, 
   ]);
 });
 
+test('what the software player plays is a second direct play profile, of the video the device decodes, never Dolby Vision', async () => {
+  const software = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hlg'] };
+  const profilesFor = async (videoStream, hdr = software.hdr) => {
+    const item = movie({ Media: [{ container: 'mkv', Part: [{ key: '/library/parts/1/1/file.mkv', Stream: [videoStream] }] }] });
+    const { engine, sent } = deciding({ item });
+    await engine.call('getStream', ['1', { device: { ...DEVICE, softwarePlayer: { ...software, hdr } } }]);
+    return decisionOf(sent).get('X-Plex-Client-Profile-Extra').split('+').filter((part) => part.startsWith('add-direct-play-profile('));
+  };
+
+  assert.deepEqual((await profilesFor({ streamType: 1, codec: 'hevc' }))[1],
+    'add-direct-play-profile(type=videoProfile&protocol=http&container=mkv&videoCodec=h264,hevc&audioCodec=aac,dca,truehd)');
+  assert.equal((await profilesFor({ streamType: 1, codec: 'hevc', DOVIPresent: true }, ['hdr10', 'dolbyVision'])).length, 1);
+  assert.equal((await profilesFor({ streamType: 1, codec: 'hevc', colorTrc: 'smpte2084' })).length, 1, 'HDR10 it names no range for');
+  assert.equal((await profilesFor({ streamType: 1, codec: 'hevc', colorTrc: 'arib-std-b67' })).length, 2);
+});
+
+test('where the play starts is the conversion\'s offset, in whole seconds, so it starts there', async () => {
+  const offsetFor = async (asked) => {
+    const { engine, sent } = deciding();
+    const stream = await engine.call('getStream', ['1', { device: DEVICE, ...asked }]);
+    const decided = decisionOf(sent).get('offset');
+    assert.equal(new URL(stream.url).searchParams.get('offset'), decided, 'start.m3u8 carries the decision\'s own');
+    return decided;
+  };
+
+  assert.equal(await offsetFor({ start: 612.8 }), '612');
+  assert.equal(await offsetFor({}), null);
+  assert.equal(await offsetFor({ start: 0 }), null);
+  assert.equal(await offsetFor({ start: -3 }), null);
+  assert.equal(await offsetFor({ start: 'x' }), null);
+  assert.equal(await offsetFor({ start: '612' }), null, 'a number, not a string of one');
+});
+
 test('a device with no HEVC decoder is sent H.264 in transport stream, at the size of its largest decoder', async () => {
   const { engine, sent } = deciding();
   const video = [{ codec: 'h264', maxWidth: 1280, maxHeight: 720, maxBitDepth: 8 }];
@@ -1156,6 +1224,18 @@ test('the screen\'s range is a limitation only on a server with Plex Pass, and a
   assert.deepEqual(await limitsFor({ myPlexSubscription: true }, ['hdr10']), ['video.colorTrc arib-std-b67', 'video.DOVIBLCompatID 0']);
   assert.deepEqual(await limitsFor({ myPlexSubscription: true }, ['hlg']), ['video.colorTrc smpte2084', 'video.DOVIBLCompatID 0']);
   assert.deepEqual(await limitsFor({ myPlexSubscription: true }, ['hdr10', 'hlg', 'dolbyVision']), []);
+});
+
+test('Plex Pass is read once per server, and a read that failed is asked again', async () => {
+  const rootReads = async (root) => {
+    const { engine, sent } = deciding({ root });
+    await engine.call('getStream', ['1', { device: DEVICE }]);
+    await engine.call('getStream', ['1', { device: DEVICE }]);
+    return sent.filter((r) => new URL(r.url).pathname === '/').length;
+  };
+
+  assert.equal(await rootReads({ myPlexSubscription: true }), 1);
+  assert.equal(await rootReads(500), 2);
 });
 
 test('a file the server says plays as stored is its part, under a session of its own', async () => {

@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "jellyfin",
   "name": "Jellyfin",
-  "version": "1.12.0",
+  "version": "1.14.0",
   "contractVersion": 23,
   "description": "A Jellyfin media server, reached with an ordinary login or with a server-generated API key.",
   "probeQuery": "bubble",
@@ -75,10 +75,25 @@ const SERIES_TYPE = 'Series';
 const TYPE_FILTER = 'type';
 const GENRE_FILTER = 'genre';
 const YEAR_FILTER = 'year';
+const SORT_FILTER = 'sort';
 const TYPE_OPTIONS = [
   { id: 'Movie', name: 'Movies' },
   { id: 'Series', name: 'Series' },
 ];
+
+// A listing with no sort is a Home shelf, so it is the latest first: a series by its newest episode.
+const ADDED_SORT = 'added';
+const SORTS = {
+  [ADDED_SORT]: { name: 'Recently added', by: 'DateLastContentAdded,DateCreated', order: 'Descending' },
+  title: { name: 'Title', by: 'SortName', order: 'Ascending' },
+  year: { name: 'Year', by: 'ProductionYear,SortName', order: 'Descending,Ascending' },
+  rating: { name: 'Rating', by: 'CommunityRating,SortName', order: 'Descending,Ascending' },
+};
+const SORT_OPTIONS = Object.keys(SORTS).map((id) => ({ id, name: SORTS[id].name }));
+// How many of a library's newest episodes are read for the series they belong to, and how many of those series
+// lead, which keeps the `Ids` list of the second ask short enough for any server's request line.
+const NEWEST_EPISODE_COUNT = 200;
+const LEADING_SERIES_COUNT = 40;
 
 // Jellyfin only includes these in a response when they are asked for by name. Omitting one
 // is not a request error, it is silently-empty data — which is exactly what a missing
@@ -109,6 +124,8 @@ const IMAGE_QUALITY = 90;
 
 const MIME_MP4 = 'video/mp4';
 const MIME_HLS = 'application/x-mpegURL';
+// A claim, where the server names the container: a player that cannot open it hands it on at once.
+const MIME_BY_CONTAINER = { mkv: 'video/x-matroska', webm: 'video/webm', avi: 'video/x-msvideo' };
 
 // The contract's cap on one stream's subtitles.
 const MAX_SUBTITLES = 32;
@@ -696,7 +713,7 @@ function streamOf(item, token) {
       static: 'true',
       mediaSourceId: item.Id,
     }),
-    mimeType: MIME_MP4,
+    mimeType: MIME_BY_CONTAINER[String(item.Container || '').toLowerCase()] || MIME_MP4,
     // The token is passed in rather than read here: with a login there is no credential in
     // the config to read, and the one that exists belongs to the session that fetched this
     // item. The player speaks neither `yonto.fetch` nor this plugin, so a stream carries
@@ -732,10 +749,11 @@ function listOf(value) {
 // The device as Jellyfin's own clients describe it. A video beyond a decoder's size, bit depth or
 // the screen's dynamic range fails its codec profile, so the server converts it to H.264 SDR,
 // tone-mapping HDR as its own settings say.
-function deviceProfileOf(device) {
+function deviceProfileOf(device, item) {
   const video = (Array.isArray(device.video) ? device.video : []).filter((v) => v && typeof v.codec === 'string');
   const audio = listOf(device.audio);
   const containers = listOf(device.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  const software = softwareProfileOf(device, video, item);
   const ranges = [...new Set([...SDR_RANGES, ...listOf(device.hdr).flatMap((format) => HDR_RANGES[format] || [])])];
   const transcodeAudio = TRANSCODE_AUDIO.filter((codec) => audio.includes(codec));
   const channels = Number.isInteger(device.maxAudioChannels) && device.maxAudioChannels > 0 ? device.maxAudioChannels : 2;
@@ -751,7 +769,7 @@ function deviceProfileOf(device) {
       Container: containers.join(','),
       VideoCodec: video.map((v) => v.codec).join(','),
       AudioCodec: audio.map((codec) => AUDIO_NAMES[codec] || codec).join(','),
-    }],
+    }, ...(software ? [software] : [])],
     TranscodingProfiles: [{
       Type: 'Video',
       Container: copiesHevc ? 'mp4' : 'ts',
@@ -780,6 +798,28 @@ function deviceProfileOf(device) {
   };
 }
 
+// What the device's software player also plays as stored: its containers, with the video it decodes in the device's own
+// hardware and a picture it shows, SDR or a range it names, never Dolby Vision.
+function softwareProfileOf(device, video, item) {
+  const player = device.softwarePlayer;
+  const stream = (Array.isArray(item.MediaStreams) ? item.MediaStreams : []).find((s) => s && s.Type === 'Video') || {};
+  if (!player || typeof player !== 'object' || !showsRange(player, VIDEO_RANGES[stream.VideoRangeType])) return null;
+  const codecs = listOf(player.video).filter((codec) => video.some((v) => v.codec === codec));
+  const containers = listOf(player.containers).map((name) => CONTAINER_NAMES[name]).filter(Boolean);
+  if (codecs.length === 0 || containers.length === 0) return null;
+  return {
+    Type: 'Video',
+    Container: containers.join(','),
+    VideoCodec: codecs.join(','),
+    AudioCodec: listOf(player.audio).map((codec) => AUDIO_NAMES[codec] || codec).join(','),
+  };
+}
+
+// An unread range is taken as SDR, as a player takes a file that says nothing of its colour.
+function showsRange(player, range = 'sdr') {
+  return range !== 'dolbyVision' && (range === 'sdr' || listOf(player.hdr).includes(range));
+}
+
 // The credential rides in the Authorization header on every hop, so a key the server writes into
 // the address is taken out rather than left in logs and caches.
 function withoutKey(path) {
@@ -795,7 +835,7 @@ async function decidedStream(item, device) {
   let playSession;
   try {
     const info = parsed(await request('POST', ['Items', item.Id, 'PlaybackInfo'], 'playback info', { UserId: ME }, {
-      DeviceProfile: deviceProfileOf(device),
+      DeviceProfile: deviceProfileOf(device, item),
       MaxStreamingBitrate: MAX_STREAMING_BITRATE,
       EnableDirectPlay: true,
       EnableDirectStream: true,
@@ -871,6 +911,8 @@ function episodeNumberOf(episode) {
 const VIDEO_RANGES = {
   SDR: 'sdr', HDR10: 'hdr10', HDR10Plus: 'hdr10plus', HLG: 'hlg',
   DOVI: 'dolbyVision', DOVIWithHDR10: 'dolbyVision', DOVIWithHLG: 'dolbyVision', DOVIWithSDR: 'dolbyVision',
+  // Jellyfin 10.11's.
+  DOVIWithEL: 'dolbyVision', DOVIWithHDR10Plus: 'dolbyVision', DOVIWithELHDR10Plus: 'dolbyVision', DOVIInvalid: 'dolbyVision',
 };
 
 // What the copy is: a film's own streams say its size and range, an episode's listing its size alone.
@@ -885,6 +927,32 @@ function videoOf(item) {
 
 function positive(value) {
   return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+// Jellyfin dates a series by when it was first added however many episodes arrive after (only its own Latest
+// row reads the episodes), so the series of the library's newest episodes are found here, newest first.
+// A lead that fails leaves the listing as the server sorts it rather than failing it.
+async function seriesWithNewEpisodes(categoryId, narrowed) {
+  try {
+    const episodes = items(await get(['Users', ME, 'Items'], categoryId, {
+      ParentId: categoryId,
+      Recursive: 'true',
+      IncludeItemTypes: 'Episode',
+      IsMissing: 'false',
+      EnableImages: 'false',
+      EnableUserData: 'false',
+      SortBy: 'DateCreated',
+      SortOrder: 'Descending',
+      Limit: String(NEWEST_EPISODE_COUNT),
+    }));
+    const seriesIds = [...new Set(episodes.map((episode) => episode.SeriesId).filter(Boolean))].slice(0, LEADING_SERIES_COUNT);
+    if (seriesIds.length === 0) return [];
+    const found = items(await get(['Users', ME, 'Items'], categoryId, { ...narrowed, Ids: seriesIds.join(',') }));
+    return seriesIds.map((id) => found.find((item) => item.Id === id)).filter(Boolean);
+  } catch (error) {
+    yonto.log('warn', `the newest episodes could not be read, so the library is listed as the server sorts it: ${error.code || error}`);
+    return [];
+  }
 }
 
 // Only each episode's size is asked for: its label is built from its name and index, and nothing here reads a
@@ -1010,6 +1078,7 @@ export default {
         options: (available.Years || []).slice().sort((a, b) => b - a)
           .map((year) => ({ id: String(year), name: String(year) })),
       },
+      { id: SORT_FILTER, name: 'Sort', options: SORT_OPTIONS, init: ADDED_SORT },
     ];
   },
 
@@ -1017,19 +1086,30 @@ export default {
   // cursor an options object may carry is never read.
   async getMediaList(categoryId, options) {
     const { page = 1, filters = {} } = options || {};
-    return items(await get(['Users', ME, 'Items'], categoryId, {
-      ParentId: categoryId,
-      Recursive: 'true',
+    const sortId = filters[SORT_FILTER] || ADDED_SORT;
+    const narrowed = {
       IncludeItemTypes: filters[TYPE_FILTER] || ALL_ITEM_TYPES,
       Fields: LIST_ITEM_FIELDS,
       EnableUserData: 'true',
-      SortBy: 'SortName',
-      SortOrder: 'Ascending',
-      StartIndex: String(Math.max(page - 1, 0) * PAGE_SIZE),
-      Limit: String(PAGE_SIZE),
       Genres: filters[GENRE_FILTER] || undefined,
       Years: filters[YEAR_FILTER] || undefined,
-    })).map(toSummary);
+    };
+    const [listed, leading] = await Promise.all([
+      get(['Users', ME, 'Items'], categoryId, {
+        ParentId: categoryId,
+        Recursive: 'true',
+        ...narrowed,
+        SortBy: SORTS[sortId].by,
+        SortOrder: SORTS[sortId].order,
+        StartIndex: String(Math.max(page - 1, 0) * PAGE_SIZE),
+        Limit: String(PAGE_SIZE),
+      }).then(items),
+      sortId === ADDED_SORT && page <= 1 && narrowed.IncludeItemTypes.split(',').includes(SERIES_TYPE)
+        ? seriesWithNewEpisodes(categoryId, narrowed)
+        : [],
+    ]);
+    const led = new Set(leading.map((item) => item.Id));
+    return [...leading, ...listed.filter((item) => !led.has(item.Id))].map(toSummary);
   },
 
   async getMediaDetail(mediaId) {
