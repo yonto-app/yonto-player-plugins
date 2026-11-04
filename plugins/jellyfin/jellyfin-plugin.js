@@ -727,7 +727,7 @@ function streamOf(item, token) {
 
 // What the device plays, in the names a DeviceProfile uses.
 const CONTAINER_NAMES = { mp4: 'mp4,m4v,mov', mkv: 'mkv', webm: 'webm', ts: 'ts,mpegts,m2ts' };
-const AUDIO_NAMES = { dts: 'dts,dca' };
+const AUDIO_NAMES = { dts: 'dts,dca', wma: 'wma,wmav1,wmav2,wmapro,wmalossless' };
 // A layer the device plays without the format on top counts too: HDR10+ and Dolby Vision play as
 // their HDR10 or HLG layer, and as their SDR one on any screen.
 const SDR_RANGES = ['SDR', 'DOVIWithSDR'];

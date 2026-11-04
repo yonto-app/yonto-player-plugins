@@ -578,7 +578,7 @@ function streamOf(target, media, item) {
 
 // What the device plays, in the names a Plex client profile uses.
 const CONTAINER_NAMES = { mp4: 'mp4,mov', mkv: 'mkv', webm: 'webm', ts: 'mpegts' };
-const AUDIO_NAMES = { dts: 'dca' };
+const AUDIO_NAMES = { dts: 'dca', wma: 'wma,wmav1,wmav2,wmapro,wmalossless' };
 const TRANSCODE_AUDIO = ['aac', 'ac3', 'eac3'];
 // The transfer each HDR format the screen shows is carried in.
 const SHOWN_TRANSFERS = { hdr10: 'smpte2084', hdr10plus: 'smpte2084', dolbyVision: 'smpte2084', hlg: 'arib-std-b67' };

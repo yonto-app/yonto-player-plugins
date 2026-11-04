@@ -531,7 +531,7 @@ function streamOf(item, token) {
 // its `VideoRange` alone (4.10 ignores the extended types as conditions), and Dolby Vision is one
 // name whatever its profile, so the profiles whose base layer the screen shows are let in per item.
 const CONTAINER_NAMES = { mp4: 'mp4,m4v,mov', mkv: 'mkv', webm: 'webm', ts: 'ts,mpegts,m2ts' };
-const AUDIO_NAMES = { dts: 'dts,dca' };
+const AUDIO_NAMES = { dts: 'dts,dca', wma: 'wma,wmav1,wmav2,wmapro,wmalossless' };
 const SDR_RANGE = 'SDR';
 const HDR_RANGES = {
   hdr10: ['HDR 10', 'HDR 10+'],

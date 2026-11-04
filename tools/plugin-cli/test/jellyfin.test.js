@@ -259,6 +259,13 @@ test('the device the server is told about is its decoders, sizes, bit depth and 
   assert.equal(DeviceProfile.TranscodingProfiles[0].Container, 'mp4');
 });
 
+test('wma audio codec is expanded to all WMA aliases in direct play profile', async () => {
+  const { engine: e, sent } = engine();
+  await e.call('getStream', [MOVIE_ID, { device: { ...DEVICE, audio: ['aac', 'wma'] } }]);
+  const { DeviceProfile } = JSON.parse(sent.find((r) => r.url.includes('/PlaybackInfo')).body);
+  assert.equal(DeviceProfile.DirectPlayProfiles[0].AudioCodec, 'aac,wma,wmav1,wmav2,wmapro,wmalossless');
+});
+
 const SOFTWARE = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hdr10'] };
 const answered = (value) => ({ status: 200, headers: {}, bodyBase64: Buffer.from(JSON.stringify(value), 'utf8').toString('base64') });
 

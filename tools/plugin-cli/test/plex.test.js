@@ -1162,6 +1162,14 @@ test('the device the server is told about is its decoders, sizes and bit depth, 
   ]);
 });
 
+test('wma audio codec is expanded to all WMA aliases in direct play profile', async () => {
+  const { engine, sent } = deciding();
+  await engine.call('getStream', ['1', { device: { ...DEVICE, audio: ['aac', 'wma'] } }]);
+  const asked = decisionOf(sent);
+  const extra = asked.get('X-Plex-Client-Profile-Extra');
+  assert.ok(extra.includes('audioCodec=aac,wma,wmav1,wmav2,wmapro,wmalossless'));
+});
+
 test('what the software player plays is a second direct play profile, of the video the device decodes, never Dolby Vision', async () => {
   const software = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hlg'] };
   const profilesFor = async (videoStream, hdr = software.hdr) => {

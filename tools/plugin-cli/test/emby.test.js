@@ -726,6 +726,13 @@ test('the device the server is told about is its decoders, sizes and bit depth, 
   assert.equal(profile.TranscodingProfiles[0].MaxAudioChannels, '6');
 });
 
+test('wma audio codec is expanded to all WMA aliases in direct play profile', async () => {
+  const transport = deciding();
+  await hostFor(withKey, transport).engine.call('getStream', ['9', { device: { ...DEVICE, audio: ['aac', 'wma'] } }]);
+  const profile = profileSent(transport);
+  assert.equal(profile.DirectPlayProfiles[0].AudioCodec, 'aac,wma,wmav1,wmav2,wmapro,wmalossless');
+});
+
 const SOFTWARE = { containers: ['mkv'], video: ['h264', 'hevc', 'av1'], audio: ['aac', 'dts', 'truehd'], hdr: ['hdr10'] };
 
 test('what the software player plays is a second direct play profile, of the video the device decodes', async () => {
