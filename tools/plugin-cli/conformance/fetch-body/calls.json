@@ -8,7 +8,7 @@
   "sized": {
     "https://body.test/at-the-limit": { "bytes": "limit", "fill": 120 },
     "https://body.test/over-the-limit": { "bytes": "limit+1", "fill": 120 },
-    "https://body.test/undecodable": { "bytes": 10485760, "fill": 228 }
+    "https://body.test/undecodable": { "bytes": 25165824, "fill": 228 }
   },
   "calls": [
     {
@@ -51,35 +51,35 @@
       "why": "a body of exactly the limit is handed over whole, as text and as bytes",
       "method": "bothLengths",
       "args": ["https://body.test/at-the-limit"],
-      "answer": [16777216, 22369624]
+      "answer": [33554432, 44739244]
     },
     {
-      "why": "a body that does not decode is one U+FFFD a byte, twice the memory, and 10 MB of it, the most a television holds, still reads both ways",
+      "why": "a body that does not decode is one U+FFFD a byte, twice the memory, and 24 MB of it, the most a television holds, still reads both ways",
       "method": "bothLengths",
       "args": ["https://body.test/undecodable"],
-      "answer": [10485760, 13981016]
+      "answer": [25165824, 33554432]
     },
     {
-      "why": "a call keeps limits.json's unreadBodyBytesPerCall of its unread bodies, four at the limit, and the oldest it dropped reads as late",
+      "why": "a call keeps limits.json's unreadBodyBytesPerCall of its unread bodies, two at the limit, and the oldest it dropped reads as late",
       "method": "manyUnread",
-      "args": ["https://body.test/at-the-limit", 6],
+      "args": ["https://body.test/at-the-limit", 4],
       "answer": [
         [null, "bodyBase64 can only be read during the call that fetched it"],
         [null, "bodyBase64 can only be read during the call that fetched it"],
-        22369624, 22369624, 22369624, 22369624
+        44739244, 44739244
       ]
     },
     {
-      "why": "a body read as bytes no longer counts against what the call keeps, so four read and two more fetched all read",
+      "why": "a body read as bytes no longer counts against what the call keeps, so two read and two more fetched all read",
       "method": "readThenMore",
       "args": ["https://body.test/at-the-limit"],
-      "answer": [22369624, 22369624, 22369624, 22369624, 22369624, 22369624]
+      "answer": [44739244, 44739244, 44739244, 44739244]
     },
     {
       "why": "one byte over the limit is RESPONSE_TOO_LARGE, naming it",
       "method": "bodyLength",
       "args": ["https://body.test/over-the-limit"],
-      "answer": ["RESPONSE_TOO_LARGE", "the response from https://body.test/over-the-limit was larger than the 16 MB a plugin may read"]
+      "answer": ["RESPONSE_TOO_LARGE", "the response from https://body.test/over-the-limit was larger than the 32 MB a plugin may read"]
     }
   ]
 }

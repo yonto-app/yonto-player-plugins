@@ -83,7 +83,7 @@ export default {
       }
       while (responses.length > 0) lengths.push(responses.shift().bodyBase64.length);
     };
-    await fetchAndRead(4);
+    await fetchAndRead(2);
     await fetchAndRead(2);
     return lengths;
   },

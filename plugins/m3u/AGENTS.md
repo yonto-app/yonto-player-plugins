@@ -10,6 +10,7 @@ The playlist's host and nothing else.
 The address is a `url` field, so the host widens the allowlist to exactly that host and checks every redirect hop against it; there is no `hostsFromConfig`.
 The entries' own addresses are the player's to open and are never fetched here, so a playlist of channels on a hundred hosts needs no allowance for them.
 A redirect off the playlist's host is refused by the host, and said so in a sentence rather than as an outage.
+A failure it has no sentence for is thrown again with its code alone, since the host's message names the URL, and a playlist address can carry a key.
 
 ## The format
 
@@ -31,12 +32,18 @@ A redirect off the playlist's host is refused by the host, and said so in a sent
 - A relative address is read against the playlist's own address.
 - An HLS media or master playlist (`#EXT-X-…`) is one stream, not a playlist of them, and says so.
 
+## A big playlist
+
+A panel's export is 30 MB and 90,000 entries, and one character above U+00FF in it makes the whole body a 2-byte-a-character string in QuickJS (56 MB for 28 MB), so the parse is written for a television's memory and budget, and measured on its QuickJS:
+the body is walked line by line with `indexOf` rather than split into a second copy (a line ends at CR, LF or both, as before), no regex runs per line (a tag is read by its characters, with the old regexes' prefixes: `#EXTM3U` however it goes on, an HLS manifest's tags anywhere in the file), an entry with no headers shares one frozen object, and an id's md5 is made only when an entry is shown or looked up (a host call each was a second of the budget).
+The customer's 28 MB playlist parses in about 0.9 s and needs 128 MB of the realm's 160; a 32 MB one built from it needs the 160.
+
 ## Ids and paging
 
 An entry's id is the md5 of its address and title, so it survives the playlist being reordered or gaining entries, and an entry the playlist repeats is one title.
 A listing is 60 entries a page, from a playlist the runtime holds for five minutes (module state, not `yonto.store`: a big one would not fit the store's 1 MiB).
 Search is a case-insensitive substring over title and group, at most 100.
-The 16 MB body limit is the largest playlist it reads.
+The 32 MB body limit is the largest playlist it reads, and a larger one says *too large to read*; an Xtream Codes panel's `get.php?username=…&password=…` link adds that it can be added as an Xtream Codes source, which reads the panel through its API in pieces (`plugins/xtream/AGENTS.md`), since a panel's export is often its whole library in one file.
 
 ## Not here
 

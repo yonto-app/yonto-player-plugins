@@ -9,7 +9,7 @@ This repository is the open part of Yonto Player, under the MIT licence:
 | --- | --- |
 | `contracts/` | The plugin contract: the manifest and result JSON Schemas, the index format, the HTTP contract (`content-source-http.md`) and `contract-versions.json`, which says when each part of the interface arrived. |
 | `tools/plugin-cli/` | `yonto-plugin`, the command-line tool that scaffolds, lints, runs, diagnoses and packages a plugin on your own computer, in the same QuickJS engine the app runs plugins in. Its `conformance/` is the suite both hosts, this tool and the app, are held to, and `templates/` is what `init` starts a plugin from. |
-| `plugins/` | Yonto's own plugins for [Jellyfin](https://jellyfin.org), [Plex](https://www.plex.tv), [Emby](https://emby.media) and [PeerTube](https://joinpeertube.org), one for M3U playlists, and the handlers that read the MacCMS and XPTV formats. Each has an `AGENTS.md` saying how that server behaves, and most have recorded fixtures to run against. |
+| `plugins/` | Yonto's own plugins for [Jellyfin](https://jellyfin.org), [Plex](https://www.plex.tv), [Emby](https://emby.media) and [PeerTube](https://joinpeertube.org), one for M3U playlists, one for Xtream Codes panels, and the handlers that read the MacCMS and XPTV formats. Each has an `AGENTS.md` saying how that server behaves, and most have recorded fixtures to run against. |
 
 The app itself is not here, and stays closed.
 

@@ -566,7 +566,7 @@ has that server to solve this on.
     (`REQUEST_INVALID`).
   - A redirect chain the host gave up on (`REDIRECT_REFUSED`). The server
     answered, with redirects.
-  - A body over 16 MB (`RESPONSE_TOO_LARGE`). The server answered, with more than
+  - A body over 32 MB (`RESPONSE_TOO_LARGE`). The server answered, with more than
     a plugin may read.
   - An answer the plugin could not parse, or one that says the request failed
     in its own words, such as a MacCMS `{"code":0}` with a `2xx` status. The
@@ -1526,7 +1526,7 @@ A fetch rejects only when it has no answer it can hand back, and the code says w
   carrying credentials, or the
   chain ran past 20 hops or 60 seconds. The server answered; the host would not follow.
 - `TIMEOUT`: the call's budget for requests ran out.
-- `RESPONSE_TOO_LARGE`: the body handed back would be larger than 16 MB (below). The server
+- `RESPONSE_TOO_LARGE`: the body handed back would be larger than 32 MB (below). The server
   answered; the host would not read it all.
 - `REQUEST_FAILED`: the request went out and no usable answer came back — the network
   failed, or the TLS handshake did. From contract 16 that is all it means from
@@ -1584,25 +1584,25 @@ A redirect to a URL carrying credentials is `REDIRECT_REFUSED`.
   of the host when first read, so a body crosses into the realm once unless a plugin wants its
   bytes, and it can be read only during the call that made the fetch: kept for a later call,
   reading it throws `bodyBase64 can only be read during the call that fetched it`, with no
-  code. A call keeps at most 64 MB of its bodies unread (four at the limit below,
+  code. A call keeps at most 64 MB of its bodies unread (two at the limit below,
   `conformance/limits.json`'s `unreadBodyBytesPerCall`), dropping the oldest first, and a
   dropped body's `bodyBase64` throws the same. Read it where the response arrives, as
   `plugins/maccms`, `plugins/tvbox` and `plugins/xptv` do. It is still listed among the response's keys, and a copy
   (`JSON.stringify`, a spread) reads it like any other field.
-- A body is handed over up to **16 MB** (16,777,216 bytes). A larger one rejects the fetch
-  with `RESPONSE_TOO_LARGE`, `the response from <url> was larger than the 16 MB a plugin may
-  read`, and neither host buffers more of it than one byte past the limit (2026-09-23). `tools/plugin-cli/conformance/limits.json` holds both
-  hosts to the number.
+- A body is handed over up to **32 MB** (33,554,432 bytes). A larger one rejects the fetch
+  with `RESPONSE_TOO_LARGE`, `the response from <url> was larger than the 32 MB a plugin may
+  read`, and neither host buffers more of it than one byte past the limit (2026-09-23). `tools/plugin-cli/conformance/limits.json` holds both hosts to the
+  number.
   A realm holds `body` as the decoded text, so what has to fit is that text, and its
   characters decide the cost. Text that decodes to ASCII or Latin-1 reads as `body` and
-  `bodyBase64` both at 16 MB, and so does UTF-8, whose wider characters take several bytes
+  `bodyBase64` both at 32 MB, and so does UTF-8, whose wider characters take several bytes
   each. A body that decodes to one character a byte above U+00FF takes twice the memory as
-  text: on a television 16 MB of windows-1251 Cyrillic runs out of memory (14 MB reads), and
-  a body that is not text at all (an image, a zip) decodes to a U+FFFD a byte and runs out
-  from 12 MB (10 MB reads). The CLI reads all of these at 16 MB, because turning that much
-  text into the realm's string costs the device more, so `doctor` passing such a body over
-  10 MB does not mean a television can read it. `conformance/fetch-body/` holds both hosts to
-  16 MB of ASCII and 10 MB that is not text.
+  text: on a television 28 MB of windows-1251 Cyrillic runs out of memory (24 MB reads), and
+  so does a body that is not text at all (an image, a zip), which decodes to a U+FFFD a byte.
+  The CLI reads all of these at 32 MB, because turning that much text into the realm's string
+  costs the device more, so `doctor` passing such a body over 24 MB does not mean a television
+  can read it. `conformance/fetch-body/` holds both hosts to 32 MB of ASCII and 24 MB that is
+  not text.
 
 ## A plugin's store
 
@@ -2385,6 +2385,8 @@ and an older app, with no limit and an eager `bodyBase64`, runs a plugin that re
 its call exactly as a newer one does. `REQUEST_FAILED` keeps meaning no usable answer on every
 app. What changed, changed on a newer app for a plugin that fetched more than 16 MB or read
 `bodyBase64` after its call, and no number a plugin declares could have protected either.
+The limit's rise to 32 MB is versionless the same way: an older
+app refuses a body over 16 MB as `RESPONSE_TOO_LARGE`, which a plugin already has to handle.
 `unauthenticated`'s `{ signIn: false }` is versionless the same way: an
 older app ignores the option and offers the sign-in for that refusal, as it did for every
 refusal, and the plugin runs on it exactly as before, so a version would gate nothing.

@@ -300,7 +300,7 @@
         "fetch": "https://large.test/"
       },
       "code": "RESPONSE_TOO_LARGE",
-      "message": "the response from https://large.test/ was larger than the 16 MB a plugin may read"
+      "message": "the response from https://large.test/ was larger than the 32 MB a plugin may read"
     },
     {
       "why": "a plugin cannot claim RESPONSE_TOO_LARGE, a host code, when no host function gave it",

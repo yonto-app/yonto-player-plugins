@@ -5,6 +5,7 @@ import { loadManifest } from '../src/manifest.js';
 import { createHost } from '../src/host/index.js';
 import { createEngine } from '../src/engines/quickjs.js';
 import { scratchDir } from '../src/scratch-dir.js';
+import { PluginError, Code } from '../src/errors.js';
 
 /** `plugins/m3u`, scripted: what is under test is the reading of a playlist. */
 const dir = fileURLToPath(new URL('../../../plugins/m3u/', import.meta.url));
@@ -225,4 +226,75 @@ test('an address that is not http(s) is the form to fix', async () => {
 
   assert.equal(error.code, 'MISCONFIGURED');
   assert.equal(transport.calls.length, 0);
+});
+
+test('a playlist too large to read says so, and an Xtream panel\'s link points at the Xtream Codes source', async () => {
+  const tooLarge = () => { throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large'); };
+  const plain = engineOver(tooLarge);
+  const panel = engineOver(tooLarge, { config: { playlist: 'http://panel.test/get.php?username=a&password=b&type=m3u_plus' } });
+
+  const plainError = await failure(plain.engine.call('getCategories', []));
+  const panelError = await failure(panel.engine.call('getCategories', []));
+
+  assert.deepEqual([plainError.code, plainError.message], ['UNAVAILABLE', 'This playlist is too large to read.']);
+  assert.equal(panelError.code, 'UNAVAILABLE');
+  assert.match(panelError.message, /too large to read\. Add it as an Xtream Codes source/);
+});
+
+test("a request the host gave up on keeps its code, and the host's words, which name the address, stay out", async () => {
+  const keyed = 'https://lists.test/tv/playlist.m3u?token=k3y';
+  const { engine } = engineOver(() => { throw new PluginError(Code.TIMEOUT, `${keyed} had not answered`); }, { config: { playlist: keyed } });
+
+  const error = await failure(engine.call('getCategories', []));
+
+  assert.equal(error.code, 'TIMEOUT');
+  assert.ok(!error.message.includes('k3y'), error.message);
+});
+
+test("an entry's id is the md5 of its address and title, so History and the Watch list keep finding it", async () => {
+  const { createHash } = await import('node:crypto');
+  const { engine } = engineOver(text(PLAYLIST));
+
+  const [news] = await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.equal(news.id, createHash('md5').update('https://cdn.test/news.m3u8\nWorld News').digest('hex'));
+  assert.equal((await engine.call('getMediaDetail', [news.id])).title, 'World News');
+});
+
+test('a playlist whose lines end in a bare CR, or open on a byte order mark, reads the same', async () => {
+  const cr = engineOver(text('#EXTM3U\r#EXTINF:-1 group-title="A",One\rhttps://cdn.test/1.ts\r#EXTINF:-1,Two\rhttps://cdn.test/2.ts'));
+  const bom = engineOver(text('﻿#EXTM3U\n#EXTINF:-1,One\nhttps://cdn.test/1.ts'));
+
+  assert.deepEqual((await cr.engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['One', 'Two']);
+  assert.deepEqual((await bom.engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['One']);
+});
+
+test("an address's own query is never read as headers, and only a Kodi suffix after a bar is", async () => {
+  const body = [
+    '#EXTM3U',
+    '#EXTINF:-1,Query\n#EXTVLCOPT:http-user-agent=Probe/1.0\nhttps://cdn.test/a.ts?token=abc&Referer=x',
+    '#EXTINF:-1,Bare\nhttps://cdn.test/b.ts?token=abc&Referer=x',
+  ].join('\n');
+  const { engine } = engineOver(text(body));
+  const [query, bare] = await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.deepEqual((await engine.call('getMediaDetail', [query.id])).playbackOptions[0].stream.headers, { 'User-Agent': 'Probe/1.0' });
+  assert.equal((await engine.call('getMediaDetail', [bare.id])).playbackOptions[0].stream.headers, undefined);
+});
+
+test('a header line with attributes, an HLS tag deep in a manifest and mixed line breaks read as they always did', async () => {
+  const header = engineOver(text('#EXTM3U x-tvg-url="http://epg.test/a.xml"\nhttps://cdn.test/1.ts'));
+  const master = ['#EXTM3U', ...Array.from({ length: 60 }, (_, i) => `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="${i}"`), '#EXT-X-STREAM-INF:BANDWIDTH=1', 'v.m3u8'].join('\n');
+  const hls = engineOver(text(master));
+  const mixed = engineOver(text('#EXTM3U\r#EXTINF:-1,One\rhttps://cdn.test/1.ts\n#EXTINF:-1,Two\r\nhttps://cdn.test/2.ts'));
+
+  assert.deepEqual((await header.engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['1']);
+  assert.match((await failure(hls.engine.call('getCategories', []))).message, /single stream/);
+  assert.deepEqual((await mixed.engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['One', 'Two']);
+});
+
+test('an HLS tag is one only as the spec writes it, in capitals', async () => {
+  const { engine } = engineOver(text('#EXTM3U\n#ext-x-targetduration:10\n#EXTINF:-1,One\nhttps://cdn.test/1.ts'));
+
+  assert.deepEqual((await engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['One']);
 });

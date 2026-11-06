@@ -125,7 +125,7 @@ It exists because on iOS reading an answer 300 deep on a coroutine's small stack
 
 ## `fetch-body/`
 
-What a plugin reads of a response's body: `bodyBase64` is the bytes, asked of the host on first read and only during the call that fetched it, a body of exactly the limit comes through whole as text and bytes, one byte more is `RESPONSE_TOO_LARGE`, a body that does not decode still reads both ways at 10 MB, the most a television's realm holds of one, a call keeps its newest unread bodies up to `unreadBodyBytesPerCall` and the ones it dropped read as late, and a NUL byte is a character of `body` like any other.
+What a plugin reads of a response's body: `bodyBase64` is the bytes, asked of the host on first read and only during the call that fetched it, a body of exactly the limit comes through whole as text and bytes, one byte more is `RESPONSE_TOO_LARGE`, a body that does not decode still reads both ways at 24 MB, the most a television's realm holds of one, a call keeps its newest unread bodies up to `unreadBodyBytesPerCall` and the ones it dropped read as late, and a NUL byte is a character of `body` like any other.
 `calls.json` is the record, run in order on one runtime, and `fetch-body-plugin.js` the plugin; `test/fetch-body.test.js` walks it through the CLI's engine and `PluginFetchBodyRecordTest` through the device's runtime.
 
 ## `clearances.json`

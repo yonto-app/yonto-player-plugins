@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "m3u",
   "name": "M3U playlist",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "contractVersion": 21,
   "description": "Plays the channels and videos of an M3U or M3U8 playlist, grouped the way the playlist groups them. You supply the address; Yonto Player includes no playlist.",
   "probeQuery": "news",
@@ -49,6 +49,8 @@ const REDIRECTS_REFUSED_MESSAGE = "This playlist's redirects lead nowhere. Check
 const UNREADABLE_MESSAGE = "This address answered with something that isn't a playlist. Check the playlist address.";
 const STREAM_ADDRESS_MESSAGE = 'This address is a single stream, not a playlist of them.';
 const EMPTY_MESSAGE = 'This playlist has nothing in it.';
+const TOO_LARGE_MESSAGE = 'This playlist is too large to read.';
+const PANEL_TOO_LARGE_MESSAGE = 'This playlist is too large to read. Add it as an Xtream Codes source, with its server, username and password.';
 
 const HTTP_URL = /^https?:\/\/\S+$/;
 const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
@@ -57,11 +59,17 @@ const ATTRIBUTE = /([A-Za-z0-9_-]+)=(?:"([^"]*)"|'([^']*)')/g;
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 const HEADER_VALUE = /^[\t\x20-\x7e]*$/;
 // What an HLS stream's own manifest has and a playlist of channels does not.
-const HLS_TAG = /^#EXT-X-(?:TARGETDURATION|STREAM-INF|MEDIA-SEQUENCE)/m;
+const HLS_TAGS = ['EXT-X-TARGETDURATION', 'EXT-X-STREAM-INF', 'EXT-X-MEDIA-SEQUENCE'];
+const HLS = 'HLS';
+// An Xtream Codes panel's playlist link, whose export of a whole library is often too large to read.
+const XTREAM_PLAYLIST = /\/get\.php\?(?=.*\busername=)(?=.*\bpassword=)/i;
 // A playlist of videos often says `-1` too; a file with one of these endings is a video.
 const VIDEO_FILE = /\.(?:mp4|m4v|mkv|avi|mov|wmv|webm)(?:[?#]|$)/i;
-const LINE_BREAK = /\r\n|\r|\n/;
-const BYTE_ORDER_MARK = '﻿';
+const HASH = 0x23;
+const COMMA = 0x2c;
+const COLON = 0x3a;
+const DOUBLE_QUOTE = 0x22;
+const SINGLE_QUOTE = 0x27;
 
 // What `#EXTVLCOPT:` calls the headers a stream wants.
 const VLC_HEADERS = {
@@ -106,7 +114,10 @@ async function download(address) {
       case 'HOST_NOT_ALLOWED': throw yonto.error.unavailable(OFF_LIMITS_MESSAGE);
       case 'REDIRECT_REFUSED': throw yonto.error.unavailable(REDIRECTS_REFUSED_MESSAGE);
       case 'REQUEST_INVALID': throw yonto.error.misconfigured(UNUSABLE_ADDRESS_MESSAGE);
-      default: throw error;
+      case 'RESPONSE_TOO_LARGE':
+        throw yonto.error.unavailable(XTREAM_PLAYLIST.test(address) ? PANEL_TOO_LARGE_MESSAGE : TOO_LARGE_MESSAGE);
+      // Its code alone: a host's message can name the address, and an address can carry a key.
+      default: throw Object.assign(new Error(`the playlist request failed: ${error?.code ?? 'no code'}`), { code: error?.code });
     }
   }
   yonto.log('info', `the playlist answered HTTP ${response.status}`);
@@ -130,34 +141,85 @@ function bodyText(response) {
  * `#EXTGRP` and `#EXTVLCOPT` lines between them add to it. Everything else starting `#` is a
  * comment or a tag this has no use for.
  */
+// A panel's export runs to 30 MB and 90,000 entries, so this loop is written for a television's
+// memory and call budget: the body is walked line by line rather than split into a second copy,
+// and a tag is recognised by its first characters rather than a regex per line.
 function parsePlaylist(text, address) {
-  const lines = text.replace(BYTE_ORDER_MARK, '').split(LINE_BREAK).map((line) => line.trim());
-  const isPlaylist = lines.some((line) => /^#EXTM3U/i.test(line) || /^#EXTINF:/i.test(line));
-  // An HLS media or master playlist opens with #EXTM3U too, but it is one stream's manifest.
-  if (HLS_TAG.test(text)) throw yonto.error.unavailable(STREAM_ADDRESS_MESSAGE);
-  if (!isPlaylist) throw yonto.error.unavailable(UNREADABLE_MESSAGE);
+  let isPlaylist = false;
   const entries = [];
   let pending = freshEntry();
-  for (const line of lines) {
-    if (line === '') continue;
-    if (/^#EXTINF:/i.test(line)) {
+  forEachLine(text, (line) => {
+    const tag = tagOf(line);
+    if (tag === 'EXTM3U') {
+      isPlaylist = true;
+    } else if (tag === HLS) {
+      // An HLS media or master playlist opens with #EXTM3U too, but it is one stream's manifest.
+      throw yonto.error.unavailable(STREAM_ADDRESS_MESSAGE);
+    } else if (tag === 'EXTINF') {
+      isPlaylist = true;
       const { attributes, seconds, title } = readExtinf(line.slice('#EXTINF:'.length));
       pending.attributes = attributes;
       pending.live = !(seconds > 0);
       pending.title = title;
-    } else if (/^#EXTGRP:/i.test(line)) {
+    } else if (tag === 'EXTGRP') {
       pending.extGroup = line.slice('#EXTGRP:'.length).trim();
-    } else if (/^#EXTVLCOPT:/i.test(line)) {
+    } else if (tag === 'EXTVLCOPT') {
       const [name, ...value] = line.slice('#EXTVLCOPT:'.length).split('=');
       const header = VLC_HEADERS[name.trim().toLowerCase()];
       if (header !== undefined) pending.headers[header] = value.join('=').trim();
-    } else if (!line.startsWith('#')) {
+    } else if (tag === null) {
       const entry = entryOf(pending, line, address);
       if (entry !== null) entries.push(entry);
       pending = freshEntry();
     }
-  }
+  });
+  if (!isPlaylist) throw yonto.error.unavailable(UNREADABLE_MESSAGE);
   return entries;
+}
+
+/** Each non-empty line of [text], trimmed (a byte order mark with it), whether it ends in CR, LF or both. */
+function forEachLine(text, visit) {
+  let lf = text.indexOf('\n');
+  let cr = text.indexOf('\r');
+  for (let from = 0; from < text.length;) {
+    // Each is looked for again only once passed, and never again once there is none left.
+    if (lf >= 0 && lf < from) lf = text.indexOf('\n', from);
+    if (cr >= 0 && cr < from) cr = text.indexOf('\r', from);
+    const end = Math.min(lf < 0 ? text.length : lf, cr < 0 ? text.length : cr);
+    const line = text.slice(from, end).trim();
+    from = end + 1;
+    if (line !== '') visit(line);
+  }
+}
+
+/**
+ * A `#` line's tag in capitals, as the old prefix regexes read it: `EXTM3U` however it goes on,
+ * [HLS] for a tag only an HLS manifest has, a tag that takes a value (`EXTINF`) only before its
+ * colon, `''` for any other comment, and null for an address.
+ */
+function tagOf(line) {
+  if (line.charCodeAt(0) !== HASH) return null;
+  let end = 1;
+  while (end < line.length && isTagChar(line.charCodeAt(end))) end += 1;
+  const written = line.slice(1, end);
+  // HLS tags are upper case by spec, and were matched as written.
+  if (HLS_TAGS.some((hls) => written.startsWith(hls))) return HLS;
+  const name = written.toUpperCase();
+  if (name.startsWith('EXTM3U')) return 'EXTM3U';
+  return line.charCodeAt(end) === COLON ? name : '';
+}
+
+/** A letter, a digit or `-`. */
+function isTagChar(code) {
+  return (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) || (code >= 0x30 && code <= 0x39) || code === 0x2d;
+}
+
+// Shared by every entry that asks for no header, which in a panel's export is all of them.
+const NO_HEADERS = Object.freeze({});
+
+function isEmpty(object) {
+  for (const _ in object) return false;
+  return true;
 }
 
 function freshEntry() {
@@ -169,16 +231,19 @@ function freshEntry() {
  * and a group name may hold commas.
  */
 function readExtinf(rest) {
-  let quote = '';
   let comma = -1;
-  for (let i = 0; i < rest.length && comma < 0; i += 1) {
-    const char = rest[i];
-    if (quote !== '') {
-      if (char === quote) quote = '';
-    } else if (char === '"' || char === "'") {
-      quote = char;
-    } else if (char === ',') {
+  for (let i = 0; i < rest.length;) {
+    const char = rest.charCodeAt(i);
+    if (char === DOUBLE_QUOTE || char === SINGLE_QUOTE) {
+      // An unclosed quote runs to the end of the line, so there is no title.
+      const close = rest.indexOf(rest[i], i + 1);
+      if (close < 0) break;
+      i = close + 1;
+    } else if (char === COMMA) {
       comma = i;
+      break;
+    } else {
+      i += 1;
     }
   }
   const head = comma < 0 ? rest : rest.slice(0, comma);
@@ -190,15 +255,15 @@ function readExtinf(rest) {
 
 /** Null for an entry with nothing to play. */
 function entryOf(pending, line, address) {
-  const [target, ...suffix] = line.split('|');
-  const url = absolute(target.trim(), address);
+  const bar = line.indexOf('|');
+  const url = absolute((bar < 0 ? line : line.slice(0, bar)).trim(), address);
   if (url === '') return null;
-  const headers = withHeaders(pending.headers, kodiHeaders(suffix.join('|')));
+  const suffix = bar < 0 ? {} : kodiHeaders(line.slice(bar + 1));
+  const headers = isEmpty(pending.headers) && isEmpty(suffix) ? NO_HEADERS : withHeaders(pending.headers, suffix);
   const attributes = pending.attributes;
   const title = pending.title || attributes['tvg-name'] || fileName(url);
   const group = attributes['group-title'] || pending.extGroup || UNGROUPED_NAME;
   const entry = {
-    id: yonto.crypto.md5(`${url}\n${title}`),
     title,
     group,
     url,
@@ -258,21 +323,40 @@ function fileName(url) {
 
 // ---------------------------------------------------------------------------- the index
 
-/** The first of every id, in order: the app keys its lists on it, and a playlist repeats entries. */
+/** The first of every address and title, in order: the app keys its lists on the id, and a playlist repeats entries. */
 function indexOf(entries) {
-  const byId = new Map();
+  const byKey = new Map();
   const groups = new Map();
   for (const entry of entries) {
-    if (byId.has(entry.id)) continue;
-    byId.set(entry.id, entry);
+    const key = keyOf(entry);
+    if (byKey.has(key)) continue;
+    byKey.set(key, entry);
     if (!groups.has(entry.group)) groups.set(entry.group, []);
     groups.get(entry.group).push(entry);
   }
-  return { entries: [...byId.values()], byId, groups };
+  return { entries: [...byKey.values()], byId: null, groups };
+}
+
+/** What an entry's id is the md5 of. */
+function keyOf(entry) {
+  return `${entry.url}\n${entry.title}`;
+}
+
+function idOf(entry) {
+  // Made only for an entry that is shown or looked up: a host call each for 90,000 entries is a
+  // second of a television's budget.
+  if (entry.id === undefined) entry.id = yonto.crypto.md5(keyOf(entry));
+  return entry.id;
+}
+
+/** Every entry by its id, made on the first title page asked for rather than on every listing. */
+function entryById(playlist, id) {
+  if (playlist.byId === null) playlist.byId = new Map(playlist.entries.map((entry) => [idOf(entry), entry]));
+  return playlist.byId.get(id);
 }
 
 function summaryOf(entry) {
-  const summary = { id: entry.id, title: entry.title, type: 'MOVIE' };
+  const summary = { id: idOf(entry), title: entry.title, type: 'MOVIE' };
   if (entry.poster !== undefined) summary.posterUrl = entry.poster;
   return summary;
 }
@@ -318,8 +402,7 @@ export default {
 
   /** One entry, which has the one thing to play. */
   async getMediaDetail(mediaId) {
-    const { byId } = await readPlaylist();
-    const entry = byId.get(String(mediaId));
+    const entry = entryById(await readPlaylist(), String(mediaId));
     if (entry === undefined) throw yonto.error.notFound(mediaId);
     return {
       ...summaryOf(entry),

@@ -69,7 +69,7 @@ const BODY_READ_LATE = 'bodyBase64 can only be read during the call that fetched
 const BODY_LANDED_LATE = 'this response arrived after the call that fetched it had ended';
 
 /** What a plugin is allowed to spend on one call — `JsLimits`, in JavaScript. */
-const MEMORY_BYTES = 64 * 1024 * 1024;
+const MEMORY_BYTES = 160 * 1024 * 1024;
 
 // QuickJS's own stack limit, so plain runaway recursion is its `InternalError: stack
 // overflow`, with the plugin's frames, as on a device. Not the
