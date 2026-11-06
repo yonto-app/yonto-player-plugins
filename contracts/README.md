@@ -1,12 +1,13 @@
 # Contracts
 
-What a content source has to implement, in the form every side of the repo reads, and the one contract the apps hold with the licensing service.
+What a content source has to implement, in the form every side of the repo reads, the one contract the apps hold with the licensing service, and Sync's.
 
 A source is a black box to the app: it depends on the `ContentSourceAdapter` interface and
 the domain models in `content/`, never on a particular provider.
 These files are where that boundary is written down, and they are the only place it
 is written down once for the app, the plugins and the CLI at the same time.
 All but `licence-token-v1.json` and `setup-v1.json` are also published, with the CLI, in yonto-app/yonto-player-plugins.
+`sync-v1.md`, `sync-v1.json` and `licence-token-v1.json`, which the sync server's tests read, are also published with it in yonto-app/yonto-player-sync-server.
 
 | File | What it defines | Who reads it |
 | --- | --- | --- |
@@ -19,8 +20,10 @@ All but `licence-token-v1.json` and `setup-v1.json` are also published, with the
 | `link-login.schema.json` | The grammar of a `link-logins.json` service | `tools/plugin-cli` (via `src/link-login.js`), whose tests hold the file to it; `LinkService` in `LinkLogins.kt` by hand |
 | `yonto-types/` | The registry of Yonto's own catalog types, one JSON Schema per name: the config a handler receives for an index entry of that type, each property marked with the `configSchema` field type (`x-yonto-field`) a handler declares it as. A bare name is Yonto's and has a file here; anybody else's is reverse-DNS and has none. Fields are only added within a name. A plugin is not a type: an index lists its plugins under `plugins` | `tools/plugin-cli` (`lint` holds a manifest's `handles` to it, via `src/yonto-types.js`), `YontoTypes` held to it by `ContractYontoTypesRecordTest` |
 | `yonto-type-name.schema.json` | The one grammar for a type name: a short id, or reverse-DNS in two or more lowercase RFC 1123 labels. `$ref`'d by the manifest's `handles` and the index's `ext.yontoType`, so the two cannot disagree | `tools/plugin-cli` (via `src/manifest.js`), held to `conformance/yonto-type-names.json` |
-| `licence-token-v1.json` | The licence token's test vectors, copied as they are from the licensing service's `tests/vectors/token-v1.json`: its public key, the install id and each case's token and verdict | `LicenceTokensTest` (in `LicenceTokenVectors.kt`, a copy `LicenceTokenVectorsCopyTest` holds to this file) |
+| `licence-token-v1.json` | The licence token's test vectors, copied as they are from the licensing service's `tests/vectors/token-v1.json`: its public key, the install id and each case's token and verdict | `LicenceTokensTest` (in `LicenceTokenVectors.kt`, a copy `LicenceTokenVectorsCopyTest` holds to this file) and `sync-server/`'s tests, which read this file in place |
 | `setup-v1.json` | *Set up from your phone*'s test vectors, copied as they are from the licensing service's `tests/vectors/setup-v1.json`: a secret and what it derives (both keys, the token and its hash, the code, the fragment), a form and a reply with their IVs, associated data and envelopes, and envelopes that must not open | `SetupVectorsTest` and `SetupEnvelopeVectorsTest` (in `SetupVectors.kt`, a copy `SetupVectorsCopyTest` holds to this file) |
+| `sync-v1.md` | Sync's wire contract: the keys a sync key derives, a record as a server holds it (an HMAC id, the stamp and flags in the clear, the rest sealed), the server's endpoints for accounts, devices, records and joining, the wrap a key travels to another device in, the match code and the recovery key (`docs/design/2026-10-27-sync-ready-records.md`) | `SyncKey.kt`, `KeyWrap.kt` and `RecoveryKey.kt`, the sync server, anyone writing another |
+| `sync-v1.json` | Sync's test vectors, written by `tools/sync-vectors/generate.mjs` from Node's own crypto: the derived keys, record ids, records sealed and the changes that must not open, a wrap, a match code and recovery keys | `SyncVectorsTest`, `SyncEnvelopeVectorsTest` (in `SyncVectors.kt`, a copy `SyncVectorsCopyTest` holds to this file), the Apple hosts' `SyncVectorsTests` and `sync-server/`'s tests, which read this file in place |
 | `index.schema.json` | Where plugins and catalogs are listed: `plugins`, Yonto's own list of plugins to install (id, name, version, contract, `provides`, the manifest's `handles`, and the versioned zip's `url` with its sha256), and `sites`, the 仓/XPTV list of catalogs, where Yonto's own are `type` 50 entries with `ext.yontoType` saying which catalog type (a name by `yonto-type-name.schema.json`) and `ext.config` its payload, held to that type's schema in `yonto-types/` (`docs/design/2026-09-23-the-app-reads-every-index.md`). A plugin is never a `sites` entry (2026-10-09) | `tools/plugin-cli` (`index`, via `src/index-document.js`, reading through `src/index-reader.js`), `IndexReader.kt` by hand |
 
 ## What `contract-versions.json` does and does not carry

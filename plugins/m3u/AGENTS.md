@@ -23,9 +23,10 @@ A redirect off the playlist's host is refused by the host, and said so in a sent
   Kodi's `url|Name=value&Name2=value2` suffix does the same; a header name or value the host would refuse is dropped, not sent.
 - **Every stream carries a `mimeType`**, because the host plays one with none as HLS.
   An address with `.m3u8` in it is HLS; anything else is `video/mp4`, which makes the player a progressive one that sniffs the real container (MP4, FLV and TS entries are common in IPTV lists, and handing them to the HLS parser fails with *Parsing manifest malformed*).
-  An HLS stream behind an address with no `.m3u8` in it is still HLS: on Android the player reads the first bytes of such a stream and plays it as a playlist when they are `#EXTM3U`, so the plugin need not fetch it (`PlaylistSniff.kt`). A stream whose address names its container, or whose type is already HLS, is not read.
+  An entry that is not HLS, a TS or FLV channel, may hand over to the software player as any file does (`docs/agents/plugins.md`), which an MPEG-2 channel needs on a phone and raw TS on an iPhone.
+  An HLS stream behind an address with no `.m3u8` in it is still HLS: on Android the player reads the first bytes of such a stream before it picks a player, and when they are `#EXTM3U` plays it as a playlist, in ExoPlayer alone, since libVLC fetches no playlist's segments, so the plugin need not fetch it. A stream whose address names its container, or whose type is already HLS, is not read.
 - **A stream says `live: true`** (contract 22) unless its `#EXTINF` states a length: `-1` (or none) is how a playlist says a stream has no end, and a looped "24/7" channel is a short file that ends every minute, which no player can tell from a title.
-  The app then saves no place in it, draws no timeline, and starts it again if it ends or drops; an app older than 22 drops the key and plays it as a title with a length, as before, which is why the manifest still declares 21: an app older than the declared version refuses the plugin.
+  The app then saves no place in it, draws no timeline, and starts it again if it ends or drops once it has played (a dead entry fails in seconds); an app older than 22 drops the key and plays it as a title with a length, as before, which is why the manifest still declares 21: an app older than the declared version refuses the plugin.
   An entry with a positive length, or whose address ends in a video file extension (`.mp4`, `.mkv`, …; playlists of videos often write `-1` too), is a video and keeps its place like any other.
 - A relative address is read against the playlist's own address.
 - An HLS media or master playlist (`#EXT-X-…`) is one stream, not a playlist of them, and says so.
@@ -40,4 +41,5 @@ The 16 MB body limit is the largest playlist it reads.
 ## Not here
 
 No EPG (`tvg-id` is ignored), no catch-up, and no playlist from a file on the device.
+A channel has no Download on its page, since it is no file to keep.
 Every entry is a `MOVIE`: nothing in the format says an entry is an episode.
