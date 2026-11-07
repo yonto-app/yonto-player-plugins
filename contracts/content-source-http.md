@@ -1609,6 +1609,8 @@ A redirect to a URL carrying credentials is `REDIRECT_REFUSED`.
 `yonto.store` is where a plugin keeps what it worked out and would rather not work out
 again — a site's current key, a 仓's config document. Values cross as JSON text, and the
 host has no business reading them.
+It is for small things a plugin reads often: large text it derived, a search index, goes in
+`yonto.cache` (*A plugin's cache*, below), which nothing holds in memory.
 
 **One namespace per source, not per plugin.** Two profiles of the same plugin — two 仓, two
 Jellyfin servers — share nothing and cannot read each other's keys. The reason is deletion:
@@ -1655,6 +1657,55 @@ A source that has not been saved yet — the editor testing a configuration befo
 is written down — gets a store that never reaches the disk. It lasts while that same
 configuration is being tested, so a second Test reads what the first wrote (a refusal, say),
 and an edited configuration starts from an empty one.
+
+## A plugin's cache
+
+`yonto.cache` is where a plugin keeps large text it derived and would rather not derive again,
+such as a search index built from a whole library.
+`yonto.store` is for small things a plugin reads often, and a host loads a store whole; a cache
+entry is read only when asked for, one at a time, and nothing of it is held in memory between
+calls. So a plugin keeps its key and its refusals in the store and its index in the cache.
+A plugin with more than one value's worth splits it across keys, as the Xtream Codes plugin keeps
+an index as a state entry naming its chunks, and treats any key it finds missing as the whole thing
+missing, since a host drops entries one at a time.
+
+```js
+const text = await yonto.cache.get('index:movie');           // the string set, or null
+const kept = await yonto.cache.set('index:movie', text, { ttlSeconds: 43200 });   // true, or false when nothing was kept
+await yonto.cache.remove('index:movie');
+```
+
+**A value is a string**, kept exactly as set and handed back as the same string: `set` with
+anything else is a `TypeError`, so a plugin that wants to keep an object stringifies it itself,
+and the host never parses what it keeps. `get` answers `null` for a key never set, expired,
+removed or dropped, and for one the host could not read back.
+
+**One namespace per source**, as the store's is, and for the same reason: deleting a source
+removes its cache, and Settings' Clear cache removes every source's. A source that has not been
+saved yet (the editor testing a configuration) gets a cache that keeps nothing.
+
+**A host may drop anything at any time**, and a plugin must work without it: a cache is never
+the only copy of anything. A write the disk refuses is dropped, so `set` resolves and the next
+`get` answers `null`.
+
+**`set` says whether it kept the value**: it resolves to `true` once the value is written and
+`false` when the host kept nothing, a source nobody saved or a write the disk refused, so a
+plugin that would otherwise derive the same text again on every call can hold it in memory
+instead for as long as its runtime lives. A write refused for its size is still `STORE_REFUSED`.
+
+**A write has a size, the same on both hosts**: a key of up to 1,024 characters and a value of
+up to 16,777,216 characters. A write past either, or a key or value holding a lone surrogate
+(the value is kept as UTF-8, which has none), is refused with `STORE_REFUSED`, naming the limit,
+and writes nothing. What one source keeps in all is bounded too, at 256 entries and 64 MiB on
+disk, and past either the host drops that source's least recently written other entries, expired
+ones first, and keeps the one just written: a write is never refused for room.
+
+`ttlSeconds` is read as the store's is: seconds, possibly fractional, and a `TypeError` when it
+is not a finite number.
+
+A call may still read and write its cache for five seconds after its last `yonto.fetch` ended, even
+past its deadline (*What bounds one call*), so what a request that answered late brought can still
+be kept.
 
 ## What bounds one call
 
@@ -1705,6 +1756,12 @@ device, deliberately generous for a television a room away from its router — a
 *next* thing the call asks for that is refused. So the worst case for one call is its
 budget plus one slow request. Both hosts give one request the same bounds: 15 s to connect,
 20 s of silence while reading, and 60 s in all (`tools/plugin-cli/conformance/limits.json`).
+
+**`yonto.cache` has a short grace past the boundary**: it is refused at the deadline like the
+rest, except for five seconds after the call's last `yonto.fetch` ended, answered or failed
+(`cacheGraceMs` in `tools/plugin-cli/conformance/limits.json`, contract 29). A call whose last
+request answered past its deadline can still keep what it read, and a call with no request in
+flight that loops on its cache ends at its deadline, as one looping on its store does.
 
 **A call that has stopped being a call** — one that returns `new Promise(() => {})` — does
 none of the things the bounds above need it to do, so both hosts end it on the wall clock at
@@ -2339,7 +2396,7 @@ earlier version may call `lantern` and would die at its first call, so every hos
 manifest declaring less than 21 (`oldest` in `contract-versions.json`) rather than run it, and
 every plugin declares 21. The versions above say when each piece of surface arrived; a plugin
 declares one of them again only once it needs something that arrived after 21 (version 22's `live`,
-version 23's play state and `subtitles`, version 24's `segments`, version 25's `episode`, version 26's `session` and version 27's `video` are result fields a plugin may send without declaring them, and version 28's `noSearch` is the first code since).
+version 23's play state and `subtitles`, version 24's `segments`, version 25's `episode`, version 26's `session` and version 27's `video` are result fields a plugin may send without declaring them, version 28's `noSearch` is the first code since, and version 29's `yonto.cache` the first host functions).
 
 **Version 22** added `live` on a stream: a stream with no end, a television channel.
 A host never saves a place in one or marks it finished, draws no timeline or speed, and starts it
@@ -2377,6 +2434,9 @@ An older app drops it and says nothing of the format, so a plugin that sends it 
 
 **Version 28** added `yonto.error.noSearch()` and its code `NO_SEARCH`, a search refused because the source has none, as described under *Yonto plugin errors*.
 An older app turns the code into `METHOD_THREW`, which reads as a source that failed, so a plugin that raises it, by the constructor or by writing the code out, declares 28.
+
+**Version 29** added `yonto.cache`: `get`, `set`, which answers whether it kept the value, and `remove`, as described under *A plugin's cache*.
+A plugin that calls it on an older app passes the gate and dies at the first call with `yonto.cache is undefined`, so a plugin that names it declares 29.
 
 **Without a version of its own**: `yonto.fetch` hands over at most 16 MB of a body,
 refusing more as `RESPONSE_TOO_LARGE`, and `bodyBase64` is asked of the host when first read. Nothing a plugin writes can need either, so a version would gate

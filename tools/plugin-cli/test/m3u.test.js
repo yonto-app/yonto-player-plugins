@@ -6,6 +6,9 @@ import { createHost } from '../src/host/index.js';
 import { createEngine } from '../src/engines/quickjs.js';
 import { scratchDir } from '../src/scratch-dir.js';
 import { PluginError, Code } from '../src/errors.js';
+import { createHash } from 'node:crypto';
+import { readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /** `plugins/m3u`, scripted: what is under test is the reading of a playlist. */
 const dir = fileURLToPath(new URL('../../../plugins/m3u/', import.meta.url));
@@ -31,7 +34,7 @@ https://cdn.test/heist.mp4
 const b64 = (text) => Buffer.from(text, 'utf8').toString('base64');
 const text = (body, { status = 200, headers = {} } = {}) => ({ status, headers, bodyBase64: b64(body) });
 
-function engineOver(answer, { config = {}, now = Date.now } = {}) {
+function engineOver(answer, { config = {}, now = Date.now, cacheDir = scratchDir('lp-m3u-cache-') } = {}) {
   const transport = {
     calls: [],
     async request(req) {
@@ -44,10 +47,11 @@ function engineOver(answer, { config = {}, now = Date.now } = {}) {
     config: { playlist: PLAYLIST_URL, ...config },
     transport,
     storeDir: scratchDir('lp-m3u-'),
+    cacheDir,
     pluginDir: dir,
     now,
   });
-  return { transport, engine: createEngine({ dir, host }) };
+  return { transport, host, engine: createEngine({ dir, host }) };
 }
 
 const failure = (promise) => promise.then(() => null, (error) => error);
@@ -297,4 +301,345 @@ test('an HLS tag is one only as the spec writes it, in capitals', async () => {
   const { engine } = engineOver(text('#EXTM3U\n#ext-x-targetduration:10\n#EXTINF:-1,One\nhttps://cdn.test/1.ts'));
 
   assert.deepEqual((await engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.title), ['One']);
+});
+
+// ---------------------------------------------------------------------------- the kept playlist
+
+const md5 = (text) => createHash('md5').update(text).digest('hex');
+const chunkFile = (cacheDir, key) => join(cacheDir, createHash('sha256').update(key).digest('hex'));
+const SECOND_HEIST = 'https://lists.test/tv/rel/second.mp4';
+
+/** Every page of [categoryId] until an empty one, or [most] pages, past which it pages forever. */
+async function everyPage(engine, categoryId, most = 1000) {
+  const all = [];
+  for (let page = 1; page <= most; page += 1) {
+    const list = await engine.call('getMediaList', [categoryId, { page }]);
+    if (list.length === 0) return all;
+    all.push(...list);
+  }
+  throw new Error(`${categoryId} has more than ${most} pages`);
+}
+
+test('a new runtime answers a page, a group, a title and a search from the cache, with no download', async () => {
+  const cacheDir = scratchDir('lp-m3u-kept-');
+  const first = engineOver(text(PLAYLIST), { cacheDir });
+  await first.engine.call('getCategories', []);
+
+  const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir });
+  const all = await engine.call('getMediaList', ['all', { page: 1 }]);
+  const movies = await engine.call('getMediaList', ['g:Movies', { page: 1 }]);
+  const detail = await engine.call('getMediaDetail', [all[2].id]);
+  const found = await engine.call('search', ['heist']);
+
+  assert.deepEqual(all.map((m) => m.title), ['World News', 'Heist', 'Second Heist', 'Loose']);
+  assert.deepEqual(movies.map((m) => m.title), ['Heist', 'Second Heist']);
+  assert.deepEqual(detail.playbackOptions[0].stream, { url: SECOND_HEIST, mimeType: 'video/mp4', headers: { 'User-Agent': 'Kodi/1' } });
+  assert.deepEqual(detail.genres, ['Movies']);
+  assert.deepEqual(found.map((m) => m.title), ['Heist', 'Second Heist']);
+  assert.equal(first.transport.calls.length, 1);
+  assert.equal(transport.calls.length, 0);
+});
+
+test("every entry's id is the md5 of its address and title, as it was before the playlist was kept", async () => {
+  const { engine } = engineOver(text(PLAYLIST));
+
+  const ids = (await engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.id);
+
+  assert.deepEqual(ids, [
+    md5('https://cdn.test/news.m3u8\nWorld News'),
+    md5('https://cdn.test/heist.mp4\nHeist'),
+    md5(`${SECOND_HEIST}\nSecond Heist`),
+    md5('https://cdn.test/loose.ts\nLoose'),
+  ]);
+});
+
+/** Groups interleaved in runs of every length, repeats among them, and a group past ASCII, over more than one chunk. */
+function interleaved(count) {
+  const groups = ['News', 'İstanbul', 'Sport', 'Films', 'Kids'];
+  const lines = ['#EXTM3U'];
+  const entries = [];
+  for (let i = 0; i < count; i += 1) {
+    // A repeat of an earlier entry, which is that entry and not a second one.
+    const n = i % 97 === 96 ? i - 50 : i;
+    const group = groups[Math.floor(n / ((n % 7) + 1)) % groups.length];
+    const entry = { title: `Channel ${n}`, group, url: `https://cdn.test/${'x'.repeat(120)}/${n}.ts` };
+    lines.push(`#EXTINF:-1 group-title="${entry.group}",${entry.title}`, entry.url);
+    entries.push(entry);
+  }
+  return { body: lines.join('\n'), entries };
+}
+
+/** The playlist's entries as the in-memory index read them: the first of each address and title, groups in first appearance. */
+function modelOf(entries) {
+  const seen = new Set();
+  const all = [];
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = `${entry.url}\n${entry.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const summary = { id: md5(key), title: entry.title, type: 'MOVIE' };
+    all.push(summary);
+    if (!groups.has(entry.group)) groups.set(entry.group, []);
+    groups.get(entry.group).push(summary);
+  }
+  return { all, groups };
+}
+
+test('All and every group keep the playlist order across chunks, as the in-memory index did', async () => {
+  const { body, entries } = interleaved(5_000);
+  const model = modelOf(entries);
+  const cacheDir = scratchDir('lp-m3u-order-');
+  const { engine, transport } = engineOver(text(body), { cacheDir });
+
+  const categories = await engine.call('getCategories', []);
+
+  assert.ok(readdirSync(cacheDir).includes(chunkFile(cacheDir, 'playlist:1').slice(cacheDir.length + 1)), 'more than one chunk');
+  assert.deepEqual(categories.map((c) => c.name), ['All', ...model.groups.keys()]);
+  assert.deepEqual(await everyPage(engine, 'all'), model.all);
+  for (const [name, summaries] of model.groups) assert.deepEqual(await everyPage(engine, `g:${name}`), summaries, name);
+  assert.deepEqual(await engine.call('search', ['İSTANBUL']), model.groups.get('İstanbul').slice(0, 100));
+  const last = model.all.at(-1);
+  assert.equal((await engine.call('getMediaDetail', [last.id])).title, last.title);
+  assert.deepEqual(await engine.call('search', [last.title]), [last]);
+  assert.equal(transport.calls.length, 1);
+});
+
+test('a chunk the cache lost means the playlist is read again, never answered in part', async () => {
+  const { body, entries } = interleaved(5_000);
+  const model = modelOf(entries);
+  const cacheDir = scratchDir('lp-m3u-lost-');
+  await engineOver(text(body), { cacheDir }).engine.call('getCategories', []);
+  rmSync(chunkFile(cacheDir, 'playlist:1'));
+
+  const { engine, transport } = engineOver(text(body), { cacheDir });
+  const last = model.all.at(-1);
+  const detail = await engine.call('getMediaDetail', [last.id]);
+  const again = engineOver(text(body), { cacheDir });
+  const page = await again.engine.call('getMediaList', ['all', { page: Math.ceil(model.all.length / 60) }]);
+
+  assert.equal(detail.title, last.title);
+  assert.equal(transport.calls.length, 1);
+  assert.deepEqual(page, model.all.slice(Math.floor((model.all.length - 1) / 60) * 60));
+  assert.equal(again.transport.calls.length, 0);
+});
+
+test('a chunk another build wrote reads as lost too', async () => {
+  const cacheDir = scratchDir('lp-m3u-other-build-');
+  let clock = 1_000_000;
+  await engineOver(text(PLAYLIST), { cacheDir, now: () => clock }).engine.call('getCategories', []);
+  const state = chunkFile(cacheDir, 'playlist');
+  const kept = readFileSync(state, 'utf8');
+  clock += 1;
+  // A later build's chunks under the earlier build's state.
+  await engineOver(text(PLAYLIST), { cacheDir, now: () => clock + 301_000 }).engine.call('getCategories', []);
+  writeFileSync(state, kept);
+
+  const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir, now: () => clock });
+  const all = await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.equal(all.length, 4);
+  assert.equal(transport.calls.length, 1);
+});
+
+test('a cache that keeps nothing holds the playlist for the runtime, so it is downloaded once across calls', async () => {
+  let clock = 1_000_000;
+  const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir: null, now: () => clock });
+
+  await engine.call('getCategories', []);
+  const [news] = await engine.call('getMediaList', ['all', { page: 1 }]);
+  await engine.call('getMediaList', ['g:Movies', { page: 1 }]);
+  await engine.call('getMediaDetail', [news.id]);
+  assert.deepEqual((await engine.call('search', ['heist'])).map((m) => m.title), ['Heist', 'Second Heist']);
+  assert.equal(transport.calls.length, 1);
+  clock += 301_000;
+  await engine.call('getCategories', []);
+  assert.equal(transport.calls.length, 2);
+});
+
+test('a write the cache refuses holds the playlist for the runtime too', async () => {
+  const { engine, transport, host } = engineOver(text(PLAYLIST));
+  host.yonto.cache = {
+    get: async () => null,
+    set: async () => { throw new PluginError(Code.STORE_REFUSED, 'yonto.cache.set refused: too large'); },
+    remove: async () => {},
+  };
+
+  await engine.call('getCategories', []);
+  await engine.call('search', ['heist']);
+
+  assert.equal(transport.calls.length, 1);
+  assert.ok(host.logs.some(({ message }) => /playlist was not kept: STORE_REFUSED/.test(message)));
+});
+
+test('a state the cache did not keep holds the playlist too, though every chunk was kept', async () => {
+  const { engine, transport, host } = engineOver(text(PLAYLIST));
+  const cache = host.yonto.cache;
+  host.yonto.cache = { ...cache, set: async (key, ...rest) => (key === 'playlist' ? false : cache.set(key, ...rest)) };
+
+  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.equal(transport.calls.length, 1);
+});
+
+test('ids the cache did not keep hold the playlist too', async () => {
+  const { engine, transport, host } = engineOver(text(PLAYLIST));
+  const cache = host.yonto.cache;
+  host.yonto.cache = { ...cache, set: async (key, ...rest) => (key === 'playlist:ids:0' ? false : cache.set(key, ...rest)) };
+
+  const [news] = await engine.call('getMediaList', ['all', { page: 1 }]);
+  await engine.call('getMediaDetail', [news.id]);
+
+  assert.equal(transport.calls.length, 1);
+});
+
+test('an ids piece another build wrote reads as lost, though the chunk is this build\'s', async () => {
+  const cacheDir = scratchDir('lp-m3u-ids-build-');
+  await engineOver(text(PLAYLIST), { cacheDir }).engine.call('getCategories', []);
+  const { build } = JSON.parse(readFileSync(chunkFile(cacheDir, 'playlist'), 'utf8').split('\n')[1]);
+  const ids = chunkFile(cacheDir, 'playlist:ids:0');
+  writeFileSync(ids, readFileSync(ids, 'utf8').replace(build, 'x'.repeat(build.length)));
+
+  const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir });
+  const id = md5('https://cdn.test/heist.mp4\nHeist');
+
+  assert.equal((await engine.call('getMediaDetail', [id])).title, 'Heist');
+  assert.equal(transport.calls.length, 1);
+});
+
+test('a playlist past what the cache holds is held for the runtime and none of it written', async () => {
+  // Each relative entry is read against a long address of characters three bytes each in UTF-8.
+  const address = `https://lists.test/${'频'.repeat(1000)}/playlist.m3u`;
+  const body = ['#EXTM3U', ...Array.from({ length: 22_000 }, (_, i) => `#EXTINF:-1,C${i}\n${i}.ts`)].join('\n');
+  const cacheDir = scratchDir('lp-m3u-over-');
+  const { engine, transport, host } = engineOver(text(body), { cacheDir, config: { playlist: address } });
+
+  await engine.call('getCategories', []);
+  const page = await engine.call('getMediaList', ['all', { page: 367 }]);
+  const detail = await engine.call('getMediaDetail', [page[0].id]);
+
+  assert.deepEqual(page.map((m) => m.title), ['C21960', 'C21961', 'C21962', 'C21963', 'C21964', 'C21965', 'C21966', 'C21967', 'C21968', 'C21969', 'C21970', 'C21971', 'C21972', 'C21973', 'C21974', 'C21975', 'C21976', 'C21977', 'C21978', 'C21979', 'C21980', 'C21981', 'C21982', 'C21983', 'C21984', 'C21985', 'C21986', 'C21987', 'C21988', 'C21989', 'C21990', 'C21991', 'C21992', 'C21993', 'C21994', 'C21995', 'C21996', 'C21997', 'C21998', 'C21999']);
+  assert.ok(detail.playbackOptions[0].stream.url.endsWith('/21960.ts'));
+  assert.equal(transport.calls.length, 1);
+  assert.deepEqual(readdirSync(cacheDir), []);
+  assert.ok(host.logs.some(({ message }) => /too large to keep/.test(message)));
+});
+
+test('a playlist is read again five minutes after it was read, whichever runtime asks', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-m3u-aged-');
+  await engineOver(text(PLAYLIST), { cacheDir, now: () => clock }).engine.call('getCategories', []);
+
+  clock += 299_000;
+  const within = engineOver(text(PLAYLIST), { cacheDir, now: () => clock });
+  await within.engine.call('getMediaList', ['all', { page: 1 }]);
+  clock += 2_000;
+  const after = engineOver(text(PLAYLIST), { cacheDir, now: () => clock });
+  await after.engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.equal(within.transport.calls.length, 0);
+  assert.equal(after.transport.calls.length, 1);
+});
+
+test('a tab in a title or a group is a space, and the entry keeps its id and its stream', async () => {
+  const { engine } = engineOver(text('#EXTM3U\n#EXTINF:-1 group-title="Ne\tws",Tab\tbed\nhttps://cdn.test/t.m3u8'));
+
+  const [entry] = await engine.call('getMediaList', ['all', { page: 1 }]);
+  const detail = await engine.call('getMediaDetail', [entry.id]);
+
+  assert.deepEqual(entry, { id: md5('https://cdn.test/t.m3u8\nTab\tbed'), title: 'Tab bed', type: 'MOVIE' });
+  assert.deepEqual(detail.genres, ['Ne ws']);
+  assert.equal(detail.playbackOptions[0].stream.url, 'https://cdn.test/t.m3u8');
+});
+
+test('a search reads lowercased chunks: İ lengthens a line, a hit only in the address is none, and order holds', async () => {
+  const body = [
+    '#EXTM3U',
+    '#EXTINF:-1 group-title="İİİİ İzmir",İİİİİİİİ',
+    'https://cdn.test/1.ts',
+    '#EXTINF:-1 group-title="Haberler",İstanbul Haber',
+    'https://cdn.test/2.ts',
+    '#EXTINF:-1,Spor',
+    'https://cdn.test/haber/3.ts',
+    '#EXTINF:-1 tvg-logo="https://img.test/haber.png",Film',
+    'https://cdn.test/4.ts',
+    '#EXTINF:-1,Akşam haberleri',
+    'https://cdn.test/5.ts',
+  ].join('\n');
+  const { engine } = engineOver(text(body));
+
+  assert.deepEqual((await engine.call('search', ['haber'])).map((m) => m.title), ['İstanbul Haber', 'Akşam haberleri']);
+  assert.deepEqual((await engine.call('search', ['İSTANBUL'])).map((m) => [m.title, m.id]), [['İstanbul Haber', md5('https://cdn.test/2.ts\nİstanbul Haber')]]);
+  assert.deepEqual((await engine.call('search', ['izmir'.replace('i', 'İ')])).map((m) => m.title), ['İİİİİİİİ']);
+  assert.deepEqual(await engine.call('search', ['spor\tother']), []);
+  const [first] = await engine.call('getMediaList', ['all', { page: 1 }]);
+  assert.deepEqual(await engine.call('search', [first.id.slice(0, 12)]), []);
+});
+
+test("a title page finds its id only where an id begins, and a lost ids piece reads the playlist again", async () => {
+  const cacheDir = scratchDir('lp-m3u-ids-');
+  await engineOver(text(PLAYLIST), { cacheDir }).engine.call('getCategories', []);
+  const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir });
+  const [a, b] = await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  const straddling = await failure(engine.call('getMediaDetail', [a.id.slice(16) + b.id.slice(0, 16)]));
+  assert.equal(straddling.code, 'NOT_FOUND');
+  assert.equal((await engine.call('getMediaDetail', [b.id])).title, 'Heist');
+  assert.equal(transport.calls.length, 0);
+
+  rmSync(chunkFile(cacheDir, 'playlist:ids:0'));
+  const again = engineOver(text(PLAYLIST), { cacheDir });
+  assert.equal((await again.engine.call('getMediaDetail', [b.id])).title, 'Heist');
+  assert.equal(again.transport.calls.length, 1);
+});
+
+test('a search reads only the search pieces, and then only the chunks holding its hits', async () => {
+  // Titles long enough that the search pieces are more than one.
+  const entries = Array.from({ length: 5_000 }, (_, i) => ({ title: `Channel ${i} ${'y'.repeat(120)}`, group: 'News', url: `https://cdn.test/${i}.ts` }));
+  const body = ['#EXTM3U', ...entries.map((e) => `#EXTINF:-1 group-title="News",${e.title}\n${e.url}`)].join('\n');
+  const model = modelOf(entries);
+  const cacheDir = scratchDir('lp-m3u-search-reads-');
+  await engineOver(text(body), { cacheDir }).engine.call('getCategories', []);
+  const { engine, host } = engineOver(text(body), { cacheDir });
+  const cache = host.yonto.cache;
+  const read = [];
+  host.yonto.cache = { ...cache, get: async (key) => { read.push(key); return cache.get(key); } };
+
+  assert.deepEqual(await engine.call('search', ['nothing like it']), []);
+  const none = read.splice(0);
+  const last = model.all.at(-1);
+  assert.deepEqual(await engine.call('search', [last.title.toUpperCase()]), [last]);
+
+  assert.deepEqual(none, ['playlist', 'playlist:search:0', 'playlist:search:1']);
+  assert.deepEqual(read, ['playlist', 'playlist:search:0', 'playlist:search:1', 'playlist:1']);
+});
+
+test('a lost search piece, or one another build wrote, reads the playlist again', async () => {
+  const cacheDir = scratchDir('lp-m3u-search-lost-');
+  await engineOver(text(PLAYLIST), { cacheDir }).engine.call('getCategories', []);
+  const { build } = JSON.parse(readFileSync(chunkFile(cacheDir, 'playlist'), 'utf8').split('\n')[1]);
+  const piece = chunkFile(cacheDir, 'playlist:search:0');
+  writeFileSync(piece, readFileSync(piece, 'utf8').replace(build, 'x'.repeat(build.length)));
+
+  const other = engineOver(text(PLAYLIST), { cacheDir });
+  const found = await other.engine.call('search', ['heist']);
+  rmSync(piece);
+  const lost = engineOver(text(PLAYLIST), { cacheDir });
+  const again = await lost.engine.call('search', ['heist']);
+
+  assert.deepEqual(found.map((m) => m.title), ['Heist', 'Second Heist']);
+  assert.deepEqual(again, found);
+  assert.equal(other.transport.calls.length, 1);
+  assert.equal(lost.transport.calls.length, 1);
+});
+
+test('a search piece the cache did not keep holds the playlist too', async () => {
+  const { engine, transport, host } = engineOver(text(PLAYLIST));
+  const cache = host.yonto.cache;
+  host.yonto.cache = { ...cache, set: async (key, ...rest) => (key === 'playlist:search:0' ? false : cache.set(key, ...rest)) };
+
+  await engine.call('getCategories', []);
+  assert.deepEqual((await engine.call('search', ['world'])).map((m) => m.title), ['World News']);
+  assert.equal(transport.calls.length, 1);
 });

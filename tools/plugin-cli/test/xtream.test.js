@@ -6,6 +6,9 @@ import { createHost } from '../src/host/index.js';
 import { createEngine } from '../src/engines/quickjs.js';
 import { PluginError, Code } from '../src/errors.js';
 import { scratchDir } from '../src/scratch-dir.js';
+import { createHash } from 'node:crypto';
+import { readdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 
 /** `plugins/xtream`, against a scripted panel: what is under test is the reading of its API. */
 const dir = fileURLToPath(new URL('../../../plugins/xtream/', import.meta.url));
@@ -78,7 +81,7 @@ function panelAnswer(url, answer) {
   return json({}, 404);
 }
 
-function engineOver({ answer, config = {}, now = Date.now } = {}) {
+function engineOver({ answer, config = {}, now = Date.now, cacheDir = scratchDir('lp-xtream-cache-') } = {}) {
   const transport = {
     calls: [],
     inFlight: 0,
@@ -100,6 +103,7 @@ function engineOver({ answer, config = {}, now = Date.now } = {}) {
     config: { server: SERVER, ...LOGIN, ...config },
     transport,
     storeDir: scratchDir('lp-xtream-'),
+    cacheDir,
     pluginDir: dir,
     now,
   });
@@ -216,6 +220,333 @@ test('search reads each library once, one request at a time, and asks nothing th
   assert.deepEqual(actions(transport.calls), ['account', 'get_live_streams', 'get_vod_streams', 'get_series']);
   assert.equal(transport.calls.length, before);
   assert.equal(transport.mostInFlight, 1);
+});
+
+test('the index outlives the runtime: a search after a restart asks the panel for the account alone', async () => {
+  const cacheDir = scratchDir('lp-xtream-kept-');
+  await engineOver({ cacheDir }).engine.call('search', ['heist']);
+
+  const { engine, transport } = engineOver({ cacheDir });
+  const found = await engine.call('search', ['heist']);
+
+  assert.deepEqual(found, [
+    { id: 'movie:100', title: 'Heist', type: 'MOVIE', posterUrl: 'http://img.test/heist.jpg', year: '2025' },
+    { id: 'movie:101', title: 'Later Heist', type: 'MOVIE', year: '2026' },
+  ]);
+  assert.deepEqual(actions(transport.calls), ['account']);
+});
+
+test("an index kept for another account, or kept too long, is read again", async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-owner-');
+  await engineOver({ cacheDir, now: () => clock }).engine.call('search', ['heist']);
+
+  const otherAccount = engineOver({ cacheDir, now: () => clock, config: { username: 'someone-else' } });
+  await otherAccount.engine.call('search', ['heist']);
+  clock += 12 * 60 * 60 * 1000;
+  const later = engineOver({ cacheDir, now: () => clock, config: { username: 'someone-else' } });
+  await later.engine.call('search', ['heist']);
+
+  assert.deepEqual(actions(otherAccount.transport.calls), ['account', 'get_live_streams', 'get_vod_streams', 'get_series']);
+  assert.deepEqual(actions(later.transport.calls), ['account', 'get_live_streams', 'get_vod_streams', 'get_series']);
+});
+
+test('an index carried on by category is kept as far as it got, and the next runtime carries on from there', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-partial-');
+  const answer = (q) => {
+    if (q.get('action') === 'get_vod_streams' && q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    if (q.get('action') === 'get_vod_streams') clock += 12_000;
+    return undefined;
+  };
+  await engineOver({ cacheDir, now: () => clock, answer }).engine.call('search', ['heist']);
+
+  const { engine, transport, host } = engineOver({ cacheDir, now: () => clock, answer });
+  const found = await engine.call('search', ['old']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:102']);
+  assert.match(host.takePartial(), /Search again/);
+  assert.deepEqual(actions(transport.calls), ['account', 'get_vod_categories', 'get_vod_streams']);
+  assert.equal(new URL(transport.calls[2]).searchParams.get('category_id'), '11');
+});
+
+test('an index read by category is begun again once it is twelve hours old, however recently it was kept', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-aged-');
+  const answer = (q) => {
+    if (q.get('action') === 'get_vod_streams' && q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    if (q.get('action') === 'get_vod_streams') clock += 12_000;
+    return undefined;
+  };
+  await engineOver({ cacheDir, now: () => clock, answer }).engine.call('search', ['heist']);
+  clock += 11 * 60 * 60 * 1000;
+  const carriedOn = engineOver({ cacheDir, now: () => clock, answer });
+  await carriedOn.engine.call('search', ['old']);
+  clock += 60 * 60 * 1000;
+  const begunAgain = engineOver({ cacheDir, now: () => clock, answer });
+  await begunAgain.engine.call('search', ['old']);
+
+  const films = (calls) => calls.filter((url) => url.includes('get_vod_streams')).map((url) => new URL(url).searchParams.get('category_id'));
+  assert.deepEqual(films(carriedOn.transport.calls), ['11']);
+  assert.deepEqual(films(begunAgain.transport.calls), [null, '10']);
+});
+
+test('an index the cache does not keep is held for the runtime, so a second search reads no list again', async () => {
+  const { engine, transport } = engineOver({ cacheDir: null });
+  await engine.call('search', ['heist']);
+  const before = transport.calls.length;
+
+  const found = await engine.call('search', ['later']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:101']);
+  assert.deepEqual(actions(transport.calls.slice(before)), []);
+});
+
+test('an index read by category that the cache does not keep carries on in memory, every chunk it read before kept', async () => {
+  let clock = 1_000_000;
+  const listings = { 10: bigFilms(1, 5000, '10'), 11: bigFilms(5001, 10, '11') };
+  const answer = (q) => {
+    if (q.get('action') !== 'get_vod_streams') return undefined;
+    if (q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    clock += 12_000;
+    return json(listings[q.get('category_id')]);
+  };
+  const { engine, transport } = engineOver({ cacheDir: null, now: () => clock, answer });
+  const films = () => transport.calls.filter((url) => url.includes('get_vod_streams')).map((url) => new URL(url).searchParams.get('category_id'));
+
+  await engine.call('search', ['nothing like it']);
+  const added = await engine.call('search', ['big film 5010']);
+  const first = await engine.call('search', ['big film 1']);
+
+  assert.deepEqual(films(), [null, '10', '11']);
+  assert.deepEqual(added.map((m) => m.id), ['movie:5010']);
+  assert.equal(first[0].id, 'movie:1');
+});
+
+test('a search finds at most a hundred titles', async () => {
+  const films = Array.from({ length: 150 }, (_, i) => ({ name: `Film ${i}`, stream_id: 1000 + i, added: String(i) }));
+  const { engine } = engineOver({ answer: (q) => (q.get('action') === 'get_vod_streams' ? json(films) : undefined) });
+
+  assert.equal((await engine.call('search', ['film'])).length, 100);
+});
+
+// Films with long poster addresses, so a few thousand of them pass the plugin's 2 Mi characters a chunk.
+const bigFilms = (from, count, category, prefix = 'Big') => Array.from({ length: count }, (_, i) => ({
+  name: `${prefix} Film ${from + i}`, stream_id: from + i, added: String(from + i), category_id: category,
+  stream_icon: `http://img.test/${'p'.repeat(500)}/${from + i}.jpg`,
+}));
+const chunkFile = (cacheDir, key) => join(cacheDir, createHash('sha256').update(key).digest('hex'));
+
+test('an index larger than a chunk survives a restart, and its last chunk is searched', async () => {
+  const cacheDir = scratchDir('lp-xtream-chunks-');
+  const films = bigFilms(1, 6000, '10');
+  const answer = (q) => (q.get('action') === 'get_vod_streams' ? json(films) : undefined);
+  await engineOver({ cacheDir, answer }).engine.call('search', ['nothing like it']);
+
+  const { engine, transport } = engineOver({ cacheDir, answer });
+  const found = await engine.call('search', ['big film 6000']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:6000']);
+  assert.deepEqual(actions(transport.calls), ['account']);
+  assert.ok(readdirSync(cacheDir).includes(chunkFile(cacheDir, 'index:movie:1').slice(cacheDir.length + 1)));
+});
+
+test('an index that lost a chunk is read again, rather than searched in part', async () => {
+  const cacheDir = scratchDir('lp-xtream-lost-');
+  const films = bigFilms(1, 6000, '10');
+  const answer = (q) => (q.get('action') === 'get_vod_streams' ? json(films) : undefined);
+  await engineOver({ cacheDir, answer }).engine.call('search', ['nothing like it']);
+  rmSync(chunkFile(cacheDir, 'index:movie:1'));
+
+  const { engine, transport } = engineOver({ cacheDir, answer });
+  const found = await engine.call('search', ['big film 600']);
+  const again = engineOver({ cacheDir, answer });
+  await again.engine.call('search', ['big film 600']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:600', 'movie:6000']);
+  assert.deepEqual(actions(transport.calls), ['account', 'get_vod_streams']);
+  assert.deepEqual(actions(again.transport.calls), ['account']);
+});
+
+test('an index read by category keeps its progress across restarts, a chunk boundary and all', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-chunked-categories-');
+  // Film 4999, kept in an earlier chunk, is listed again in the second category, and is still one title.
+  const listings = { 10: bigFilms(1, 5000, '10'), 11: [...bigFilms(5001, 5000, '11'), ...bigFilms(4999, 1, '11')] };
+  const answer = (q) => {
+    if (q.get('action') !== 'get_vod_streams') return undefined;
+    if (q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    clock += 12_000;
+    return json(listings[q.get('category_id')]);
+  };
+  const runtime = () => engineOver({ cacheDir, now: () => clock, answer });
+  const films = (calls) => calls.filter((url) => url.includes('get_vod_streams')).map((url) => new URL(url).searchParams.get('category_id'));
+
+  const first = runtime();
+  await first.engine.call('search', ['nothing like it']);
+  const second = runtime();
+  const secondFound = await second.engine.call('search', ['big film 10000']);
+  const third = runtime();
+  const thirdFound = await third.engine.call('search', ['big film 4999']);
+
+  assert.deepEqual(films(first.transport.calls), [null, '10']);
+  assert.deepEqual(films(second.transport.calls), ['11']);
+  assert.deepEqual(secondFound.map((m) => m.id), ['movie:10000']);
+  assert.deepEqual(films(third.transport.calls), []);
+  assert.deepEqual(thirdFound.map((m) => m.id), ['movie:4999']);
+  assert.ok(!third.host.takePartial());
+  // The last chunk was carried on rather than a new one begun after it.
+  const files = readdirSync(cacheDir);
+  assert.ok(files.includes(chunkFile(cacheDir, 'index:movie:2').slice(cacheDir.length + 1)));
+  assert.ok(!files.includes(chunkFile(cacheDir, 'index:movie:3').slice(cacheDir.length + 1)));
+});
+
+test('a chunk that could not be kept keeps the state from naming it, so the category is read again', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-chunk-refused-');
+  const listings = { 10: bigFilms(1, 5000, '10'), 11: bigFilms(5001, 5000, '11') };
+  const answer = (q) => {
+    if (q.get('action') !== 'get_vod_streams') return undefined;
+    if (q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    clock += 12_000;
+    return json(listings[q.get('category_id')]);
+  };
+  const runtime = () => engineOver({ cacheDir, now: () => clock, answer });
+  await runtime().engine.call('search', ['nothing like it']);
+  const refusing = runtime();
+  const { set } = refusing.host.yonto.cache;
+  refusing.host.yonto.cache.set = async (key, ...rest) => {
+    if (key === 'index:movie:1') throw new PluginError(Code.STORE_REFUSED, 'yonto.cache.set refused: no room');
+    return set(key, ...rest);
+  };
+  await refusing.engine.call('search', ['nothing like it']);
+
+  const after = runtime();
+  const found = await after.engine.call('search', ['big film 5001']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:5001']);
+  assert.ok(after.transport.calls.some((url) => new URL(url).searchParams.get('category_id') === '11'));
+});
+
+test('an index read by category that lost a chunk begins again', async () => {
+  let clock = 1_000_000;
+  const cacheDir = scratchDir('lp-xtream-category-lost-');
+  const answer = (q) => {
+    if (q.get('action') !== 'get_vod_streams') return undefined;
+    if (q.get('category_id') === null) throw new PluginError(Code.RESPONSE_TOO_LARGE, 'too large');
+    clock += 12_000;
+    return json(bigFilms(1, 5000, q.get('category_id')));
+  };
+  await engineOver({ cacheDir, now: () => clock, answer }).engine.call('search', ['nothing like it']);
+  rmSync(chunkFile(cacheDir, 'index:movie:0'));
+
+  const { engine, transport } = engineOver({ cacheDir, now: () => clock, answer });
+  await engine.call('search', ['nothing like it']);
+
+  const films = transport.calls.filter((url) => url.includes('get_vod_streams')).map((url) => new URL(url).searchParams.get('category_id'));
+  assert.deepEqual(films, [null, '10']);
+});
+
+test('an index built again smaller removes the chunks it no longer names', async () => {
+  const cacheDir = scratchDir('lp-xtream-smaller-');
+  const big = (q) => (q.get('action') === 'get_vod_streams' ? json(bigFilms(1, 6000, '10')) : undefined);
+  await engineOver({ cacheDir, answer: big }).engine.call('search', ['nothing like it']);
+
+  await engineOver({ cacheDir, config: { username: 'someone-else' } }).engine.call('search', ['nothing like it']);
+
+  assert.ok(readdirSync(cacheDir).includes(chunkFile(cacheDir, 'index:movie:0').slice(cacheDir.length + 1)));
+  assert.ok(!readdirSync(cacheDir).includes(chunkFile(cacheDir, 'index:movie:1').slice(cacheDir.length + 1)));
+});
+
+/** [engine]'s cache, whose write of [key] waits for the answer of [hold] (a promise) before it is made, or fails if [hold] does. */
+function holdingWrite(engine, key, hold) {
+  const { set } = engine.host.yonto.cache;
+  let reached;
+  const writing = new Promise((resolve) => { reached = resolve; });
+  engine.host.yonto.cache.set = async (written, ...rest) => {
+    if (written === key) {
+      reached();
+      await hold();
+    }
+    return set(written, ...rest);
+  };
+  return writing;
+}
+
+test("an old call finishing after the source was edited leaves no chunk of its panel under the new one's state", async () => {
+  const cacheDir = scratchDir('lp-xtream-edited-');
+  const panelOf = (prefix) => (q) => (q.get('action') === 'get_vod_streams' ? json(bigFilms(1, 6000, '10', prefix)) : undefined);
+  let release;
+  const released = new Promise((resolve) => { release = resolve; });
+  const edited = engineOver({ cacheDir, config: { username: 'someone-else' }, answer: panelOf('New') });
+  const editedAtState = holdingWrite(edited, 'index:movie', () => released);
+  const editedSearch = edited.engine.call('search', ['nothing like it']);
+  await editedAtState;
+  // The old call writes its chunks over the edited one's, and ends before its state is kept.
+  const old = engineOver({ cacheDir, answer: panelOf('Old') });
+  holdingWrite(old, 'index:movie', () => Promise.reject(new PluginError(Code.TIMEOUT, 'refused rather than started')));
+  await old.engine.call('search', ['nothing like it']);
+  release();
+  await editedSearch;
+
+  const after = engineOver({ cacheDir, config: { username: 'someone-else' }, answer: panelOf('New') });
+  const found = await after.engine.call('search', ['new film 6000']);
+
+  assert.deepEqual(found.map((m) => m.id), ['movie:6000']);
+  assert.ok(actions(after.transport.calls).includes('get_vod_streams'));
+});
+
+test("two builds of one index at once never leave one's state naming the other's chunks", async () => {
+  const cacheDir = scratchDir('lp-xtream-interleaved-');
+  // One clock for both, so the two builds are told apart by more than when they began.
+  const now = () => 1_000_000;
+  const first = (q) => (q.get('action') === 'get_vod_streams' ? json(bigFilms(1, 9000, '10', 'First')) : undefined);
+  const second = (q) => (q.get('action') === 'get_vod_streams' ? json(bigFilms(1, 6000, '10', 'Second')) : undefined);
+  let release;
+  const released = new Promise((resolve) => { release = resolve; });
+  const a = engineOver({ cacheDir, now, answer: first });
+  const aAtState = holdingWrite(a, 'index:movie', () => released);
+  const aSearch = a.engine.call('search', ['nothing like it']);
+  await aAtState;
+  await engineOver({ cacheDir, now, answer: second }).engine.call('search', ['nothing like it']);
+  release();
+  await aSearch;
+
+  const after = engineOver({ cacheDir, now, answer: second });
+  const found = await after.engine.call('search', ['film 600']);
+
+  assert.deepEqual(found.map((m) => m.title), ['Second Film 600', 'Second Film 6000']);
+  assert.ok(actions(after.transport.calls).includes('get_vod_streams'));
+});
+
+test('a cache that refuses or fails still searches, and the index is held for the runtime instead', async () => {
+  const { engine, transport, host } = engineOver();
+  host.yonto.cache = {
+    get: async () => { throw new PluginError(Code.TIMEOUT, 'refused rather than started'); },
+    set: async () => { throw new PluginError(Code.STORE_REFUSED, 'yonto.cache.set refused: too large'); },
+    remove: async () => {},
+  };
+
+  const first = await engine.call('search', ['heist']);
+  const second = await engine.call('search', ['heist']);
+
+  assert.deepEqual(first.map((m) => m.id), ['movie:100', 'movie:101']);
+  assert.deepEqual(second, first);
+  assert.equal(actions(transport.calls).filter((action) => action === 'get_vod_streams').length, 1);
+  assert.ok(host.logs.some(({ message }) => /index was not kept: STORE_REFUSED/.test(message)));
+});
+
+test('a title whose fields hold a tab, a line break or a lone surrogate is still one title', async () => {
+  const { engine } = engineOver({
+    answer: (q) => (q.get('action') === 'get_vod_streams'
+      ? json([{ name: 'Tab\tand\nbreak \ud800 film', stream_id: 500, added: '1', stream_icon: 'http://img.test/a.jpg' }]) : undefined),
+  });
+
+  const found = await engine.call('search', ['break']);
+  const again = await engine.call('search', ['film']);
+
+  assert.deepEqual(found, [{ id: 'movie:500', title: 'Tab and break \ufffd film', type: 'MOVIE', posterUrl: 'http://img.test/a.jpg' }]);
+  assert.deepEqual(again, found);
 });
 
 test('a library too large to read whole is searched a category at a time, each search carrying on where the last stopped', async () => {

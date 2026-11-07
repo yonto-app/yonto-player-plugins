@@ -37,6 +37,9 @@
     "getMediaDetail.episode": 25,
     "getMediaDetail.stream.session": 26,
     "getMediaDetail.video": 27,
-    "yonto.error.noSearch": 28
+    "yonto.error.noSearch": 28,
+    "yonto.cache.get": 29,
+    "yonto.cache.set": 29,
+    "yonto.cache.remove": 29
   }
 }

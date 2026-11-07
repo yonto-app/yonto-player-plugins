@@ -3,8 +3,8 @@
   "kind": "content-source",
   "id": "m3u",
   "name": "M3U playlist",
-  "version": "1.2.0",
-  "contractVersion": 21,
+  "version": "1.3.0",
+  "contractVersion": 29,
   "description": "Plays the channels and videos of an M3U or M3U8 playlist, grouped the way the playlist groups them. You supply the address; Yonto Player includes no playlist.",
   "probeQuery": "news",
   "provides": "source-type",
@@ -88,17 +88,24 @@ function playlistAddress() {
   return address;
 }
 
-let cached = null;
-
-/** The parsed playlist, at most [CACHE_SECONDS] old. Module state, so it lives as long as the runtime does. */
-async function readPlaylist() {
+/**
+ * The playlist, read at most [CACHE_SECONDS] ago: the cache's, or [held]'s, or else downloaded,
+ * parsed and kept. [again] reads it again whatever is kept, for a chunk the cache lost.
+ */
+async function readPlaylist({ again = false } = {}) {
   const address = playlistAddress();
   const now = yonto.now();
-  if (cached !== null && cached.address === address && now - cached.at < CACHE_SECONDS * 1000) return cached.playlist;
+  const fresh = (state) => state.address === address && now - state.at < CACHE_SECONDS * 1000;
+  if (held !== null && !fresh(held.state)) held = null;
+  if (!again) {
+    if (held !== null) return held;
+    const state = await keptState();
+    if (state !== null && fresh(state)) return { state, chunks: null, ids: null, search: null };
+  }
   const entries = parsePlaylist(await download(address), address);
   if (entries.length === 0) throw yonto.error.unavailable(EMPTY_MESSAGE);
-  const playlist = indexOf(entries);
-  cached = { address, at: now, playlist };
+  const playlist = compactOf(entries, address, now);
+  held = (await kept(playlist)) ? null : playlist;
   return playlist;
 }
 
@@ -321,43 +328,295 @@ function fileName(url) {
   return dot > 0 ? last.slice(0, dot) : last || url;
 }
 
-// ---------------------------------------------------------------------------- the index
+// ---------------------------------------------------------------------------- the kept playlist
 
-/** The first of every address and title, in order: the app keys its lists on the id, and a playlist repeats entries. */
-function indexOf(entries) {
-  const byKey = new Map();
-  const groups = new Map();
-  for (const entry of entries) {
-    const key = keyOf(entry);
-    if (byKey.has(key)) continue;
-    byKey.set(key, entry);
-    if (!groups.has(entry.group)) groups.set(entry.group, []);
-    groups.get(entry.group).push(entry);
-  }
-  return { entries: [...byKey.values()], byId: null, groups };
-}
+// A big playlist's entries are ~110 MB of a realm, so none of them stays in memory between calls:
+// they are lines in `yonto.cache`, and a call reads only the chunks it needs. `playlist` is the
+// state, `playlist:<n>` the chunks (`plugins/m3u/AGENTS.md`, *The kept playlist*).
+const STATE_KEY = 'playlist';
+const CHUNK_KEY = 'playlist:';
+/** Every line's id in line order, so a title page reads one ids piece and one chunk rather than scanning. */
+const IDS_KEY = 'playlist:ids:';
+/** Each line's title and group, lowercased as they were written, so a search lowercases nothing and reads no address. */
+const SEARCH_KEY = 'playlist:search:';
+const ID_CHARS = 32;
+/** 4 Mi characters a piece, so a 90,000 entry playlist's ids are one piece. */
+const IDS_PER_PIECE = 128 * 1024;
+/** Well under the 16 Mi characters a cache value may be, so a call holds one small chunk at a time. */
+const CHUNK_CHARS = 512 * 1024;
+/** What the playlist may come to on disk, under the 64 MiB a source's cache keeps, so the host never drops our own chunks to make room. */
+const CACHE_BYTES = 60 * 1024 * 1024;
+const [ID, TITLE, GROUP, POSTER, URL, LIVE, HEADERS] = [0, 1, 2, 3, 4, 5, 6];
+const TAB = /\t/g;
+// Bounded: an unbounded run over a piece of millions of characters runs the device's regexp out of memory.
+const NON_ASCII_RUN = /[^\x00-\x7f]{1,4096}/g;
+const LOST = Symbol('lost');
+
+/** The playlist the cache did not keep (a source nobody saved, a disk that refuses, one too large), for this runtime. */
+let held = null;
 
 /** What an entry's id is the md5 of. */
 function keyOf(entry) {
   return `${entry.url}\n${entry.title}`;
 }
 
-function idOf(entry) {
-  // Made only for an entry that is shown or looked up: a host call each for 90,000 entries is a
-  // second of a television's budget.
-  if (entry.id === undefined) entry.id = yonto.crypto.md5(keyOf(entry));
-  return entry.id;
+/**
+ * The first of every address and title, in order, as lines: the app keys its lists on the id, and
+ * a playlist repeats entries. Each entry is let go once it is a line, so the two never fill a realm side by side.
+ */
+function compactOf(entries, address, at) {
+  const build = `${at.toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const seen = new Set();
+  const groups = new Map();
+  const chunks = chunker(build);
+  const search = chunker(build);
+  const ids = [];
+  let idParts = null;
+  let lines = 0;
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i];
+    entries[i] = undefined;
+    const id = yonto.crypto.md5(keyOf(entry));
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (lines % IDS_PER_PIECE === 0) {
+      if (idParts !== null) ids.push(idParts.join(''));
+      idParts = [`${build}\n`];
+    }
+    idParts.push(id);
+    chunks.add(lineOf(id, entry), lines);
+    let group = groups.get(entry.group);
+    if (group === undefined) groups.set(entry.group, (group = [entry.group, [], fieldOf(entry.group).toLowerCase()]));
+    search.add(`${fieldOf(entry.title).toLowerCase()}\t${group[2]}\n`, lines);
+    const runs = group[1];
+    const run = runs[runs.length - 1];
+    if (run !== undefined && run[0] + run[1] === lines) run[1] += 1;
+    else runs.push([lines, 1]);
+    lines += 1;
+  }
+  if (idParts !== null) ids.push(idParts.join(''));
+  chunks.done();
+  search.done();
+  const state = {
+    address, at, build, lines, starts: chunks.starts, searchStarts: search.starts,
+    groups: [...groups.values()].map(([name, runs]) => [name, runs]),
+  };
+  return { state, chunks: chunks.pieces, ids, search: search.pieces };
 }
 
-/** Every entry by its id, made on the first title page asked for rather than on every listing. */
-function entryById(playlist, id) {
-  if (playlist.byId === null) playlist.byId = new Map(playlist.entries.map((entry) => [idOf(entry), entry]));
-  return playlist.byId.get(id);
+/** Lines cut into pieces of at most [CHUNK_CHARS], each opening with [build], a line never split; [starts] is each piece's first line. */
+function chunker(build) {
+  const pieces = [];
+  const starts = [];
+  let parts = null;
+  let size = 0;
+  const done = () => {
+    if (parts !== null) pieces.push(parts.join(''));
+    parts = null;
+  };
+  return {
+    pieces,
+    starts,
+    done,
+    add(line, at) {
+      if (parts !== null && size + line.length > CHUNK_CHARS) done();
+      if (parts === null) {
+        parts = [`${build}\n`];
+        size = parts[0].length;
+        starts.push(at);
+      }
+      parts.push(line);
+      size += line.length;
+    },
+  };
 }
 
-function summaryOf(entry) {
-  const summary = { id: idOf(entry), title: entry.title, type: 'MOVIE' };
-  if (entry.poster !== undefined) summary.posterUrl = entry.poster;
+// A tab in a field would split the line; a line break cannot be in one, since the playlist's lines were split on them.
+function lineOf(id, entry) {
+  const headers = isEmpty(entry.headers) ? '' : JSON.stringify(entry.headers);
+  return `${id}\t${fieldOf(entry.title)}\t${fieldOf(entry.group)}\t${fieldOf(entry.poster ?? '')}\t${fieldOf(entry.url)}\t${entry.live ? '1' : ''}\t${headers}\n`;
+}
+
+function fieldOf(text) {
+  return text.includes('\t') ? text.replace(TAB, ' ') : text;
+}
+
+/**
+ * The chunks, then the state that names them; false when any was not kept or the whole would pass
+ * what the cache holds. A lone surrogate, which a decoded body cannot hold, would be refused and so held.
+ */
+async function kept(playlist) {
+  const stateText = JSON.stringify(playlist.state);
+  if (bytesOf([stateText, ...playlist.chunks, ...playlist.ids, ...playlist.search]) > CACHE_BYTES) {
+    yonto.log('info', 'the playlist is too large to keep, so it is held for this runtime');
+    return false;
+  }
+  for (let n = 0; n < playlist.chunks.length; n += 1) {
+    if (!(await cacheSet(CHUNK_KEY + n, playlist.chunks[n]))) return false;
+  }
+  for (let n = 0; n < playlist.ids.length; n += 1) {
+    if (!(await cacheSet(IDS_KEY + n, playlist.ids[n]))) return false;
+  }
+  for (let n = 0; n < playlist.search.length; n += 1) {
+    if (!(await cacheSet(SEARCH_KEY + n, playlist.search[n]))) return false;
+  }
+  return cacheSet(STATE_KEY, stateText);
+}
+
+/** At most the UTF-8 bytes of [texts]: a character past ASCII counted as three. */
+function bytesOf(texts) {
+  let bytes = 0;
+  for (const text of texts) {
+    bytes += text.length;
+    NON_ASCII_RUN.lastIndex = 0;
+    for (let run = NON_ASCII_RUN.exec(text); run !== null; run = NON_ASCII_RUN.exec(text)) bytes += 2 * run[0].length;
+  }
+  return bytes;
+}
+
+async function keptState() {
+  const text = await cacheGet(STATE_KEY);
+  if (text === null) return null;
+  try {
+    const state = JSON.parse(text);
+    const shaped = Array.isArray(state?.starts) && Array.isArray(state.searchStarts) && Array.isArray(state.groups) && typeof state.build === 'string' && Number.isInteger(state.lines);
+    return shaped ? state : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A cache that cannot be read is no playlist kept, and one that cannot be written is a playlist held. */
+async function cacheGet(key) {
+  try {
+    const text = await yonto.cache.get(key);
+    return typeof text === 'string' ? text : null;
+  } catch (error) {
+    yonto.log('warn', `the playlist could not be read back: ${error?.code ?? 'no code'}`);
+    return null;
+  }
+}
+
+async function cacheSet(key, value) {
+  try {
+    return (await yonto.cache.set(key, value, { ttlSeconds: CACHE_SECONDS })) === true;
+  } catch (error) {
+    yonto.log('warn', `the playlist was not kept: ${error?.code ?? 'no code'}`);
+    return false;
+  }
+}
+
+/** Chunk [n], its build id on the first line; null when the cache lost it or holds another build's. */
+async function chunkOf(playlist, n) {
+  return playlist.chunks !== null ? playlist.chunks[n] : pieceOf(playlist, CHUNK_KEY + n);
+}
+
+/** Ids piece [n], as [chunkOf] reads a chunk. */
+async function idsOf(playlist, n) {
+  return playlist.ids !== null ? playlist.ids[n] : pieceOf(playlist, IDS_KEY + n);
+}
+
+/** Search piece [n], as [chunkOf] reads a chunk. */
+async function searchOf(playlist, n) {
+  return playlist.search !== null ? playlist.search[n] : pieceOf(playlist, SEARCH_KEY + n);
+}
+
+async function pieceOf(playlist, key) {
+  const text = await cacheGet(key);
+  const newline = text?.indexOf('\n') ?? -1;
+  if (newline !== playlist.state.build.length || !text.startsWith(playlist.state.build)) return null;
+  return text;
+}
+
+/** What [read] answers of the playlist, read again first when a chunk it needed is lost: never a partial answer. */
+async function answered(read) {
+  const answer = await read(await readPlaylist());
+  return answer === LOST ? read(await readPlaylist({ again: true })) : answer;
+}
+
+/** The fields of each line in [lines], ascending, a chunk read once for all the lines in it. */
+async function linesAt(playlist, lines) {
+  const { starts } = playlist.state;
+  const found = [];
+  let n = -1;
+  let text = '';
+  let at = 0;
+  let line = 0;
+  for (const wanted of lines) {
+    if (n + 1 < starts.length && wanted >= starts[n + 1]) {
+      n += 1;
+      while (n + 1 < starts.length && wanted >= starts[n + 1]) n += 1;
+      text = await chunkOf(playlist, n);
+      if (text === null) return LOST;
+      at = text.indexOf('\n') + 1;
+      line = starts[n];
+    }
+    for (; line < wanted && at > 0; line += 1) at = text.indexOf('\n', at) + 1;
+    const end = text.indexOf('\n', at);
+    if (at === 0 || end < 0) return LOST;
+    found.push(text.slice(at, end).split('\t'));
+  }
+  return found;
+}
+
+/** The lines of a group's entries [from] to [to] in its own order, from its runs. */
+function groupLines(runs, from, to) {
+  const lines = [];
+  let before = 0;
+  for (const [start, length] of runs) {
+    for (let i = Math.max(0, from - before); i < length && before + i < to; i += 1) lines.push(start + i);
+    before += length;
+    if (before >= to) break;
+  }
+  return lines;
+}
+
+/** The fields of the line whose id is [id], null when there is none: its place in the ids, then its one chunk. */
+async function lineWithId(playlist, id) {
+  if (id.length !== ID_CHARS) return null;
+  const pieces = Math.ceil(playlist.state.lines / IDS_PER_PIECE);
+  const first = playlist.state.build.length + 1;
+  for (let n = 0; n < pieces; n += 1) {
+    const text = await idsOf(playlist, n);
+    if (text === null) return LOST;
+    let at = text.indexOf(id, first);
+    while (at >= 0 && (at - first) % ID_CHARS !== 0) at = text.indexOf(id, at + 1);
+    if (at < 0) continue;
+    const lines = await linesAt(playlist, [n * IDS_PER_PIECE + (at - first) / ID_CHARS]);
+    if (lines === LOST || lines[0][ID] !== id) return LOST;
+    return lines[0];
+  }
+  return null;
+}
+
+/**
+ * The entries whose title or group holds [needle], in playlist order: found in the search pieces,
+ * which hold nothing else and are lowercased already, then read from the chunks holding them.
+ */
+async function matching(playlist, needle) {
+  if (needle.includes('\t') || needle.includes('\n')) return [];
+  const { searchStarts } = playlist.state;
+  const hits = [];
+  for (let n = 0; n < searchStarts.length && hits.length < SEARCH_LIMIT; n += 1) {
+    const text = await searchOf(playlist, n);
+    if (text === null) return LOST;
+    // The line the cursor is at, the build id's being 0.
+    let line = 0;
+    let at = 0;
+    for (let hit = text.indexOf(needle, text.indexOf('\n') + 1); hit >= 0 && hits.length < SEARCH_LIMIT;) {
+      const start = text.lastIndexOf('\n', hit) + 1;
+      for (; at < start; line += 1) at = text.indexOf('\n', at) + 1;
+      hits.push(searchStarts[n] + line - 1);
+      hit = text.indexOf(needle, text.indexOf('\n', hit) + 1);
+    }
+  }
+  const lines = await linesAt(playlist, hits);
+  return lines === LOST ? LOST : lines.map(summaryOf);
+}
+
+function summaryOf(fields) {
+  const summary = { id: fields[ID], title: fields[TITLE], type: 'MOVIE' };
+  if (fields[POSTER] !== '') summary.posterUrl = fields[POSTER];
   return summary;
 }
 
@@ -371,10 +630,11 @@ const PROGRESSIVE_MIME = 'video/mp4';
 // `#EXTINF:-1` is how a playlist says a stream has no end, and a looped channel is a short file
 // that ends every minute, which a player cannot tell from a title: so the entry says it is live.
 // An entry that states a length is a video, and keeps its place like any other.
-function streamOf(entry) {
-  const stream = { url: entry.url, mimeType: HLS_ADDRESS.test(entry.url) ? HLS_MIME : PROGRESSIVE_MIME };
-  if (entry.live) stream.live = true;
-  if (Object.keys(entry.headers).length > 0) stream.headers = entry.headers;
+function streamOf(fields) {
+  const url = fields[URL];
+  const stream = { url, mimeType: HLS_ADDRESS.test(url) ? HLS_MIME : PROGRESSIVE_MIME };
+  if (fields[LIVE] === '1') stream.live = true;
+  if (fields[HEADERS] !== '') stream.headers = JSON.parse(fields[HEADERS]);
   return stream;
 }
 
@@ -383,42 +643,53 @@ function streamOf(entry) {
 export default {
   /** The playlist's own groups in the order they first appear, under All. */
   async getCategories() {
-    const { groups } = await readPlaylist();
+    const { state } = await readPlaylist();
     return [
       { id: ALL_CATEGORY_ID, name: ALL_CATEGORY_NAME },
-      ...[...groups.keys()].map((name) => ({ id: GROUP_PREFIX + name, name })),
+      ...state.groups.map(([name]) => ({ id: GROUP_PREFIX + name, name })),
     ];
   },
 
   /** One page of a group, or of the whole playlist for All. */
   async getMediaList(categoryId, options) {
-    const { entries, groups } = await readPlaylist();
     const id = String(categoryId ?? ALL_CATEGORY_ID);
-    const source = id === ALL_CATEGORY_ID ? entries : groups.get(id.slice(GROUP_PREFIX.length));
-    if (source === undefined) throw yonto.error.notFound(id);
     const page = Math.max(1, Math.trunc(options?.page ?? 1));
-    return source.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(summaryOf);
+    const [from, to] = [(page - 1) * PAGE_SIZE, page * PAGE_SIZE];
+    const lines = await answered(async (playlist) => {
+      const { state } = playlist;
+      let wanted;
+      if (id === ALL_CATEGORY_ID) {
+        wanted = [];
+        for (let line = from; line < Math.min(to, state.lines); line += 1) wanted.push(line);
+      } else {
+        const group = state.groups.find(([name]) => GROUP_PREFIX + name === id);
+        if (group === undefined) throw yonto.error.notFound(id);
+        wanted = groupLines(group[1], from, to);
+      }
+      return linesAt(playlist, wanted);
+    });
+    return lines.map(summaryOf);
   },
 
   /** One entry, which has the one thing to play. */
   async getMediaDetail(mediaId) {
-    const entry = entryById(await readPlaylist(), String(mediaId));
-    if (entry === undefined) throw yonto.error.notFound(mediaId);
+    const fields = await answered((playlist) => lineWithId(playlist, String(mediaId)));
+    if (fields === null) throw yonto.error.notFound(mediaId);
+    const group = fields[GROUP];
     return {
-      ...summaryOf(entry),
-      genres: entry.group === UNGROUPED_NAME ? [] : [entry.group],
-      playbackOptions: [{ label: entry.title, stream: streamOf(entry) }],
+      ...summaryOf(fields),
+      genres: group === UNGROUPED_NAME ? [] : [group],
+      playbackOptions: [{ label: fields[TITLE], stream: streamOf(fields) }],
     };
   },
 
   /** A title or group containing the words, case-insensitively: a playlist has no search of its own. */
   async search(query) {
-    const { entries } = await readPlaylist();
     const needle = String(query ?? '').trim().toLowerCase();
-    if (needle === '') return [];
-    return entries
-      .filter((entry) => entry.title.toLowerCase().includes(needle) || entry.group.toLowerCase().includes(needle))
-      .slice(0, SEARCH_LIMIT)
-      .map(summaryOf);
+    if (needle === '') {
+      await readPlaylist();
+      return [];
+    }
+    return answered((playlist) => matching(playlist, needle));
   },
 };

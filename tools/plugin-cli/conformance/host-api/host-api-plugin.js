@@ -186,6 +186,10 @@ export default {
       { id: 'storeLimits', name: await storeLimitsProbe() },
       { id: 'storeLoneSurrogate', name: await storeLoneSurrogate() },
       { id: 'storeTtl', name: await storeTtl() },
+      { id: 'cache', name: await cacheRoundTrip() },
+      { id: 'cacheTtl', name: await cacheTtl() },
+      { id: 'cacheTypes', name: await cacheTypes() },
+      { id: 'cacheLimits', name: await cacheLimits() },
       { id: 'concurrency', name: await concurrent() },
       { id: 'sleep', name: await sleepResolves() },
       { id: 'log', name: logAccepts() },
@@ -561,6 +565,59 @@ async function storeTtl() {
   };
   const answers = [await after(0.5), await after(0.0001), await after(Number.MAX_VALUE), await after(-Number.MAX_VALUE)];
   await yonto.store.clear();
+  return answers.join('|');
+}
+
+// A value is text, kept as it was set, whatever it holds: a byte-order mark, a tab, a newline
+// (the line a host's file begins with is its own), a NUL and a pair, and set says it kept it.
+// Removing it leaves none.
+async function cacheRoundTrip() {
+  const value = '\ufeffa\tb\nc\u0000d\ud83d\ude00';
+  const kept = await yonto.cache.set('c', value);
+  const same = (await yonto.cache.get('c')) === value;
+  await yonto.cache.remove('c');
+  return `${JSON.stringify(kept)}|${same}|${JSON.stringify(await yonto.cache.get('c'))}|${JSON.stringify(await yonto.cache.get('never-set'))}`;
+}
+
+// A ttl is read as the store's is, against the same frozen clock.
+async function cacheTtl() {
+  const after = async (ttlSeconds) => {
+    await yonto.cache.set('ct', 'v', { ttlSeconds });
+    return JSON.stringify(await yonto.cache.get('ct'));
+  };
+  const answers = [await after(0.5), await after(0.0001), await after(Number.MAX_VALUE), await after(-Number.MAX_VALUE)];
+  await yonto.cache.remove('ct');
+  return answers.join('|');
+}
+
+// A value is a string the plugin made itself, never something the host turns into one.
+async function cacheTypes() {
+  const outcome = (call) => call.then(() => 'ok', (error) => `${error.name}: ${error.message}`);
+  return [
+    await outcome(yonto.cache.set('ty', { n: 1 })),
+    await outcome(yonto.cache.set('ty', 1)),
+    await outcome(yonto.cache.set(1, 'v')),
+    await outcome(yonto.cache.get(1)),
+    await outcome(yonto.cache.set('ty', 'v', { ttlSeconds: Infinity })),
+  ].join('|');
+}
+
+// A key up to 1,024 characters and a value up to 16 Mi characters, the same on both hosts; past
+// either, or with a lone surrogate in either, the write is refused as STORE_REFUSED. What a
+// source keeps in all is dropped rather than refused, which no frozen suite can reach.
+async function cacheLimits() {
+  const outcome = (write) => write.then(() => 'ok', (error) => `${error.code}: ${error.message}`);
+  const answers = [
+    await outcome(yonto.cache.set('k'.repeat(1024), 'v')),
+    await outcome(yonto.cache.set('k'.repeat(1025), 'v')),
+    await outcome(yonto.cache.set('cl', 'x'.repeat(16 * 1024 * 1024))),
+    await outcome(yonto.cache.set('cl', 'x'.repeat(16 * 1024 * 1024 + 1))),
+    await outcome(yonto.cache.set('cl\ud800', 'v')),
+    await outcome(yonto.cache.set('cl', 'a\udc00')),
+    String((await yonto.cache.get('cl'))?.length),
+  ];
+  await yonto.cache.remove('k'.repeat(1024));
+  await yonto.cache.remove('cl');
   return answers.join('|');
 }
 

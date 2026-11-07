@@ -226,6 +226,24 @@ globalThis.yonto = {
     async remove(key) { need(key, 'string', 'yonto.store.remove: key'); unwrap(await raw.__host_storeRemove(key)); },
     async clear() { unwrap(await raw.__host_storeClear()); },
   },
+  cache: {
+    async get(key) {
+      need(key, 'string', 'yonto.cache.get: key');
+      const id = unwrap(await raw.__host_cacheGet(key));
+      if (id === null || id === undefined) return null;
+      const value = raw.__host_cacheValue(id);
+      return value === null || value === undefined ? null : value;
+    },
+    async set(key, value, options) {
+      need(key, 'string', 'yonto.cache.set: key');
+      need(value, 'string', 'yonto.cache.set: value');
+      const ttl = options && options.ttlSeconds !== undefined && options.ttlSeconds !== null
+        ? need(options.ttlSeconds, 'number', 'yonto.cache.set: ttlSeconds') : null;
+      if (ttl !== null && !finite(ttl)) throw new TypeError('yonto.cache.set: ttlSeconds must be a finite number');
+      return unwrap(await raw.__host_cacheSet(key, value, ttl)) === true;
+    },
+    async remove(key) { need(key, 'string', 'yonto.cache.remove: key'); unwrap(await raw.__host_cacheRemove(key)); },
+  },
   crypto: {
     md5: (input) => unwrap(raw.__host_md5(need(input, 'string', 'yonto.crypto.md5: input'))),
     sha1: (input) => unwrap(raw.__host_sha1(need(input, 'string', 'yonto.crypto.sha1: input'))),
@@ -486,6 +504,9 @@ export function createEngine({
   };
   let bodyIds = 0;
   let callsRunning = 0;
+  // What `yonto.cache.get` read, until the bootstrap takes it, cleared with the bodies.
+  const unreadCached = new Map();
+  let cacheIds = 0;
 
   // Which call is running, the codes the host's own
   // functions answered it with, and the last call the interrupt stopped. All three live here
@@ -790,6 +811,21 @@ export function createEngine({
       (key, valueJson, ttlSeconds) => yonto.store.set(key, JSON.parse(valueJson), { ttlSeconds }), true);
     register('__host_storeRemove', (key) => yonto.store.remove(key), true);
     register('__host_storeClear', () => yonto.store.clear(), true);
+    // The value goes back as a body does, outside the async answer, as the device hands it over.
+    register('__host_cacheGet', async (key) => {
+      const value = await yonto.cache.get(key);
+      if (value === null) return null;
+      cacheIds += 1;
+      unreadCached.set(cacheIds, value);
+      return cacheIds;
+    }, true);
+    register('__host_cacheValue', (id) => {
+      const value = unreadCached.get(id) ?? null;
+      unreadCached.delete(id);
+      return value;
+    }, false, true);
+    register('__host_cacheSet', (key, value, ttlSeconds) => yonto.cache.set(key, value, { ttlSeconds }), true);
+    register('__host_cacheRemove', (key) => yonto.cache.remove(key), true);
     if (yonto.session) {
       register('__host_sessionLinked', () => yonto.session.linked(), false);
       register('__host_sessionServers', () => yonto.session.servers(), true);
@@ -1100,6 +1136,7 @@ export function createEngine({
         if (callsRunning === 0) {
           unreadBodies.clear();
           unreadBytes = 0;
+          unreadCached.clear();
         }
       }
     },

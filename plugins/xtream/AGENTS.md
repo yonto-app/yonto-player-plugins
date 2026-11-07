@@ -37,16 +37,22 @@ Ids are `live:<id>`, `movie:<id>` and `series:<id>`. A channel's page is found i
 
 ## Search
 
-Search reads each library's whole list once, builds an index of `[id, title, poster, year]` and searches that, so a search after the first makes no request.
+Search reads each library's whole list once, builds an index of its titles and searches that, so a search after the first asks the panel for the account at most, every five minutes as every call does.
 A list over the 32 MB limit (or one a panel answers empty) is read one category at a time instead.
 A category over the limit is passed over for good; one that failed goes behind every category not tried yet, so one that times out cannot hold up the rest, and after three failed searches it is given up on too, the answer then saying *couldn't be searched*. A whole list that failed is asked again by the next search, and the other libraries are searched meanwhile. Only a panel that answered no library at all fails the search.
 **Never two requests at once**: a panel's flood protection drops connections when a plugin fans out, so every read waits for the one before it.
 A search starts requests for at most 12 s, because the host refuses any request a call starts after 20 s of wall time (`JsHostApi.boundedAsyncFunction`); what is left is read by the next search, and until then the answer says so with `yonto.partial`.
 On the panel that brought it, the first search took about 12 s (three requests, the films' 16.7 MB among them) and the next 10 ms.
 
-The index is in module memory, so it is built again after the runtime is renewed or the app restarts.
+Each library's index is kept in `yonto.cache` for 12 hours, so it survives the runtime being renewed and the app restarting, and nothing of it stays in memory between searches.
+It is several entries: `index:<kind>` is the state, JSON naming `owner` (the server and username it was read for), `at` (when it was begun), `complete`, `chunks` (the id of each chunk, that of the write that made it) and, for one read by category, `read`, `failures` and `tooLarge`; `index:<kind>:0`, `:1` and on are the chunks, each at most 2 Mi characters (`CHUNK_CHARS`, well under the cache's 16 Mi a value), its id on the first line and then a line per title, `id\ttitle\tposter\tyear`, with a tab, a line break or a lone surrogate in a field replaced.
+So a big panel's films fit, as a few chunks under the 64 MiB a source's cache keeps, and a search holds one chunk at a time, scanning it line by line and building no list of every title.
+The chunks are written before the state that names them, and a smaller index built again removes the chunks it no longer names.
+A chunk the cache lost, could not read, or holds with an id the state does not name (another call building the same index at once, or an old call finishing after the source was edited) means the index is built again before that library answers, never searched in part as if it were whole.
+An entry for another account, or begun over 12 hours ago, is built again.
+An index read by category is written back after each search, as far as it got, rewriting only its last chunk and adding new ones, and the cache answers for five seconds after the call's last `yonto.fetch` ended, so what a request that answered past the deadline brought is still kept.
+A cache that cannot be read leaves the search answering from the panel, as the first search does; an index the cache did not keep (`yonto.cache.set` answered false or threw: a source nobody saved, a disk that refuses) is held in module memory for the runtime instead (`unkept`), whole, so Test Connection or a broken disk does not read every list again on each search.
 `yonto.store` is no place for it: on the device that is one DataStore file for every source, held whole and rewritten on each write.
-A file-backed cache for it is an earlier issue.
 
 ## Not here
 

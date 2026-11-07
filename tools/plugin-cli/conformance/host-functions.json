@@ -1,4 +1,7 @@
 [
+  "cache.get",
+  "cache.remove",
+  "cache.set",
   "crypto.aesCbcDecrypt",
   "crypto.hmacSha256",
   "crypto.md5",

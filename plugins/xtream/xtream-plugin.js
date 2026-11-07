@@ -3,8 +3,8 @@
   "kind": "content-source",
   "id": "xtream",
   "name": "Xtream Codes",
-  "version": "1.0.0",
-  "contractVersion": 21,
+  "version": "1.1.1",
+  "contractVersion": 29,
   "description": "Plays the live channels, films and series of an Xtream Codes panel, grouped the way the panel groups them. You supply the server and your login; Yonto Player includes no subscription.",
   "probeQuery": "news",
   "provides": "source-type",
@@ -386,71 +386,251 @@ function optional(key, value) {
 
 // ---------------------------------------------------------------------------- the search index
 
-// A library's titles as `[id, title, poster, year]`, kept in memory for this runtime, so only the
-// first search in a while asks the panel. Read from the library's whole list, one request; a list
-// over the host's limit (a big panel's films) is read one category at a time instead, never two
-// requests at once, which a panel takes for a flood. Not in `yonto.store`, which is one file for
-// every source and far too small a place for a panel's library.
-const indexes = new Map();
+// Each library's titles, kept in `yonto.cache` so a search after a restart need not read the panel
+// again, and nothing of them stays in memory between searches. `index:<kind>` is the state, saying
+// whose index it is, how far it got and the id of each chunk; `index:<kind>:<n>` are the chunks, the
+// id written with them on their first line and then a line per title, `id\ttitle\tposter\tyear`, so
+// a big panel fits, a category read rewrites only the last chunk, and a chunk another call wrote since
+// reads as lost. Read from the library's whole list, one request; a list over the host's limit (a
+// big panel's films) is read one category at a time instead, never two requests at once, which a
+// panel takes for a flood.
+const INDEX_KEY = 'index:';
+/** Well under the 16 Mi characters a cache value may be, so a search holds one small chunk at a time. */
+const CHUNK_CHARS = 2 * 1024 * 1024;
+const FIELD_BREAKS = /[\t\n\r]/g;
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
 
-async function searchIndex(site, kind, deadline) {
+/** Each library's index the cache did not keep (a source nobody saved, a disk that refuses), whole, for this runtime. */
+const unkept = new Map();
+
+/**
+ * A library's index: its [state], and the chunks from [from] on that this call holds, built or
+ * changed, which are written back; the ones before [from] are read from the cache as they are scanned.
+ */
+async function searchIndex(site, kind, deadline, { rebuild = false } = {}) {
   const owner = `${site.server}\n${site.username}`;
   const now = yonto.now();
-  let index = indexes.get(kind);
-  if (index?.owner !== owner || now - index.at >= INDEX_SECONDS * 1000) index = null;
-  if (index?.complete) return index;
-  if (index === null && now >= deadline) return { complete: false, items: [] };
+  const keptState = await keptIndexState(kind);
+  let index = keptState === null ? unkept.get(kind) ?? null : { state: keptState, from: keptState.chunks.length, chunks: [] };
+  if (rebuild || index?.state.owner !== owner || now - index.state.at >= INDEX_SECONDS * 1000) index = null;
+  if (index?.state.complete) return index;
+  if (index === null && now >= deadline) return { state: { complete: false, tooLarge: 0, chunks: [] }, from: 0, chunks: [] };
   if (index === null) {
     const all = await api(site, { action: KINDS[kind].streams }, `the whole ${kind} list`, { tooLarge: null });
     // Some panels answer the whole list with nothing at all, and only a category with its titles.
-    index = Array.isArray(all) && all.length > 0
-      ? { owner, at: now, complete: true, read: new Set(), failures: new Map(), tooLarge: 0, items: compact(kind, all) }
-      : { owner, at: now, complete: false, read: new Set(), failures: new Map(), tooLarge: 0, items: [] };
+    const complete = Array.isArray(all) && all.length > 0;
+    const chunks = complete ? chunked('', linesOf(kind, all, new Set())) : [];
+    index = { state: { owner, at: now, complete, read: [], failures: {}, tooLarge: 0, chunks: [] }, from: 0, chunks };
   }
-  if (!index.complete) await readByCategory(site, kind, index, deadline);
-  indexes.set(kind, index);
+  if (!index.state.complete && !(await readByCategory(site, kind, index, deadline))) {
+    return searchIndex(site, kind, deadline, { rebuild: true });
+  }
+  await keepIndex(kind, index, keptState?.chunks.length ?? 0);
   return index;
+}
+
+async function keptIndexState(kind) {
+  const text = await cacheGet(INDEX_KEY + kind);
+  if (text === null) return null;
+  try {
+    const state = JSON.parse(text);
+    return Array.isArray(state?.chunks) && state.chunks.every((id) => typeof id === 'string') ? state : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A chunk of [kind]'s index: the one this call holds, or else the cache's, null when the cache has
+ * lost it or holds one the state does not name, which another call building the same index wrote.
+ */
+async function chunkOf(kind, index, n) {
+  if (n >= index.from) return index.chunks[n - index.from] ?? null;
+  const text = await cacheGet(`${INDEX_KEY}${kind}:${n}`);
+  const newline = text?.indexOf('\n') ?? -1;
+  if (newline < 0 || text.slice(0, newline) !== index.state.chunks[n]) return null;
+  return text.slice(newline + 1);
+}
+
+/**
+ * The chunks first and the state that names them after, then the chunks a smaller index no longer
+ * names. An index the cache did not keep is held in memory instead, when this call holds all of it.
+ */
+async function keepIndex(kind, index, keptChunks) {
+  const written = `${yonto.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  index.state.chunks = [...index.state.chunks.slice(0, index.from), ...index.chunks.map(() => written)];
+  const kept = async () => {
+    for (let i = 0; i < index.chunks.length; i += 1) {
+      if (!(await cacheSet(`${INDEX_KEY}${kind}:${index.from + i}`, `${written}\n${index.chunks[i]}`))) return false;
+    }
+    return cacheSet(INDEX_KEY + kind, JSON.stringify(index.state));
+  };
+  if (!(await kept())) {
+    if (index.from === 0) unkept.set(kind, index);
+    return;
+  }
+  unkept.delete(kind);
+  for (let n = index.state.chunks.length; n < keptChunks; n += 1) {
+    try {
+      await yonto.cache.remove(`${INDEX_KEY}${kind}:${n}`);
+    } catch {
+      // Left behind, it is named by no state and goes when the cache needs room.
+    }
+  }
+}
+
+/** A cache that cannot be read is no index, and one that cannot be written is a search read again next time. */
+async function cacheGet(key) {
+  try {
+    const text = await yonto.cache.get(key);
+    return typeof text === 'string' ? text : null;
+  } catch (error) {
+    yonto.log('warn', `the index could not be read: ${error?.code ?? 'no code'}`);
+    return null;
+  }
+}
+
+async function cacheSet(key, value) {
+  try {
+    return (await yonto.cache.set(key, value, { ttlSeconds: INDEX_SECONDS })) === true;
+  } catch (error) {
+    yonto.log('warn', `the index was not kept: ${error?.code ?? 'no code'}`);
+    return false;
+  }
 }
 
 /**
  * The categories not read yet until [deadline]; the rest wait for the next search. One that failed
  * goes behind every one not tried yet, so a category that times out cannot hold up the others, and
  * after [CATEGORY_TRIES] failures it is given up on like one over the limit, which is passed over
- * at once.
+ * at once. False when a chunk of what was read before is lost, so the index has to begin again.
  */
 async function readByCategory(site, kind, index, deadline) {
-  if (yonto.now() >= deadline) return;
-  const ids = new Set(index.items.map(([id]) => id));
+  if (yonto.now() >= deadline) return true;
+  const { state } = index;
+  const ids = new Set();
+  let last = '';
+  for (let n = 0; n < index.from + index.chunks.length; n += 1) {
+    const chunk = await chunkOf(kind, index, n);
+    if (chunk === null) return false;
+    idsIn(chunk, ids);
+    last = chunk;
+  }
+  const read = new Set(state.read);
+  const failures = new Map(Object.entries(state.failures));
+  const added = [];
   const waiting = (await categoriesOf(site, kind))
-    .filter((category) => !index.read.has(category.id))
-    .sort((a, b) => (index.failures.get(a.id) ?? 0) - (index.failures.get(b.id) ?? 0));
+    .filter((category) => !read.has(category.id))
+    .sort((a, b) => (failures.get(a.id) ?? 0) - (failures.get(b.id) ?? 0));
   for (const category of waiting) {
-    if (yonto.now() >= deadline) return;
+    if (yonto.now() >= deadline) break;
     let answer;
     try {
       answer = await api(site, { action: KINDS[kind].streams, category_id: category.id }, `a ${kind} listing`, { tooLarge: null });
     } catch {
-      const failures = (index.failures.get(category.id) ?? 0) + 1;
-      index.failures.set(category.id, failures);
-      if (failures < CATEGORY_TRIES) continue;
+      const tries = (failures.get(category.id) ?? 0) + 1;
+      failures.set(category.id, tries);
+      if (tries < CATEGORY_TRIES) continue;
       answer = null;
     }
-    if (answer === null) index.tooLarge += 1;
-    for (const item of compact(kind, Array.isArray(answer) ? answer : [])) {
-      if (!ids.has(item[0])) index.items.push(item);
-      ids.add(item[0]);
-    }
-    index.read.add(category.id);
+    if (answer === null) state.tooLarge += 1;
+    added.push(...linesOf(kind, Array.isArray(answer) ? answer : [], ids));
+    read.add(category.id);
   }
-  index.complete = waiting.every((category) => index.read.has(category.id));
+  state.read = [...read];
+  state.failures = Object.fromEntries(failures);
+  state.complete = waiting.every((category) => read.has(category.id));
+  if (added.length > 0) {
+    // The last chunk is rewritten with the new titles after it, and the rest are left as they are.
+    const count = index.from + index.chunks.length;
+    const before = Math.max(0, count - 1);
+    index.chunks = [...index.chunks.slice(0, Math.max(0, before - index.from)), ...chunked(count === 0 ? '' : last, added)];
+    index.from = Math.min(index.from, before);
+  }
+  return true;
 }
 
-/** A title the panel lists in two categories is one result. */
-function compact(kind, raw) {
-  const seen = new Set();
-  return raw.map((item) => itemOf(kind, item))
-    .filter((item) => item !== null && !seen.has(item.id) && seen.add(item.id))
-    .map((item) => [item.id, item.title, item.poster ?? '', item.year ?? '']);
+function idsIn(chunk, ids) {
+  for (let start = 0; start < chunk.length;) {
+    const end = lineEnd(chunk, start);
+    ids.add(chunk.slice(start, chunk.indexOf('\t', start)));
+    start = end + 1;
+  }
+}
+
+/** A line per title not in [ids] yet, so a title the panel lists in two categories is one result. */
+function linesOf(kind, raw, ids) {
+  const lines = [];
+  for (const entry of raw) {
+    const item = itemOf(kind, entry);
+    if (item === null || ids.has(item.id)) continue;
+    ids.add(item.id);
+    lines.push(`${[item.id, item.title, item.poster ?? '', item.year ?? ''].map(fieldOf).join('\t')}\n`);
+  }
+  return lines;
+}
+
+/** [lines] after [first], cut into chunks of at most [CHUNK_CHARS], a line never split. */
+function chunked(first, lines) {
+  const chunks = [];
+  let parts = first === '' ? [] : [first];
+  let size = first.length;
+  for (const line of lines) {
+    if (size > 0 && size + line.length > CHUNK_CHARS) {
+      chunks.push(parts.join(''));
+      parts = [];
+      size = 0;
+    }
+    parts.push(line);
+    size += line.length;
+  }
+  if (size > 0) chunks.push(parts.join(''));
+  return chunks;
+}
+
+// A cache keeps no lone surrogate, which a panel's JSON can spell.
+function fieldOf(text) {
+  return String(text).replace(FIELD_BREAKS, ' ').replace(LONE_SURROGATE, '�');
+}
+
+function lineEnd(titles, start) {
+  const end = titles.indexOf('\n', start);
+  return end < 0 ? titles.length : end;
+}
+
+/**
+ * The titles of [index] containing [needle], a chunk at a time and each line read where it lies
+ * rather than split out of the whole. False when the cache has lost a chunk.
+ */
+async function matching(index, kind, needle, found) {
+  for (let n = 0; n < index.from + index.chunks.length && found.length < SEARCH_LIMIT; n += 1) {
+    const titles = await chunkOf(kind, index, n);
+    if (titles === null) return false;
+    for (let start = 0; start < titles.length && found.length < SEARCH_LIMIT;) {
+      const end = lineEnd(titles, start);
+      const titleAt = titles.indexOf('\t', start) + 1;
+      const title = titles.slice(titleAt, titles.indexOf('\t', titleAt));
+      if (title.toLowerCase().includes(needle)) {
+        const [id, , poster, year] = titles.slice(start, end).split('\t');
+        found.push(summaryOf({ id, title, poster: poster || undefined, year: year || undefined }, kind));
+      }
+      start = end + 1;
+    }
+  }
+  return true;
+}
+
+/** [kind]'s titles containing [needle] added to [found], an index that lost a chunk built again first. */
+async function searchOf(site, kind, deadline, needle, found) {
+  const before = found.length;
+  let index = await searchIndex(site, kind, deadline);
+  if (!(await matching(index, kind, needle, found))) {
+    // Never a partial index answered as a whole one.
+    found.length = before;
+    index = await searchIndex(site, kind, deadline, { rebuild: true });
+    await matching(index, kind, needle, found);
+  }
+  return index;
 }
 
 // ---------------------------------------------------------------------------- the contract
@@ -514,7 +694,7 @@ export default {
     for (const kind of Object.keys(KINDS)) {
       let index;
       try {
-        index = await searchIndex(site, kind, deadline);
+        index = await searchOf(site, kind, deadline, needle, found);
       } catch (error) {
         // One library the panel cannot answer leaves the others searched; it is asked again next time.
         failure = failure ?? error;
@@ -522,13 +702,9 @@ export default {
         continue;
       }
       answered += 1;
-      complete = complete && index.complete;
-      tooLarge = tooLarge || index.tooLarge > 0;
-      for (const [id, title, poster, year] of index.items) {
-        if (!title.toLowerCase().includes(needle)) continue;
-        found.push(summaryOf({ id, title, poster: poster || undefined, year: year || undefined }, kind));
-        if (found.length === SEARCH_LIMIT) return found;
-      }
+      complete = complete && index.state.complete;
+      tooLarge = tooLarge || index.state.tooLarge > 0;
+      if (found.length === SEARCH_LIMIT) return found;
     }
     // A panel that answered no library at all is down, which is not the same as finding nothing.
     if (failure !== null && answered === 0) throw failure;

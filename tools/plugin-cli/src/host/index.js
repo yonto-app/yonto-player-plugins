@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
-import { resolve } from 'node:path';
-import { createFetch } from './fetch.js';
+import { join, resolve } from 'node:path';
+import { createFetch, LIMITS } from './fetch.js';
 import { maskedBytes } from './mask.js';
 import { createSession, hostClientIdOf } from './session.js';
 import { clearanceForHop } from './clearance.js';
 import { cookieLoginOf } from './credential.js';
 import { createStore } from './store.js';
+import { createCache } from './cache.js';
 import { crypto, encoding } from './crypto.js';
 import { Code, HostRefusal, PluginError } from '../errors.js';
 import { hostsWith } from '../manifest.js';
@@ -14,11 +15,12 @@ import { hostsWith } from '../manifest.js';
  * [session] is what a television would hold for a linkLogin (`YONTO_PLUGIN_SESSION`): the
  * account credential and its link record. [hostTransport] carries the host's own requests for
  * it, which a recording keeps apart from the plugin's; [secrets] collects what `--record` must
- * not write, and [warn] is told when the host sets a session aside.
+ * not write, and [warn] is told when the host sets a session aside. [cacheDir] null is a cache that
+ * keeps nothing, a source nobody saved.
  */
 export function createHost({
-  manifest, config = {}, transport, storeDir, pluginDir, now = Date.now, subSource = null, credential = null, origin = null,
-  clearances = [], session: held = null, hostTransport = transport, secrets = null, warn = () => {},
+  manifest, config = {}, transport, storeDir, cacheDir = join(storeDir, 'cache'), pluginDir, now = Date.now, subSource = null,
+  credential = null, origin = null, clearances = [], session: held = null, hostTransport = transport, secrets = null, warn = () => {},
 }) {
   // What is left of this call's allowance for `yonto.sleep`, in milliseconds, and the
   // engine's `startCall` is what refills it. Until one does, a host has no call in flight
@@ -72,6 +74,29 @@ export function createHost({
     }
     return fn(...args);
   };
+  // When this call's last `yonto.fetch` ended, and `yonto.cache`'s bound: refused at the deadline except for
+  // a short grace after that, so what a late answer brought can still be kept (`JsHostApi.cacheFunction`).
+  let lastRequestEndedAt = -Infinity;
+  let callSerial = 0;
+  const boundedWithGrace = (name, fn) => (...args) => {
+    const at = now();
+    if (at >= deadlineAt && at >= lastRequestEndedAt + LIMITS.cacheGraceMs) {
+      return Promise.reject(new PluginError(Code.TIMEOUT,
+        `this call has been running for more than the ${callBudgetMs} ms it is allowed and its last yonto.fetch ` +
+        `ended over ${LIMITS.cacheGraceMs} ms ago, so ${name} was refused rather than started`,
+        { name, budgetMs: callBudgetMs }));
+    }
+    return fn(...args);
+  };
+  const endingRequests = (fetch) => async (...args) => {
+    const call = callSerial;
+    try {
+      return await fetch(...args);
+    } finally {
+      // Answered or failed, and only for the call it belongs to: an earlier call's gives the next none.
+      if (call === callSerial) lastRequestEndedAt = now();
+    }
+  };
   // No default. `yonto.installId()` is derived from this, and a host that quietly built
   // one out of `undefined` would hand every plugin on the machine the same answer — which
   // is the failure this whole function exists to prevent, arriving through the host.
@@ -95,7 +120,7 @@ export function createHost({
 
   const yonto = {
     config,
-    fetch: bounded('yonto.fetch', createFetch({
+    fetch: bounded('yonto.fetch', endingRequests(createFetch({
       hosts: hostsWith(manifest, config, origin),
       // The login the manifest declares, and the session a viewer's television would be
       // holding for it — `YONTO_PLUGIN_CREDENTIAL` here. The plugin is handed neither:
@@ -117,8 +142,9 @@ export function createHost({
       requests,
       linkSession: session,
       callSignal: () => callRequests.signal,
-    })),
+    }))),
     store: boundedStore(createStore({ dir: storeDir, now }), bounded),
+    cache: boundedCache(createCache({ dir: cacheDir, now }), boundedWithGrace),
     crypto,
     encoding,
     text: {
@@ -221,6 +247,7 @@ export function createHost({
     // Kept while a call is still going, as a test may start one beside another.
     if (callRequests.signal.aborted) callRequests = new AbortController();
     partial = null;
+    callSerial += 1;
     session?.startCall();
   };
 
@@ -247,5 +274,14 @@ function boundedStore(store, bounded) {
     set: bounded('yonto.store.set', store.set),
     remove: bounded('yonto.store.remove', store.remove),
     clear: bounded('yonto.store.clear', store.clear),
+  };
+}
+
+/** `yonto.cache`, written out for `boundedStore`'s reason. */
+function boundedCache(cache, bounded) {
+  return {
+    get: bounded('yonto.cache.get', cache.get),
+    set: bounded('yonto.cache.set', cache.set),
+    remove: bounded('yonto.cache.remove', cache.remove),
   };
 }
