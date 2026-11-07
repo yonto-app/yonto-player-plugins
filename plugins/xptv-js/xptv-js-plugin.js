@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "xptv-js",
   "name": "XPTV format",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "contractVersion": 28,
   "description": "Reads catalogs written for the XPTV format. Each is a small program, which Yonto Player fetches from the address you supply and runs in its sandbox; Yonto Player includes no catalog.",
   "probeQuery": "画皮",
