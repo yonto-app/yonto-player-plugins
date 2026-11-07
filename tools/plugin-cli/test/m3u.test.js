@@ -255,13 +255,13 @@ test("a request the host gave up on keeps its code, and the host's words, which 
   assert.ok(!error.message.includes('k3y'), error.message);
 });
 
-test("an entry's id is the md5 of its address and title, so History and the Watch list keep finding it", async () => {
+test("an entry's id is the md5 of its group and title, so History and the Watch list keep finding it", async () => {
   const { createHash } = await import('node:crypto');
   const { engine } = engineOver(text(PLAYLIST));
 
   const [news] = await engine.call('getMediaList', ['all', { page: 1 }]);
 
-  assert.equal(news.id, createHash('md5').update('https://cdn.test/news.m3u8\nWorld News').digest('hex'));
+  assert.equal(news.id, createHash('md5').update('News, World\nWorld News').digest('hex'));
   assert.equal((await engine.call('getMediaDetail', [news.id])).title, 'World News');
 });
 
@@ -340,17 +340,56 @@ test('a new runtime answers a page, a group, a title and a search from the cache
   assert.equal(transport.calls.length, 0);
 });
 
-test("every entry's id is the md5 of its address and title, as it was before the playlist was kept", async () => {
+test("every entry's id is the md5 of its group and title, never its address", async () => {
   const { engine } = engineOver(text(PLAYLIST));
 
   const ids = (await engine.call('getMediaList', ['all', { page: 1 }])).map((m) => m.id);
 
   assert.deepEqual(ids, [
-    md5('https://cdn.test/news.m3u8\nWorld News'),
-    md5('https://cdn.test/heist.mp4\nHeist'),
-    md5(`${SECOND_HEIST}\nSecond Heist`),
-    md5('https://cdn.test/loose.ts\nLoose'),
+    md5('News, World\nWorld News'),
+    md5('Movies\nHeist'),
+    md5('Movies\nSecond Heist'),
+    md5('Other\nLoose'),
   ]);
+});
+
+/** A provider's playlist that signs every address afresh on each download, its titles alike. */
+const signed = (signature) => `#EXTM3U
+#EXTINF:-1 group-title="Sport",Arena 1
+https://cdn.test/live/${signature}-a.m3u8
+#EXTINF:-1 group-title="Sport",Arena 1
+https://backup.test/live/${signature}-b.m3u8
+#EXTINF:-1 group-title="News",Arena 1
+https://cdn.test/live/${signature}-c.m3u8
+#EXTINF:-1 group-title="Sport",Arena 2
+https://cdn.test/live/${signature}-d.m3u8
+`;
+
+test('a playlist read again with every address signed afresh keeps every id, so a title page still opens', async () => {
+  let clock = 1_000_000;
+  let signature = 'aaa';
+  const { engine, transport } = engineOver((_req) => text(signed(signature)), { now: () => clock });
+
+  const before = await engine.call('getMediaList', ['all', { page: 1 }]);
+  signature = 'bbb';
+  clock += 301_000;
+  const detail = await engine.call('getMediaDetail', [before[3].id]);
+  const after = await engine.call('getMediaList', ['all', { page: 1 }]);
+
+  assert.equal(transport.calls.length, 2);
+  assert.equal(detail.title, 'Arena 2');
+  assert.equal(detail.playbackOptions[0].stream.url, 'https://cdn.test/live/bbb-d.m3u8');
+  assert.deepEqual(after, before);
+});
+
+test('entries of one group and title are a title each, told apart by their order, and the same title in another group is its own', async () => {
+  const { engine } = engineOver(text(signed('aaa')));
+
+  const all = await engine.call('getMediaList', ['all', { page: 1 }]);
+  const backup = await engine.call('getMediaDetail', [all[1].id]);
+
+  assert.deepEqual(all.map((m) => m.id), [md5('Sport\nArena 1'), md5('Sport\nArena 1\n1'), md5('News\nArena 1'), md5('Sport\nArena 2')]);
+  assert.equal(backup.playbackOptions[0].stream.url, 'https://backup.test/live/aaa-b.m3u8');
 });
 
 /** Groups interleaved in runs of every length, repeats among them, and a group past ASCII, over more than one chunk. */
@@ -369,16 +408,20 @@ function interleaved(count) {
   return { body: lines.join('\n'), entries };
 }
 
-/** The playlist's entries as the in-memory index read them: the first of each address and title, groups in first appearance. */
+/** The playlist's entries as the in-memory index read them: the first of each address and title, groups in first appearance, ids by group and title. */
 function modelOf(entries) {
   const seen = new Set();
+  const namesakes = new Map();
   const all = [];
   const groups = new Map();
   for (const entry of entries) {
     const key = `${entry.url}\n${entry.title}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const summary = { id: md5(key), title: entry.title, type: 'MOVIE' };
+    const name = `${entry.group}\n${entry.title}`;
+    const before = namesakes.get(name) ?? 0;
+    namesakes.set(name, before + 1);
+    const summary = { id: md5(before === 0 ? name : `${name}\n${before}`), title: entry.title, type: 'MOVIE' };
     all.push(summary);
     if (!groups.has(entry.group)) groups.set(entry.group, []);
     groups.get(entry.group).push(summary);
@@ -502,7 +545,7 @@ test('an ids piece another build wrote reads as lost, though the chunk is this b
   writeFileSync(ids, readFileSync(ids, 'utf8').replace(build, 'x'.repeat(build.length)));
 
   const { engine, transport } = engineOver(text(PLAYLIST), { cacheDir });
-  const id = md5('https://cdn.test/heist.mp4\nHeist');
+  const id = md5('Movies\nHeist');
 
   assert.equal((await engine.call('getMediaDetail', [id])).title, 'Heist');
   assert.equal(transport.calls.length, 1);
@@ -548,7 +591,7 @@ test('a tab in a title or a group is a space, and the entry keeps its id and its
   const [entry] = await engine.call('getMediaList', ['all', { page: 1 }]);
   const detail = await engine.call('getMediaDetail', [entry.id]);
 
-  assert.deepEqual(entry, { id: md5('https://cdn.test/t.m3u8\nTab\tbed'), title: 'Tab bed', type: 'MOVIE' });
+  assert.deepEqual(entry, { id: md5('Ne\tws\nTab\tbed'), title: 'Tab bed', type: 'MOVIE' });
   assert.deepEqual(detail.genres, ['Ne ws']);
   assert.equal(detail.playbackOptions[0].stream.url, 'https://cdn.test/t.m3u8');
 });
@@ -570,7 +613,7 @@ test('a search reads lowercased chunks: İ lengthens a line, a hit only in the a
   const { engine } = engineOver(text(body));
 
   assert.deepEqual((await engine.call('search', ['haber'])).map((m) => m.title), ['İstanbul Haber', 'Akşam haberleri']);
-  assert.deepEqual((await engine.call('search', ['İSTANBUL'])).map((m) => [m.title, m.id]), [['İstanbul Haber', md5('https://cdn.test/2.ts\nİstanbul Haber')]]);
+  assert.deepEqual((await engine.call('search', ['İSTANBUL'])).map((m) => [m.title, m.id]), [['İstanbul Haber', md5('Haberler\nİstanbul Haber')]]);
   assert.deepEqual((await engine.call('search', ['izmir'.replace('i', 'İ')])).map((m) => m.title), ['İİİİİİİİ']);
   assert.deepEqual(await engine.call('search', ['spor\tother']), []);
   const [first] = await engine.call('getMediaList', ['all', { page: 1 }]);

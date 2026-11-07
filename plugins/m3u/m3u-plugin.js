@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "m3u",
   "name": "M3U playlist",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "contractVersion": 29,
   "description": "Plays the channels and videos of an M3U or M3U8 playlist, grouped the way the playlist groups them. You supply the address; Yonto Player includes no playlist.",
   "probeQuery": "news",
@@ -355,9 +355,21 @@ const LOST = Symbol('lost');
 /** The playlist the cache did not keep (a source nobody saved, a disk that refuses, one too large), for this runtime. */
 let held = null;
 
-/** What an entry's id is the md5 of. */
-function keyOf(entry) {
+/** An entry the playlist lists again, address and title alike, is the one title. */
+function repeatKeyOf(entry) {
   return `${entry.url}\n${entry.title}`;
+}
+
+/**
+ * The md5 of the entry's group and title, and of how many entries of both came before it, counted in [namesakes].
+ * Never of its address, which a provider may sign afresh on every download.
+ */
+function idOf(entry, namesakes) {
+  const name = `${entry.group}\n${entry.title}`;
+  const first = yonto.crypto.md5(name);
+  const before = namesakes.get(first) ?? 0;
+  namesakes.set(first, before + 1);
+  return before === 0 ? first : yonto.crypto.md5(`${name}\n${before}`);
 }
 
 /**
@@ -367,6 +379,7 @@ function keyOf(entry) {
 function compactOf(entries, address, at) {
   const build = `${at.toString(36)}-${Math.random().toString(36).slice(2)}`;
   const seen = new Set();
+  const namesakes = new Map();
   const groups = new Map();
   const chunks = chunker(build);
   const search = chunker(build);
@@ -376,9 +389,10 @@ function compactOf(entries, address, at) {
   for (let i = 0; i < entries.length; i += 1) {
     const entry = entries[i];
     entries[i] = undefined;
-    const id = yonto.crypto.md5(keyOf(entry));
-    if (seen.has(id)) continue;
-    seen.add(id);
+    const repeat = yonto.crypto.md5(repeatKeyOf(entry));
+    if (seen.has(repeat)) continue;
+    seen.add(repeat);
+    const id = idOf(entry, namesakes);
     if (lines % IDS_PER_PIECE === 0) {
       if (idParts !== null) ids.push(idParts.join(''));
       idParts = [`${build}\n`];

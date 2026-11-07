@@ -43,7 +43,7 @@ The customer's 28 MB playlist parses in about 0.9 s and needs 128 MB of the real
 What was parsed is kept in `yonto.cache` (contract 29) rather than in module memory, which held about 110 MB of the realm for a 90,000 entry playlist for as long as the source was open.
 Right after the parse, each entry becomes a line, `id\ttitle\tgroup\tposter\turl\tlive\theaders` (`live` is `1` or empty, `headers` JSON or empty, and a tab in a field a space), in playlist order and with a repeat dropped as before, and each entry is let go once it is a line, so the parse's peak is not raised.
 The lines are cut into chunks of at most 512 Ki characters, `playlist:0`, `:1` and on, each opening with the build id of the write that made it, and `playlist` is the state: the address, `at` (when it was read), the build id, the line count, the line each chunk starts at, and each group's name and runs of lines `[start, length]`, in first appearance, so a group's page is found without a scan.
-Every id's md5 is made then, 90,000 host calls, about 0.5 s on the CLI's QuickJS.
+Every entry's two md5s are made then, its id's and the repeat check's, 180,000 host calls, which take a 90,000 entry playlist's first read from about 2.1 s to 2.7 s on the CLI's QuickJS; the count of an id's namesakes is kept by the md5 of its group and title, never the title itself, so the parse holds 32 ASCII characters an entry and not a two-byte title.
 Beside them, `playlist:ids:0` and on hold every line's 32-character id in line order, concatenated after the same build id, 131,072 a piece (4 Mi characters, so a 90,000 entry playlist's are one).
 And `playlist:search:0` and on hold each line's title and group, lowercased as they were written, `title\tgroup` a line, in pieces of their own that start where the state's `searchStarts` say.
 A call reads the state and only the pieces it needs, so nothing of the playlist stays in memory between calls: Categories the state alone, a page of All or a group the one or two chunks holding its lines, a title page the ids (`indexOf` at a multiple of 32 gives the line) and then that line's chunk, and a search the search pieces until it has 100 hits (`indexOf` straight through each, a hit's line counted in that text, so `İ`, which lowercases to two characters, moves nothing), then only the chunks holding them.
@@ -54,7 +54,9 @@ Two calls never race to download it: the host runs one call at a time per source
 
 ## Ids and paging
 
-An entry's id is the md5 of its address and title, so it survives the playlist being reordered or gaining entries, and an entry the playlist repeats is one title.
+An entry's id is the md5 of its group and title (`idOf`), so it survives the playlist being reordered or gaining entries, and above all its address changing: a provider may sign every stream address afresh every few minutes, and an id made from the address gave every channel a new one at each download, which a title page, History and the Watch list then could not find.
+A second entry of the same group and title, a backup stream, is a title of its own, its id the md5 of the group, the title and how many of both came before it, so the first keeps the plain one.
+An entry the playlist repeats, address and title alike, is still one title, wherever it is repeated.
 A listing is 60 entries a page, from a playlist read at most five minutes ago (`CACHE_SECONDS`, counted from the state's `at`, so a restart within five minutes answers from the cache).
 Search is a case-insensitive substring over title and group, at most 100.
 The 32 MB body limit is the largest playlist it reads, and a larger one says *too large to read*; an Xtream Codes panel's `get.php?username=…&password=…` link adds that it can be added as an Xtream Codes source, which reads the panel through its API in pieces (`plugins/xtream/AGENTS.md`), since a panel's export is often its whole library in one file.
