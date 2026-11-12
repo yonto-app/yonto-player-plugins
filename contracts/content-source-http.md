@@ -1464,7 +1464,7 @@ Optional, and both answer nothing: an answer is ignored.
 { "mediaId": "…", "played": true }
 ```
 
-- `event` is `"start"`, `"progress"` or `"stop"`. `paused` is the player's play-when-ready turned off. `position` and `duration` are seconds. `finished` is only on `stop` and says the viewer reached the credits; a server that decides watched itself from the position may ignore it.
+- `event` is `"start"`, `"progress"` or `"stop"`. `paused` says the title stands still, by the viewer's pause or while another app has the device's sound (a call); a title that only buffers is not paused. `position` and `duration` are seconds. `finished` is only on `stop` and says the viewer reached the credits; a server that decides watched itself from the position may ignore it.
 - `optionId` is the option's `id`, or absent for a film.
 - `session` is the played stream's own `session`, verbatim, and absent when it had none (contract 26).
 - `setPlayed` is the viewer marking a title watched or unwatched themselves.
