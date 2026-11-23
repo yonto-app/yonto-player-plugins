@@ -753,7 +753,7 @@ test('a title the software player cannot show is never its: HDR it names no rang
     return profileSent(transport).DirectPlayProfiles.length;
   };
 
-  assert.equal(await profilesFor('HDR 10', []), 1, 'the Mac, whose VLCKit picture shows no HDR');
+  assert.equal(await profilesFor('HDR 10', []), 1, 'a player naming no HDR range, as on an SDR screen');
   assert.equal(await profilesFor('HLG', ['hdr10']), 1);
   assert.equal(await profilesFor('DolbyVision', ['hdr10', 'dolbyVision']), 1);
   assert.equal(await profilesFor('SDR', []), 2);

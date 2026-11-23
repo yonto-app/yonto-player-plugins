@@ -293,7 +293,7 @@ test('what the software player plays is a second direct play profile, of the vid
     return softwareProfileSent(sent) !== undefined;
   };
   assert.equal(await shownFor('HDR10', ['hdr10']), true);
-  assert.equal(await shownFor('HDR10', []), false, 'the Mac, whose VLCKit picture shows no HDR');
+  assert.equal(await shownFor('HDR10', []), false, 'a player naming no HDR range, as on an SDR screen');
   assert.equal(await shownFor('DOVIWithHDR10', ['hdr10', 'dolbyVision']), false);
   for (const type of ['DOVIWithEL', 'DOVIWithHDR10Plus', 'DOVIWithELHDR10Plus', 'DOVIInvalid']) {
     assert.equal(await shownFor(type, ['hdr10']), false, `${type}, Jellyfin 10.11's`);
