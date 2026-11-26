@@ -21,6 +21,14 @@ test('accepts a well-formed category list', () => {
   assert.deepEqual(result, { valid: true, errors: [] });
 });
 
+test('a category may say whether it is for Home, as a boolean', () => {
+  const category = (home) => validateResult('getCategories', [{ id: 'dianying', name: '电影', home }]).valid;
+
+  assert.equal(category(false), true);
+  assert.equal(category(true), true);
+  assert.equal(category('false'), false);
+});
+
 test('names the JSON path of a bad item', () => {
   const { valid, errors } = validateResult('getCategories', [{ id: 'dianying' }]);
   assert.equal(valid, false);

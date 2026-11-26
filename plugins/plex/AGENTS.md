@@ -5,7 +5,7 @@ Like `plugins/jellyfin/`, nothing here is scraped: the server is the viewer's ow
 
 ## Two ways to a server
 
-Every server is one library in the app's sense, the second level behind Home's badge (not one of a Plex server's own library sections, which are this plugin's categories), and a source can have both kinds at once: the typed server's library first, then one per server a login shares (2026-09-25).
+Every server is one library in the app's sense, the second level behind Home's badge (not one of a Plex server's own library sections, which are this plugin's categories, with its collections and playlists after them), and a source can have both kinds at once: the typed server's library first, then one per server a login shares (2026-09-25).
 
 **A server the viewer typed** (`serverUrl`, with the optional `token` beside it) is read exactly as it was before the sign-in existed.
 This is how a viewer reaches their own server, since the host binds nothing to a server the account owns.
@@ -50,9 +50,9 @@ Everything past a link is **unverified**: no Plex account exists, so the resourc
 
 | Method | Plex call |
 |---|---|
-| `getCategories` | `GET /library/sections/all`, kept to `type` `movie` and `show` (a music library is `artist`) |
-| `getFilters` | none asked: a static Sort group |
-| `getMediaList` | `GET /library/sections/{key}/all?sort&X-Plex-Container-Start&X-Plex-Container-Size`, 60 a page, the sort `episode.addedAt:desc` unless another is picked |
+| `getCategories` | `GET /library/sections/all`, kept to `type` `movie` and `show` (a music library is `artist`), then `GET /library/sections/{key}/collections` for each and `GET /playlists?playlistType=video` |
+| `getFilters` | a section's: none asked, a static Sort group; Collections' and Playlists': the same calls that list them (Collections' ask for the sections first) |
+| `getMediaList` | `GET /library/sections/{key}/all?sort&X-Plex-Container-Start&X-Plex-Container-Size`, 60 a page, the sort `episode.addedAt:desc` unless another is picked; a collection's is `GET /library/collections/{ratingKey}/children` and a playlist's `GET /playlists/{ratingKey}/items`, paged the same and never sorted, after the calls that list them when none is picked |
 | `getMediaDetail` | `GET /library/metadata/{ratingKey}?includeMarkers=1`, plus `/allLeaves` for a show's episodes; a film's version and each episode a `track` |
 | `getStream` | `GET /library/metadata/{ratingKey}?includeMarkers=1` of the film or episode, for its part, its subtitle files and its markers; with the device, then `GET /` and `GET /video/:/transcode/universal/decision` |
 | `search` | `GET /hubs/search?query&limit=50`, keeping the `movie` and `show` hubs |
@@ -73,6 +73,19 @@ Paging arguments go in the query rather than as headers, which Plex accepts too,
 A Home shelf is a library's first page with no filters, so a listing is the latest first, and the Sort group (Recently added, Title, Year, Rating) opens on that.
 `episode.addedAt:desc` is a show section's *Last Episode Date Added*, which on PMS 1.43.4 moved a show to the top when an episode was added; a film section answers it as its own `addedAt:desc`, so one sort serves both and a listing needs no section type.
 `/library/sections/{key}/sorts` lists what a section takes.
+
+## Collections and playlists (2026-11-26)
+
+an earlier issue. The shape is the one Jellyfin's and Emby's box sets and playlists can take too, and needs nothing of the contract.
+
+- **Two categories after the sections, Collections and Playlists, each only where the server has one, in Browse and not on Home** (2026-11-26). The Apple TV app has no Browse, so it shows neither. The category's one filter names the list (`collection`, `playlist`), and its `init` is the list changed last (`updatedAt`), which a listing with nothing picked is too. The host keeps filters for a day, so after a list is edited Browse may open on the one it opened on before, and one deleted since is `notFound` until the filters are asked for again. No Sort: a list keeps the server's order. Not a filter on each section, whose Sort always sends a choice and would fight a collection's own order, and no section holds a playlist that spans them; not a category per list, since a server with fifty would put fifty shelves on Home.
+- **A list is never a title.** A collection as a series of its films would be one click less, but the page has no age rating of its own, so a junior profile would play a film through it that its own page refuses, and History would hold the collection. Each card is the server's own title, weighed and opened as anywhere else. So playing one does not go on to the next in the list.
+- **An episode or a season is its show**, once, where the list first has it, with the episode's `contentRating` and none of its place. An episode as a title of its own would keep its place in the list, but a grown-up's rating is kept by title id, so a show rated 18+ would still open by its episodes; and History would hold it apart from the show, and a subtitle search would take it for a film.
+- **A page is never only what was listed before**: the host takes a page with nothing new as the end, and sixty episodes of one show are one card, so `curatedPage` reads on past them. It remembers how far the last list was walked (`lastWalk`), and a page asked for out of turn, as after a restart, is walked to from the start. The list ends at the server's `totalSize`, or without one at a page that is not full. A junior profile from which a whole page is hidden sees the list end there, as in a section, and a page of one hidden show does that sooner.
+- A clip is a film. Anything else (a track, a photo) is dropped, and so is an episode or a season that names no show.
+- An empty list is not offered (`childCount`, which Plex sends as a string, and `leafCount`), nor a playlist whose `playlistType` is not `video`. Two collections of one name, which two sections may have, are told apart as `Marvel (Movies)`.
+- The lists are read with `ask`, so a server that refuses or drops them leaves its sections as they were, without Collections or Playlists, and is not a login refused; nor is a shared server's connection let go when it has answered the same call (`target.answered`). A list request that hangs does hold the call up, as any request does on a device. A list's own titles are read with `get`, like a section's.
+- **Not seen on a real server.** The calls and fields are from Plex's API documentation and python-plexapi's source, with `/library/collections/{id}/children` (a collection's own `key`, smart ones included) rather than the newer `/items`. The fixtures wrap recorded items in hand-written containers. Unseen: whether the paging arguments page these two calls as they do a section (a server ignoring them answers it all at once, which is read as the end), whether `includeGuids` is read there, and what a shared server's lists look like to a friend.
 
 ## Play state (contract 23)
 
@@ -160,6 +173,8 @@ For external subtitles the film's detail gained an external SRT stream, and `get
 A title's `ids` come from its `Guid` entries (`tmdb://10378`, `imdb://tt…`, `tvdb://…`).
 A detail lists them without being asked, as recorded, but a listing and a search leave them out unless asked with `includeGuids=1`, so those two send it.
 The listing and search were recorded before that, so their fixtures were re-keyed to the `includeGuids` request and `Big Buck Bunny` was given its own `Guid`s by hand, copied from its recorded detail; a re-recording replaces both.
+
+For collections and playlists five fixtures are **NOT RECORDINGS**: `get-cace85fb26ce3062` and `get-7271bba129035c60` (the two sections' collections, the second empty), `get-c2891c7480e9d65b` (the collection's titles), `get-180959e168589ee6` (the playlists) and `get-e5fbcd2d9cb9ddc2` (the playlist's items), written by hand in the documented shape around the recorded films and episode.
 
 To record again, run a server the same way and add the libraries through the API:
 

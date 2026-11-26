@@ -44,10 +44,15 @@ function answering(status, value) {
   }, { ...RECORDED, token: TOKEN });
 }
 
-test('only movie and show libraries become categories', async () => {
+test('only movie and show libraries become categories, with the server\'s collections and playlists after them', async () => {
   const categories = await replayed().engine.call('getCategories', []);
 
-  assert.deepEqual(categories, [{ id: '1', name: 'Movies' }, { id: '2', name: 'TV Shows' }]);
+  assert.deepEqual(categories, [
+    { id: '1', name: 'Movies' },
+    { id: '2', name: 'TV Shows' },
+    { id: 'collections', name: 'Collections', home: false },
+    { id: 'playlists', name: 'Playlists', home: false },
+  ]);
 });
 
 test('a listing pages with the container start and size', async () => {
@@ -380,6 +385,300 @@ test('no log line names the server, a path, the search or the token', async () =
   }
 });
 
+// Collections and playlists. Their fixtures are written by hand in the shape Plex documents (plugins/plex/AGENTS.md),
+// around items a real server answered.
+const SECTIONS = { MediaContainer: { Directory: [{ key: '1', type: 'movie', title: 'Movies' }, { key: '2', type: 'show', title: 'TV Shows' }] } };
+const NONE = { MediaContainer: { size: 0 } };
+const containing = (Metadata) => ({ MediaContainer: { Metadata } });
+
+test('a collection and a playlist are picked by name, and each lists its titles in its own order', async () => {
+  const { engine, requests } = replayed();
+
+  assert.deepEqual(await engine.call('getFilters', ['collections']), [
+    { id: 'collection', name: 'Collection', options: [{ id: '20', name: 'Blender films' }], init: '20' },
+  ]);
+  assert.deepEqual(await engine.call('getFilters', ['playlists']), [
+    { id: 'playlist', name: 'Playlist', options: [{ id: '22', name: 'Movie night' }], init: '22' },
+  ]);
+  const collection = await engine.call('getMediaList', ['collections', { page: 1, filters: { collection: '20' } }]);
+  assert.deepEqual(collection.map((item) => [item.id, item.title]), [['2', 'Sintel'], ['1', 'Big Buck Bunny']]);
+  const playlist = await engine.call('getMediaList', ['playlists', { page: 1, filters: { playlist: '22' } }]);
+  assert.deepEqual(playlist.map((item) => [item.id, item.type, item.title]), [
+    ['2', 'MOVIE', 'Sintel'],
+    [SHOW_ID, 'SERIES', 'Blender Shorts'],
+    ['1', 'MOVIE', 'Big Buck Bunny'],
+  ]);
+  // A list keeps its order, so it is never asked for sorted.
+  assert.equal(requests.some((r) => r.url.includes('sort=')), false);
+});
+
+test('a title in a list is the server\'s own, and carries its age rating, its ids and its place', async () => {
+  const { engine } = replayed();
+  const [, , inPlaylist] = await engine.call('getMediaList', ['playlists', { page: 1 }]);
+  const inSection = (await engine.call('getMediaList', ['1', { page: 1 }])).find((item) => item.id === MOVIE_ID);
+
+  assert.equal(inPlaylist.rating, 'G');
+  assert.deepEqual(inPlaylist, inSection);
+});
+
+test('with nothing picked a category lists the list changed last, as it opens', async () => {
+  const lists = (key) => containing([
+    { ratingKey: '30', type: 'playlist', playlistType: 'video', title: 'Older', updatedAt: 100, leafCount: 1 },
+    { ratingKey: '31', type: 'playlist', playlistType: 'video', title: 'Newest', updatedAt: 300, leafCount: 1 },
+    { ratingKey: '32', type: 'playlist', playlistType: 'video', title: 'Undated', leafCount: 1 },
+  ].map((item) => (key === undefined ? item : { ...item, updatedAt: undefined })));
+  const opening = async (answer) => {
+    const { engine, sent } = routed([['/playlists?', answer], ['/items', NONE]]);
+    const [{ init, options }] = await engine.call('getFilters', ['playlists']);
+    await engine.call('getMediaList', ['playlists', { page: 1 }]);
+    return [init, options.map((o) => o.id), new URL(sent.at(-1).url).pathname];
+  };
+
+  assert.deepEqual(await opening(lists()), ['31', ['30', '31', '32'], '/playlists/31/items']);
+  assert.deepEqual(await opening(lists('undated')), ['30', ['30', '31', '32'], '/playlists/30/items']);
+});
+
+// [items] a page at a time, as a server pages them, each request's path and place kept.
+function listOf(items, path = '/playlists/7/items') {
+  const starts = [];
+  const { engine } = engineOver({
+    async request(req) {
+      const url = new URL(req.url);
+      const [start, size] = ['Start', 'Size'].map((name) => Number(url.searchParams.get(`X-Plex-Container-${name}`)));
+      starts.push(start);
+      if (url.pathname !== path || url.searchParams.get('includeGuids') !== '1') return { status: 404, headers: {}, bodyBase64: body({}) };
+      return { status: 200, headers: {}, bodyBase64: body(containing(items.slice(start, start + size))) };
+    },
+  }, { ...RECORDED, token: TOKEN });
+  const [, kind, id] = path.match(/(collections|playlists)\/(\d+)/);
+  const page = async (number) => (await engine.call('getMediaList', [kind, { page: number, filters: { [kind.slice(0, -1)]: id } }])).map((item) => item.id);
+  return { page, starts };
+}
+
+const films = (count, from = 1000) => Array.from({ length: count }, (_, i) => movie({ ratingKey: String(from + i) }));
+const keys = (items) => items.map((item) => item.ratingKey);
+const episodesOf = (show, count) => Array.from({ length: count }, (_, i) => (
+  { ratingKey: `${show}${i}`, type: 'episode', title: `Episode ${i}`, grandparentRatingKey: show, grandparentTitle: 'Show' }));
+
+test('a picked list pages in the server\'s order, and asks for nothing else', async () => {
+  for (const path of ['/library/collections/7/children', '/playlists/7/items']) {
+    const all = films(130);
+    const { page, starts } = listOf(all, path);
+
+    assert.deepEqual(await page(1), keys(all.slice(0, 60)));
+    assert.deepEqual(await page(2), keys(all.slice(60, 120)));
+    assert.deepEqual(await page(3), keys(all.slice(120)));
+    assert.deepEqual(await page(4), []);
+    assert.deepEqual(starts, [0, 60, 120]);
+  }
+});
+
+// The host takes a page with nothing new as the end, so one is never answered before the list's end.
+test('a page whose titles are all listed already is read past', async () => {
+  const { page, starts } = listOf([...episodesOf('9', 180), ...films(1), ...episodesOf('9', 40), ...films(1, 2000)]);
+
+  assert.deepEqual(await page(1), ['9']);
+  assert.deepEqual(await page(2), ['1000', '2000']);
+  assert.deepEqual(await page(3), []);
+  assert.deepEqual(starts, [0, 60, 120, 180]);
+});
+
+test('a page asked for out of turn is walked to from the start, and page 1 always starts over', async () => {
+  const all = films(130);
+  const { page, starts } = listOf(all);
+
+  assert.deepEqual(await page(3), keys(all.slice(120)));
+  assert.deepEqual(starts.splice(0), [0, 60, 120]);
+  assert.deepEqual(await page(3), keys(all.slice(120)));
+  assert.deepEqual(starts.splice(0), [0, 60, 120]);
+  assert.deepEqual(await page(1), keys(all.slice(0, 60)));
+  assert.deepEqual(await page(1), keys(all.slice(0, 60)));
+  assert.deepEqual(starts, [0, 0]);
+});
+
+test('a page cut short of the server\'s own count is not the end, whatever the server leaves out of it', async () => {
+  const all = films(130);
+  const { engine } = engineOver({
+    async request(req) {
+      const start = Number(new URL(req.url).searchParams.get('X-Plex-Container-Start'));
+      const answered = all.slice(start, start + 50);
+      return { status: 200, headers: {}, bodyBase64: body({ MediaContainer: { totalSize: 130, Metadata: answered } }) };
+    },
+  }, RECORDED);
+  const page = async (number) => (await engine.call('getMediaList', ['playlists', { page: number, filters: { playlist: '7' } }])).length;
+
+  assert.deepEqual([await page(1), await page(2), await page(3), await page(4)], [50, 50, 30, 0]);
+});
+
+test('a page asked for out of turn and cut goes on from where it was', async () => {
+  const all = films(250);
+  const starts = [];
+  let cutAt = 180;
+  const { engine } = engineOver({
+    async request(req) {
+      const start = Number(new URL(req.url).searchParams.get('X-Plex-Container-Start'));
+      starts.push(start);
+      if (start === cutAt) throw new Error('connection reset');
+      return { status: 200, headers: {}, bodyBase64: body(containing(all.slice(start, start + 60))) };
+    },
+  }, RECORDED);
+  const page = () => engine.call('getMediaList', ['playlists', { page: 5, filters: { playlist: '7' } }]);
+
+  await assert.rejects(page());
+  starts.length = 0;
+  cutAt = null;
+  assert.deepEqual((await page()).map((item) => item.id), keys(all.slice(240)));
+  assert.deepEqual(starts, [180, 240]);
+});
+
+test('a page of one list does not go on from another\'s', async () => {
+  const all = { 7: films(130), 8: films(130, 2000) };
+  const { engine } = engineOver({
+    async request(req) {
+      const url = new URL(req.url);
+      const start = Number(url.searchParams.get('X-Plex-Container-Start'));
+      return { status: 200, headers: {}, bodyBase64: body(containing(all[url.pathname.split('/')[2]].slice(start, start + 60))) };
+    },
+  }, RECORDED);
+  const page = async (playlist, number) => (await engine.call('getMediaList', ['playlists', { page: number, filters: { playlist } }])).map((item) => item.id);
+
+  await page('7', 1);
+  await page('8', 1);
+  assert.deepEqual(await page('7', 2), keys(all[7].slice(60, 120)));
+});
+
+test('a list that says its length is not asked past it', async () => {
+  const { engine, sent } = routed([['/items', { MediaContainer: { totalSize: 60, Metadata: films(60) } }]]);
+  const ask = (page) => engine.call('getMediaList', ['playlists', { page, filters: { playlist: '7' } }]);
+
+  assert.equal((await ask(1)).length, 60);
+  assert.deepEqual(await ask(2), []);
+  assert.equal(sent.length, 1);
+});
+
+test('a server with no collection and no playlist lists its sections alone', async () => {
+  const { engine } = routed([['/library/sections/all', SECTIONS], ['/collections', NONE], ['/playlists?', NONE]]);
+
+  assert.deepEqual((await engine.call('getCategories', [])).map((c) => c.id), ['1', '2']);
+  assert.deepEqual(await engine.call('getFilters', ['collections']), []);
+  assert.deepEqual(await engine.call('getFilters', ['playlists']), []);
+  assert.deepEqual(await engine.call('getMediaList', ['collections', { page: 1 }]), []);
+  assert.deepEqual(await engine.call('getMediaList', ['playlists', { page: 1 }]), []);
+});
+
+test('an empty list is not offered, nor a music or a photo playlist', async () => {
+  const { engine, sent } = routed([
+    ['/library/sections/all', SECTIONS],
+    ['/sections/1/collections', containing([{ ratingKey: '40', title: 'Empty', childCount: '0' }])],
+    ['/collections', NONE],
+    ['/playlists?', containing([
+      { ratingKey: '41', playlistType: 'audio', title: 'Running', leafCount: 9 },
+      { ratingKey: '42', playlistType: 'photo', title: 'Holiday', leafCount: 9 },
+      { ratingKey: '43', playlistType: 'video', title: 'Emptied', leafCount: 0 },
+    ])],
+  ]);
+
+  assert.deepEqual((await engine.call('getCategories', [])).map((c) => c.id), ['1', '2']);
+  assert.ok(sent.some((r) => r.url.endsWith('/playlists?playlistType=video')));
+});
+
+test('a server that cannot say what its lists are keeps its sections, and the login', async () => {
+  const { engine, account, clock, logs } = linked({ refusedPaths: ['/library/sections/2/collections', '/playlists'] });
+
+  assert.deepEqual((await engine.call('getCategories', [])).map((c) => c.id), ['1', '2']);
+  clock.now += 61_000;
+  await engine.call('getSubSources', []);
+  assert.equal(account.calls.length, 1);
+  assert.ok(logs.some((line) => line.message.startsWith('collections were left out')));
+  assert.ok(logs.some((line) => line.message.startsWith('playlists were left out')));
+});
+
+test('a list that cannot be read does not forget the connection that answered the sections', async () => {
+  for (const path of ['/library/sections/1/collections', '/playlists']) {
+    const { engine, servers } = linked({ droppedPaths: [path] });
+
+    await engine.call('getCategories', []);
+    servers.probes.length = 0;
+    await engine.call('getMediaList', ['1', { page: 1 }]);
+
+    assert.deepEqual(servers.probes, [], path);
+  }
+});
+
+test('a title\'s own request dropped midway, or an update, still probes again', async () => {
+  const finished = { mediaId: `${FRIEND.id}|${MOVIE_ID}`, event: 'stop', paused: false, position: 20, duration: 20, finished: true };
+  for (const [path, method, args] of [
+    ['/:/scrobble', 'reportPlayback', [finished]],
+    ['/library/metadata/3/allLeaves', 'getMediaDetail', [`${FRIEND.id}|${SHOW_ID}`]],
+    ['/:/scrobble', 'setPlayed', [{ mediaId: `${FRIEND.id}|${MOVIE_ID}`, played: true }]],
+  ]) {
+    const { engine, servers } = linked({ droppedPaths: [path] });
+    await engine.call('getMediaList', ['1', { page: 1 }]);
+    servers.probes.length = 0;
+
+    await engine.call(method, args).catch(() => {});
+
+    assert.equal(servers.probes.length, 3, path);
+  }
+});
+
+test('two collections of one name are told apart by their section', async () => {
+  const { engine } = routed([
+    ['/library/sections/all', SECTIONS],
+    ['/sections/1/collections', containing([{ ratingKey: '50', title: 'Marvel', childCount: '3' }, { ratingKey: '51', title: 'Noir', childCount: '2' }])],
+    ['/sections/2/collections', containing([{ ratingKey: '52', title: 'Marvel', childCount: '1' }])],
+  ]);
+
+  const [{ options }] = await engine.call('getFilters', ['collections']);
+  assert.deepEqual(options.map((o) => o.name), ['Marvel (Movies)', 'Noir', 'Marvel (TV Shows)']);
+});
+
+// Its own page would escape what a grown-up rated the show.
+test('an episode and a season are their show, once, where the list first has it', async () => {
+  const episode = {
+    ratingKey: '61', type: 'episode', title: 'Pilot', grandparentRatingKey: '60', grandparentTitle: 'Show', parentIndex: 1, index: 3, contentRating: 'TV-14',
+    viewCount: 1, viewOffset: 5000, thumb: '/library/metadata/61/thumb/1', grandparentThumb: '/library/metadata/60/thumb/1', Guid: [{ id: 'tmdb://603' }],
+  };
+  const { engine } = routed([['/items', containing([
+    episode,
+    movie(),
+    { ...episode, ratingKey: '62', title: 'Second' },
+    movie(),
+    { ratingKey: '63', type: 'season', parentRatingKey: '70', parentTitle: 'Other', title: 'Season 1', contentRating: 'TV-G' },
+    { ratingKey: '64', type: 'season', parentRatingKey: '60', parentTitle: 'Show', title: 'Season 2' },
+    { ratingKey: '65', type: 'clip', title: 'Holiday' },
+    { ratingKey: '66', type: 'track', title: 'Song' },
+    { ratingKey: '67', type: 'episode', title: 'Orphan' },
+    { ratingKey: '68', type: 'season', title: 'Orphan' },
+  ])]]);
+  const items = await engine.call('getMediaList', ['playlists', { page: 1, filters: { playlist: '9' } }]);
+
+  assert.deepEqual(items.map((item) => [item.id, item.type, item.title, item.rating]), [
+    ['60', 'SERIES', 'Show', 'TV-14'],
+    ['1', 'MOVIE', 'Seen', undefined],
+    ['70', 'SERIES', 'Other', 'TV-G'],
+    ['65', 'MOVIE', 'Holiday', undefined],
+  ]);
+  const [show] = items;
+  assert.match(show.posterUrl, /metadata%2F60%2Fthumb/);
+  // The episode's own place and database id are not the show's.
+  assert.deepEqual([show.played, show.position, show.ids], [undefined, undefined, undefined]);
+});
+
+test('a list deleted on the server is not found', async () => {
+  const error = await routed([]).engine.call('getMediaList', ['playlists', { page: 1, filters: { playlist: '9' } }]).catch((e) => e);
+
+  assert.equal(error.code, 'NOT_FOUND');
+});
+
+test('a shared server\'s list is of its own titles, opened there', async () => {
+  const { engine, servers } = linked({ subSource: NEIGHBOUR.id });
+  const items = await engine.call('getMediaList', ['playlists', { page: 1 }]);
+
+  assert.deepEqual(items.map((item) => item.id), ['2', SHOW_ID, '1'].map((key) => `${NEIGHBOUR.id}|${key}`));
+  assert.ok(servers.calls.every((c) => baseOf(c.url) === NEIGHBOUR_REMOTE));
+});
+
 // Signed in with a code. No Plex account exists, so the account's server list is
 // plugins/plex/fixtures/linked/resources.json, written by hand and saying so; each shared
 // server answers with the typed server's recordings, replayed under its own address.
@@ -403,13 +702,13 @@ const HANG_MS = 2000;
  * A linked Plex. [dead] is the connections refused at once, [hanging] those that never answer, so
  * fail at a connect timeout scaled to [HANG_MS] (a call waits for every request it made), and
  * [slow] those that answer after so many milliseconds, [broken] those answering 503 to everything,
- * [answers] a status per server base where it is not the recording (its probes answer as usual), [resources] the account's
- * answer, and [clock] the host's. `servers.calls` is what the plugin asked for and
+ * [answers] a status per server base where it is not the recording (its probes answer as usual), [droppedPaths] the paths
+ * whose requests are dropped, [resources] the account's answer, and [clock] the host's. `servers.calls` is what the plugin asked for and
  * `servers.probes` its `/identity` probes, each with the time it was asked `at`.
  */
 function linked({
   config = {}, dead = [], hanging = [], slow = {}, broken = [], answers = {}, resources = RESOURCES, accountDown = false, subSource = null, clock = { now: 1_700_000_000_000 },
-  refusedPaths = [],
+  refusedPaths = [], droppedPaths = [],
 } = {}) {
   const replay = createReplayTransport({ dir: join(dir, 'fixtures') });
   const account = {
@@ -436,6 +735,8 @@ function linked({
       if (dead.includes(base)) throw new Error('connection refused');
       if (broken.includes(base)) return { status: 503, headers: {}, bodyBase64: body({}) };
       if (answers[base] !== undefined && !probe) return { status: answers[base], headers: {}, bodyBase64: body({}) };
+      if (new URL(req.url).pathname === '/:/timeline') return { status: 200, headers: {}, bodyBase64: body({ MediaContainer: {} }) };
+      if (droppedPaths.includes(new URL(req.url).pathname)) throw new Error('connection reset');
       if (refusedPaths.some((path) => new URL(req.url).pathname === path)) return { status: 403, headers: {}, bodyBase64: body({}) };
       if (probe) return { status: 200, headers: {}, bodyBase64: body({ MediaContainer: { machineIdentifier: 'x' } }) };
       return replay.request({ ...req, url: `${RECORDED.serverUrl}${req.url.slice(base.length)}` });
@@ -491,7 +792,7 @@ test('the typed catalog is read as it always was, with the session never asked',
   const detail = await engine.call('getMediaDetail', [MOVIE_ID]);
   const stream = await engine.call('getStream', [MOVIE_ID]);
 
-  assert.deepEqual(categories.map((c) => c.id), ['1', '2']);
+  assert.deepEqual(categories.map((c) => c.id), ['1', '2', 'collections', 'playlists']);
   assert.equal(detail.id, MOVIE_ID);
   assert.equal(servers.calls[0].url, `${RECORDED.serverUrl}/library/sections/all`);
   assert.equal(servers.calls[0].headers['X-Plex-Token'], TOKEN);
@@ -542,8 +843,8 @@ test('a typed server stands alone when the login is out, cannot be read, or no l
 
   assert.deepEqual(await signedOutTyped.engine.call('getSubSources', []), alone);
   assert.deepEqual(await down.engine.call('getSubSources', []), alone);
-  await down.engine.call('getCategories', []);
-  await gone.engine.call('getCategories', []);
+  await down.engine.call('getMediaList', ['1', { page: 1 }]);
+  await gone.engine.call('getMediaList', ['1', { page: 1 }]);
 
   assert.deepEqual(signedOutTyped.asked, []);
   assert.deepEqual(signedOutTyped.logs, []);
@@ -588,9 +889,9 @@ test('the picked catalog is the server a call reads, with that server\'s own tok
   assert.equal((await engine.call('getSubSources', [])).activeId, NEIGHBOUR.id);
   const categories = await engine.call('getCategories', []);
 
-  assert.deepEqual(categories.map((c) => c.name), ['Movies', 'TV Shows']);
+  assert.deepEqual(categories.map((c) => c.name), ['Movies', 'TV Shows', 'Collections', 'Playlists']);
   assert.equal(servers.calls[0].url, `${NEIGHBOUR_REMOTE}/library/sections/all`);
-  assert.equal(servers.calls[0].headers['X-Plex-Token'], NEIGHBOUR.token);
+  assert.deepEqual(servers.calls.map((c) => [baseOf(c.url), c.headers['X-Plex-Token']]), servers.calls.map(() => [NEIGHBOUR_REMOTE, NEIGHBOUR.token]));
 });
 
 test('a shared server\'s title keeps its server in its id, and opens there whichever catalog is picked', async () => {
@@ -621,7 +922,7 @@ test('a shared server\'s episode is asked for on its own server, whichever catal
 test('every connection is probed at once, a direct one wins over a relay, and it is asked straight away next time', async () => {
   const { engine, servers } = linked();
 
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
   const probed = servers.probes.map((c) => baseOf(c.url));
   const first = servers.calls.map((c) => baseOf(c.url));
   servers.probes.length = 0;
@@ -637,7 +938,7 @@ test('every connection is probed at once, a direct one wins over a relay, and it
 test('a connection answering its probe with an error does not win it', async () => {
   const { engine, servers } = linked({ broken: [FRIEND_LOCAL] });
 
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   assert.deepEqual(servers.calls.map((c) => baseOf(c.url)), [FRIEND_REMOTE]);
 });
@@ -645,20 +946,20 @@ test('a connection answering its probe with an error does not win it', async () 
 test('a remembered connection that starts answering with an error is let go and the connections probed again', async () => {
   const broken = [];
   const { engine, servers } = linked({ broken });
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   broken.push(FRIEND_LOCAL);
   servers.calls.length = 0;
-  const categories = await engine.call('getCategories', []);
+  const items = await engine.call('getMediaList', ['1', { page: 1 }]);
 
-  assert.deepEqual(categories.map((c) => c.name), ['Movies', 'TV Shows']);
+  assert.deepEqual(items.map((item) => item.title), ['Big Buck Bunny', 'Sintel']);
   assert.deepEqual(servers.calls.map((c) => baseOf(c.url)), [FRIEND_LOCAL, FRIEND_REMOTE]);
 });
 
 test('a direct connection answering shortly after the relay is still the one read', async () => {
   const { engine, servers } = linked({ slow: { [FRIEND_LOCAL]: 200, [FRIEND_REMOTE]: 200 } });
 
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   assert.deepEqual(servers.calls.map((c) => baseOf(c.url)), [FRIEND_LOCAL]);
 });
@@ -668,9 +969,9 @@ test('a server whose direct connections hang is read over its relay well within 
   const { engine, servers } = linked({ hanging: [FRIEND_LOCAL, FRIEND_REMOTE] });
 
   const started = Date.now();
-  const categories = await engine.call('getCategories', []);
+  const items = await engine.call('getMediaList', ['1', { page: 1 }]);
 
-  assert.deepEqual(categories.map((c) => c.name), ['Movies', 'TV Shows']);
+  assert.deepEqual(items.map((item) => item.title), ['Big Buck Bunny', 'Sintel']);
   assert.deepEqual(servers.calls.map((c) => baseOf(c.url)), [FRIEND_RELAY]);
   // Asked over the relay once its grace was up, not once the hanging probes gave up: the call
   // itself still waits for them, as a television's does.
@@ -681,18 +982,18 @@ test('a server whose direct connections hang is read over its relay well within 
 test('a relay is kept ten minutes, then probed past, so a direct connection that came back is used', async () => {
   const dead = [FRIEND_LOCAL, FRIEND_REMOTE];
   const { engine, servers, clock } = linked({ dead });
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   dead.length = 0;
   servers.probes.length = 0;
   servers.calls.length = 0;
   clock.now += 9 * 60_000;
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
   const kept = [servers.probes.length, ...servers.calls.map((c) => baseOf(c.url))];
   servers.probes.length = 0;
   servers.calls.length = 0;
   clock.now += 2 * 60_000;
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   assert.deepEqual(kept, [0, FRIEND_RELAY]);
 
@@ -703,17 +1004,17 @@ test('a relay is kept ten minutes, then probed past, so a direct connection that
 test('a remembered connection that stops answering is probed past, and one none of whose connections answer is unreachable', async () => {
   const dead = [];
   const { engine, servers } = linked({ dead });
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   dead.push(FRIEND_LOCAL);
   servers.calls.length = 0;
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
   const moved = servers.calls.map((c) => baseOf(c.url));
   dead.push(FRIEND_REMOTE, FRIEND_RELAY);
-  const error = await engine.call('getCategories', []).catch((e) => e);
+  const error = await engine.call('getMediaList', ['1', { page: 1 }]).catch((e) => e);
   dead.length = 0;
   servers.calls.length = 0;
-  await engine.call('getCategories', []);
+  await engine.call('getMediaList', ['1', { page: 1 }]);
 
   assert.deepEqual(moved, [FRIEND_LOCAL, FRIEND_REMOTE]);
   assert.equal(error.code, 'UNREACHABLE');
@@ -803,7 +1104,7 @@ test('linked, the plugin asks plex.tv nothing: only the host does', async () => 
   await engine.call('search', ['bunny']);
   await engine.call('getImageHeaders', []);
 
-  assert.equal(servers.calls.length, 5);
+  assert.equal(servers.calls.length, 8);
   assert.deepEqual([...servers.calls, ...servers.probes].filter((c) => ACCOUNT_HOSTS.test(c.url)).map((c) => c.url), []);
   assert.deepEqual(account.calls.map((c) => c.url), [DISCOVER]);
 });

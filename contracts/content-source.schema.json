@@ -9,7 +9,11 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "name": { "type": "string", "minLength": 1 },
-        "thumbnailUrl": { "type": "string" }
+        "thumbnailUrl": { "type": "string" },
+        "home": {
+          "$comment": "false keeps the category out of Home, and in Browse. Absent is true.",
+          "type": "boolean"
+        }
       }
     },
     "filter": {

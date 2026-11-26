@@ -101,6 +101,9 @@ export const MANIFEST_FACTS = {
  * `stream.session` (contract 26) too, and a host that reads it hands it back as `reportPlayback`'s
  * `session`; an older app drops it and reports as it always did. A playback option's `video`
  * (contract 27), what its copy is, is one more: an older app drops it and says nothing of the format.
+ *
+ * `getCategories.home` (contract 30) is a category saying it is not for Home. An older app drops
+ * it and makes a shelf of it.
  */
 export const RESULT_FIELDS = {
   FILTER_INIT: 'getFilters.init',
@@ -111,6 +114,7 @@ export const RESULT_FIELDS = {
   EPISODE: 'getMediaDetail.episode',
   STREAM_SESSION: 'getMediaDetail.stream.session',
   VIDEO: 'getMediaDetail.video',
+  CATEGORY_HOME: 'getCategories.home',
 };
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });

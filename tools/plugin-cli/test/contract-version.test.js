@@ -561,9 +561,10 @@ test('a plugin that may answer with a result field is justified in declaring its
     'demo-plugin.js': 'export default { async getCategories() { return []; } };',
   });
 
-  assert.deepEqual(withFilters.mayAnswerWith, [{ name: RESULT_FIELDS.FILTER_INIT, version: RECORD.since[RESULT_FIELDS.FILTER_INIT] }]);
+  const home = { name: RESULT_FIELDS.CATEGORY_HOME, version: 30 };
+  assert.deepEqual(withFilters.mayAnswerWith, [{ name: RESULT_FIELDS.FILTER_INIT, version: RECORD.since[RESULT_FIELDS.FILTER_INIT] }, home]);
   assert.equal(withFilters.required, 1, 'may is not must: an older app still runs it');
-  assert.deepEqual(without.mayAnswerWith, []);
+  assert.deepEqual(without.mayAnswerWith, [home]);
 });
 
 // `live` (22) and the play state and subtitles (23) are on what getMediaDetail answers with, so any

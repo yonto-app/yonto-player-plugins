@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/library/sections/1/collections",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjoxLCJpZGVudGlmaWVyIjoiY29tLnBsZXhhcHAucGx1Z2lucy5saWJyYXJ5IiwiYWxsb3dTeW5jIjpmYWxzZSwibGlicmFyeVNlY3Rpb25JRCI6MSwibGlicmFyeVNlY3Rpb25UaXRsZSI6Ik1vdmllcyIsInRpdGxlMSI6Ik1vdmllcyIsInRpdGxlMiI6IkFsbCBDb2xsZWN0aW9ucyIsInZpZXdHcm91cCI6Im1vdmllIiwiTWV0YWRhdGEiOlt7InJhdGluZ0tleSI6IjIwIiwia2V5IjoiL2xpYnJhcnkvY29sbGVjdGlvbnMvMjAvY2hpbGRyZW4iLCJndWlkIjoiY29sbGVjdGlvbjovL2YxYmQzYmMyLTZhMmMtNGQwYy05ZTBmLTBkN2Y2ZjNjMGEyMCIsInR5cGUiOiJjb2xsZWN0aW9uIiwidGl0bGUiOiJCbGVuZGVyIGZpbG1zIiwic3VidHlwZSI6Im1vdmllIiwic3VtbWFyeSI6IiIsImluZGV4IjoxLCJyYXRpbmdDb3VudCI6MiwidGh1bWIiOiIvbGlicmFyeS9jb2xsZWN0aW9ucy8yMC9jb21wb3NpdGUvMTc5MDE5MjAwMD93aWR0aD00MDAmaGVpZ2h0PTYwMCIsImFkZGVkQXQiOjE3OTAxOTIwMDAsInVwZGF0ZWRBdCI6MTc5MDE5MjAwMCwiY2hpbGRDb3VudCI6IjIiLCJtaW5ZZWFyIjoiMjAwOCIsIm1heFllYXIiOiIyMDEwIn1dfX0="
+  }
+}

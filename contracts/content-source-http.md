@@ -43,6 +43,13 @@ Top-level browse categories (e.g. genres, curated shelves).
 
 `thumbnailUrl` is optional.
 
+`home` is optional (contract 30). `"home": false` keeps the category out of Home: the app
+makes no shelf of it, asks nothing for it there and takes nothing of it for the hero, and
+Browse lists it like any other. It is for a category whose first page says little of the
+source, such as whichever of the viewer's playlists changed last. Where a source has no
+other category the app makes shelves of them all the same, since Home would be empty.
+An older app drops the key and makes a shelf.
+
 ### `GET /v1/categories/{categoryId}/filters`
 
 Optional. The ways a listing of this category can be narrowed, in the order
@@ -314,7 +321,7 @@ arguments so that a later option can be added without every published plugin
 having to count its parameters — and because a host that passed them
 positionally would be handing `{ page }` a number.
 
-A category's page 1 with no filters is its Home shelf, so a source lists it
+A category's page 1 with no filters is its Home shelf, unless it says `"home": false`, so a source lists it
 latest first wherever it can: what was added or updated last, a series by its
 newest episode. A source that offers other orders offers them as a filter
 group with an `init` naming that one, and answers a listing that names no
@@ -2396,7 +2403,7 @@ earlier version may call `lantern` and would die at its first call, so every hos
 manifest declaring less than 21 (`oldest` in `contract-versions.json`) rather than run it, and
 every plugin declares 21. The versions above say when each piece of surface arrived; a plugin
 declares one of them again only once it needs something that arrived after 21 (version 22's `live`,
-version 23's play state and `subtitles`, version 24's `segments`, version 25's `episode`, version 26's `session` and version 27's `video` are result fields a plugin may send without declaring them, version 28's `noSearch` is the first code since, and version 29's `yonto.cache` the first host functions).
+version 23's play state and `subtitles`, version 24's `segments`, version 25's `episode`, version 26's `session` and version 27's `video` are result fields a plugin may send without declaring them, version 28's `noSearch` is the first code since, version 29's `yonto.cache` the first host functions, and version 30's `home` a result field again).
 
 **Version 22** added `live` on a stream: a stream with no end, a television channel.
 A host never saves a place in one or marks it finished, draws no timeline or speed, and starts it
@@ -2437,6 +2444,10 @@ An older app turns the code into `METHOD_THREW`, which reads as a source that fa
 
 **Version 29** added `yonto.cache`: `get`, `set`, which answers whether it kept the value, and `remove`, as described under *A plugin's cache*.
 A plugin that calls it on an older app passes the gate and dies at the first call with `yonto.cache is undefined`, so a plugin that names it declares 29.
+
+**Version 30** added a category's `home`, as described under `GET /v1/categories`.
+It is a result field, recorded as `getCategories.home`, so `lint` accepts a declaration of exactly 30 from any plugin and requires none.
+An older app drops it and makes a shelf of the category, so a plugin that sends it may declare 23 and keep its older users.
 
 **Without a version of its own**: `yonto.fetch` hands over at most 16 MB of a body,
 refusing more as `RESPONSE_TOO_LARGE`, and `bodyBase64` is asked of the host when first read. Nothing a plugin writes can need either, so a version would gate

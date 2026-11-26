@@ -40,6 +40,7 @@
     "yonto.error.noSearch": 28,
     "yonto.cache.get": 29,
     "yonto.cache.set": 29,
-    "yonto.cache.remove": 29
+    "yonto.cache.remove": 29,
+    "getCategories.home": 30
   }
 }

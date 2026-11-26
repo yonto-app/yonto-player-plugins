@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/library/sections/2/collections",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjowLCJpZGVudGlmaWVyIjoiY29tLnBsZXhhcHAucGx1Z2lucy5saWJyYXJ5IiwiYWxsb3dTeW5jIjpmYWxzZSwibGlicmFyeVNlY3Rpb25JRCI6MiwibGlicmFyeVNlY3Rpb25UaXRsZSI6IlRWIFNob3dzIiwidGl0bGUxIjoiVFYgU2hvd3MiLCJ0aXRsZTIiOiJBbGwgQ29sbGVjdGlvbnMiLCJ2aWV3R3JvdXAiOiJzaG93In19"
+  }
+}

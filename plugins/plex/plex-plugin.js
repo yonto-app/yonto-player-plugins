@@ -3,7 +3,7 @@
   "kind": "content-source",
   "id": "plex",
   "name": "Plex",
-  "version": "1.10.0",
+  "version": "1.11.1",
   "contractVersion": 23,
   "description": "The Plex servers shared with you, once you log in with a code, or your own server at an address you type.",
   "probeQuery": "bunny",
@@ -40,6 +40,11 @@ const SEARCH_LIMIT = 50;
 const MOVIE = 'movie';
 const SHOW = 'show';
 const LIBRARY_TYPES = [MOVIE, SHOW];
+const SEASON = 'season';
+const EPISODE = 'episode';
+const CLIP = 'clip';
+const TITLE_TYPES = [...LIBRARY_TYPES, CLIP];
+const VIDEO_PLAYLIST = 'video';
 
 const SORT_FILTER = 'sort';
 // A listing with no sort is a Home shelf, so it is the latest first. `episode.addedAt` is a show's
@@ -196,7 +201,7 @@ function typedTarget() {
 
 async function sharedTarget(server) {
   const remembered = await rememberedBase(server);
-  return { typed: false, server, remembered, base: null, probed: false, prefix: `${server.id}${ID_SEPARATOR}` };
+  return { typed: false, server, remembered, base: null, probed: false, answered: false, prefix: `${server.id}${ID_SEPARATOR}` };
 }
 
 // The picked library, falling back to the typed one and then to the first shared server.
@@ -299,9 +304,15 @@ function isSuccess(status) {
   return status >= 200 && status < 300;
 }
 
+// What a shared server's answer says of its connection. A write's refusal says nothing, and nor does an
+// extra's, even when it is dropped on a connection that has already answered this call.
+const READ = {};
+const WRITE = { anyAnswerStands: true };
+const EXTRA = { anyAnswerStands: true, dropStands: true };
+
 // A remembered connection that stops answering, or answers with an error, is let go and the
 // connections probed once more.
-async function fetchShared(target, pathAndQuery, what, anyAnswerStands = false) {
+async function fetchShared(target, pathAndQuery, what, rules = READ) {
   let response;
   try {
     if (target.base === null) target.base = await connect(target, what);
@@ -309,20 +320,22 @@ async function fetchShared(target, pathAndQuery, what, anyAnswerStands = false) 
   } catch (error) {
     yonto.log('warn', `${what} failed: ${error?.code ?? 'no code'}`);
     if (error?.code !== 'REQUEST_FAILED' && error?.code !== 'UNREACHABLE') throw refusal(error, target);
+    if (rules.dropStands && target.answered) throw refusal({ code: 'REQUEST_FAILED' }, target);
     await yonto.store.remove(CONNECTION_KEY + target.server.id).catch(() => {});
     if (target.probed) throw refusal({ code: 'REQUEST_FAILED' }, target);
-    return probedAgain(target, pathAndQuery, what, anyAnswerStands);
+    return probedAgain(target, pathAndQuery, what, rules);
   }
-  if (target.probed || anyAnswerStands || isSuccess(response.status)) return response;
+  if (isSuccess(response.status)) target.answered = true;
+  if (target.probed || rules.anyAnswerStands || isSuccess(response.status)) return response;
   yonto.log('warn', `${what} got HTTP ${response.status} from the connection it kept`);
   await yonto.store.remove(CONNECTION_KEY + target.server.id).catch(() => {});
-  return probedAgain(target, pathAndQuery, what, anyAnswerStands);
+  return probedAgain(target, pathAndQuery, what, rules);
 }
 
-function probedAgain(target, pathAndQuery, what, anyAnswerStands) {
+function probedAgain(target, pathAndQuery, what, rules) {
   target.remembered = null;
   target.base = null;
-  return fetchShared(target, pathAndQuery, what, anyAnswerStands);
+  return fetchShared(target, pathAndQuery, what, rules);
 }
 
 async function get(target, path, what, params) {
@@ -367,7 +380,7 @@ async function ask(target, path, what, params) {
   const pathAndQuery = `${path}${queryOf(params)}`;
   const response = target.typed
     ? await fetchTyped(target, pathAndQuery, what)
-    : await fetchShared(target, pathAndQuery, what, true);
+    : await fetchShared(target, pathAndQuery, what, EXTRA);
   if (!isSuccess(response.status)) {
     yonto.log('warn', `${what} got HTTP ${response.status}`);
     throw yonto.error.unavailable(SERVER_ERROR_MESSAGE);
@@ -396,7 +409,7 @@ async function write(target, path, params, what) {
   const query = queryOf({ identifier: LIBRARY_IDENTIFIER, ...params });
   const response = target.typed
     ? await fetchTyped(target, `${path}${query}`, what)
-    : await fetchShared(target, `${path}${query}`, what, true);
+    : await fetchShared(target, `${path}${query}`, what, WRITE);
   if (!isSuccess(response.status)) {
     yonto.log('warn', `${what} got HTTP ${response.status}`);
     throw yonto.error.unavailable(WRITE_REFUSED_MESSAGE);
@@ -491,6 +504,131 @@ function toSummary(target, item) {
     rating: item.contentRating || undefined,
     ids: idsOf(item),
   };
+}
+
+// The field names an episode and a season give their show under.
+const SHOW_FIELDS = { [EPISODE]: 'grandparent', [SEASON]: 'parent' };
+
+// The show an episode or a season is of, with none of its place, or null where the server names none.
+function showSummary(target, item) {
+  const of = SHOW_FIELDS[item.type];
+  if (item[`${of}RatingKey`] === undefined) return null;
+  return toSummary(target, {
+    type: SHOW,
+    ratingKey: item[`${of}RatingKey`],
+    title: item[`${of}Title`] || item.title,
+    thumb: item[`${of}Thumb`],
+    art: item[`${of}Art`] || item.art,
+    contentRating: item.contentRating,
+  });
+}
+
+async function sectionsOf(target) {
+  return list(await get(target, '/library/sections/all', 'libraries'), 'Directory')
+    .filter((section) => LIBRARY_TYPES.indexOf(section.type) !== -1);
+}
+
+function curatedList(item, name) {
+  return { id: String(item.ratingKey), name, changedAt: Number(item.updatedAt) || 0 };
+}
+
+// Plex keeps collections per section, so two of one name are told apart by theirs.
+async function collectionsOf(target, sections) {
+  const perSection = await Promise.all(sections.map(async (section) => {
+    const path = `/library/sections/${encodeURIComponent(section.key)}/collections`;
+    return list(await ask(target, path, 'collections'), 'Metadata')
+      .filter((item) => Number(item.childCount) !== 0)
+      .map((item) => ({ item, section }));
+  }));
+  const found = perSection.flat();
+  const isShared = (title) => found.filter(({ item }) => item.title === title).length > 1;
+  return found.map(({ item, section }) => curatedList(item, isShared(item.title) ? `${item.title} (${section.title})` : item.title));
+}
+
+async function playlistsOf(target) {
+  return list(await ask(target, '/playlists', 'playlists', { playlistType: VIDEO_PLAYLIST }), 'Metadata')
+    .filter((item) => item.playlistType === VIDEO_PLAYLIST && Number(item.leafCount) !== 0)
+    .map((item) => curatedList(item, item.title));
+}
+
+// What was curated on the server: a category beside the sections, in Browse and not on Home, whose
+// one filter names the list it shows. It offers no Sort, since a list keeps its own order.
+const CURATED = new Map([
+  ['collections', {
+    name: 'Collections',
+    filter: { id: 'collection', name: 'Collection' },
+    listsOf: async (target, sections) => collectionsOf(target, sections || await sectionsOf(target)),
+    pathOf: (id) => `/library/collections/${encodeURIComponent(id)}/children`,
+  }],
+  ['playlists', {
+    name: 'Playlists',
+    filter: { id: 'playlist', name: 'Playlist' },
+    listsOf: playlistsOf,
+    pathOf: (id) => `/playlists/${encodeURIComponent(id)}/items`,
+  }],
+]);
+
+// The list changed last: what the category opens on, and what a listing with nothing picked is.
+function openingIdOf(lists) {
+  return lists.reduce((latest, next) => (latest && latest.changedAt >= next.changedAt ? latest : next), undefined)?.id;
+}
+
+// Only the categories the server has lists for, and one that cannot say leaves the sections as they are.
+async function curatedCategories(target, sections) {
+  const categories = await Promise.all([...CURATED].map(async ([id, { name, listsOf }]) => {
+    try {
+      return (await listsOf(target, sections)).length > 0 ? [{ id, name, home: false }] : [];
+    } catch (error) {
+      yonto.log('warn', `${id} were left out: ${error?.code ?? 'no code'}`);
+      return [];
+    }
+  }));
+  return categories.flat();
+}
+
+// An episode or a season is its show: as a title of its own it would escape what a grown-up rated the show.
+function curatedSummary(target, item) {
+  if (SHOW_FIELDS[item.type]) return showSummary(target, item);
+  return TITLE_TYPES.indexOf(item.type) !== -1 ? toSummary(target, item) : null;
+}
+
+/** How far the last list read was walked, so its next page goes on from there. */
+let lastWalk = null;
+
+// A list's page, each title once in the server's order. The host takes a page with nothing new as
+// the end, and sixty episodes of a show already listed are nothing new, so a page reads on past them.
+async function curatedPage(target, path, page, what) {
+  const key = `${target.typed ? target.base : ''}${target.prefix}${path}`;
+  const goesOn = lastWalk?.key === key && lastWalk.page < page;
+  const walk = goesOn ? lastWalk : { key, page: 0, start: 0, ended: false, seen: new Set() };
+  lastWalk = walk;
+  let summaries = [];
+  while (walk.page < page) {
+    summaries = await nextSummaries(target, path, walk, what);
+    walk.page += 1;
+  }
+  return summaries;
+}
+
+async function nextSummaries(target, path, walk, what) {
+  while (!walk.ended) {
+    const container = await get(target, path, what, { ...WITH_GUIDS, ...pagingFrom(walk.start) });
+    const items = list(container, 'Metadata');
+    walk.start += items.length;
+    walk.ended = items.length === 0
+      || (container.totalSize === undefined ? items.length !== PAGE_SIZE : walk.start >= Number(container.totalSize));
+    const fresh = items.map((item) => curatedSummary(target, item)).filter((summary) => {
+      if (summary === null || walk.seen.has(summary.id)) return false;
+      walk.seen.add(summary.id);
+      return true;
+    });
+    if (fresh.length > 0) return fresh;
+  }
+  return [];
+}
+
+function pagingFrom(start) {
+  return { 'X-Plex-Container-Start': String(start), 'X-Plex-Container-Size': String(PAGE_SIZE) };
 }
 
 // The part key is the one string the server puts straight after our host, so it has to be a
@@ -841,23 +979,35 @@ export default {
 
   async getCategories() {
     const target = await pickedTarget();
-    return list(await get(target, '/library/sections/all', 'libraries'), 'Directory')
-      .filter((section) => LIBRARY_TYPES.indexOf(section.type) !== -1)
-      .map((section) => ({ id: String(section.key), name: section.title }));
+    const sections = await sectionsOf(target);
+    return [
+      ...sections.map((section) => ({ id: String(section.key), name: section.title })),
+      ...await curatedCategories(target, sections),
+    ];
   },
 
-  async getFilters() {
+  async getFilters(categoryId) {
+    const curated = CURATED.get(categoryId);
+    if (curated) {
+      const lists = await curated.listsOf(await pickedTarget());
+      if (lists.length === 0) return [];
+      return [{ ...curated.filter, options: lists.map(({ id, name }) => ({ id, name })), init: openingIdOf(lists) }];
+    }
     return [{ id: SORT_FILTER, name: 'Sort', options: SORT_OPTIONS, init: ADDED_SORT }];
   },
 
   async getMediaList(categoryId, options) {
     const { page = 1, filters = {} } = options || {};
     const target = await pickedTarget();
+    const curated = CURATED.get(categoryId);
+    if (curated) {
+      const picked = filters[curated.filter.id] || openingIdOf(await curated.listsOf(target));
+      return picked ? curatedPage(target, curated.pathOf(picked), page, categoryId) : [];
+    }
     const container = await get(target, `/library/sections/${encodeURIComponent(categoryId)}/all`, categoryId, {
       ...WITH_GUIDS,
       sort: SORTS[filters[SORT_FILTER] || ADDED_SORT].by,
-      'X-Plex-Container-Start': String(Math.max(page - 1, 0) * PAGE_SIZE),
-      'X-Plex-Container-Size': String(PAGE_SIZE),
+      ...pagingFrom(Math.max(page - 1, 0) * PAGE_SIZE),
     });
     return list(container, 'Metadata').map((item) => toSummary(target, item));
   },
@@ -930,15 +1080,9 @@ export default {
   async getContinueWatching() {
     const target = await pickedTarget();
     const items = list(await get(target, '/library/onDeck', 'on deck'), 'Metadata').flatMap((item) => {
-      if (item.type === 'episode' && item.grandparentRatingKey !== undefined) {
-        const show = toSummary(target, {
-          type: SHOW,
-          ratingKey: item.grandparentRatingKey,
-          title: item.grandparentTitle || item.title,
-          thumb: item.grandparentThumb,
-          art: item.grandparentArt,
-        });
-        return [{ ...show, ...playStateOf(item), optionId: String(item.ratingKey) }];
+      if (item.type === EPISODE) {
+        const show = showSummary(target, item);
+        return show ? [{ ...show, ...playStateOf(item), optionId: String(item.ratingKey) }] : [];
       }
       return item.type === MOVIE ? [toSummary(target, item)] : [];
     });

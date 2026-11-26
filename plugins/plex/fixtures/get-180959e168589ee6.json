@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:18400/playlists?playlistType=video",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "bodyBase64": "eyJNZWRpYUNvbnRhaW5lciI6eyJzaXplIjoxLCJNZXRhZGF0YSI6W3sicmF0aW5nS2V5IjoiMjIiLCJrZXkiOiIvcGxheWxpc3RzLzIyL2l0ZW1zIiwiZ3VpZCI6ImNvbS5wbGV4YXBwLmFnZW50cy5ub25lOi8vOGYxYzJmN2UtMGEwYy00YTUzLThhMGItMmY2ZjVjMWIwMDIyIiwidHlwZSI6InBsYXlsaXN0IiwidGl0bGUiOiJNb3ZpZSBuaWdodCIsInN1bW1hcnkiOiIiLCJzbWFydCI6ZmFsc2UsInBsYXlsaXN0VHlwZSI6InZpZGVvIiwiY29tcG9zaXRlIjoiL3BsYXlsaXN0cy8yMi9jb21wb3NpdGUvMTc5MDE5MjEwMCIsImR1cmF0aW9uIjo2MDAwMCwibGVhZkNvdW50IjozLCJhZGRlZEF0IjoxNzkwMTkyMTAwLCJ1cGRhdGVkQXQiOjE3OTAxOTIxMDB9XX19"
+  }
+}
